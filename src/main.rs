@@ -33,10 +33,13 @@ fn add() -> Template {
 }
 
 #[post("/add", data = "<form>")]
-fn save(form: Form<models::AddForm>) -> Redirect {
+fn save(form: Form<models::AddForm>) -> Result<Redirect, String> {
     let form = form.into_inner();
-    println!("{}", form.url);
-    Redirect::to("/add")
+    let url = form.url.trim();
+    if !url.starts_with("http://") && !url.starts_with("https://") {
+        return Err(format!("Not a valid URL: {}", url));
+    }
+    Ok(Redirect::to("/add"))
 }
 
 #[get("/favicon.ico")]

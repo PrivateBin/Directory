@@ -23,7 +23,7 @@ test: ## Launch tests to verify that the service works as expected, requires a r
 	@sleep 1
 	nc -z localhost $(PORT)
 	curl -s http://localhost:$(PORT)/ | grep "Welcome!"
-    curl -s http://localhost:$(PORT)/add | grep "Add instance!"
+	curl -s http://localhost:$(PORT)/add | grep "Add instance"
 
 clean: ## Stops and removes the running container.
 	docker stop $(NAME)
