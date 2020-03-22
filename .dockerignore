@@ -1,0 +1,10 @@
+Cargo.*
+Dockerfile
+Makefile
+src
+target/release
+target/x86_64-unknown-linux-musl/release/deps
+*.md
+.cargo
+.git
+.gitignore
