@@ -35,6 +35,7 @@ fn rocket() -> rocket::Rocket {
     rocket::ignite()
         .mount("/", routes![index, favicon])
         .mount("/img", StaticFiles::from("/img"))
+        .mount("/css", StaticFiles::from("/css"))
         .attach(Template::fairing())
 }
 
