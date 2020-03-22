@@ -6,4 +6,12 @@ edition = "2018"
 
 [dependencies]
 rocket = "0.4.4"
-rocket_contrib = "0.4.4"
+
+[dependencies.rocket_contrib]
+version = "0.4.4"
+default-features = false
+features = ["serve", "tera_templates"]
+
+[dependencies.serde]
+version = "1.0.105"
+features = ["derive"]
