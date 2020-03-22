@@ -2,6 +2,7 @@
 
 #[macro_use] extern crate rocket;
 use rocket::response::Redirect;
+use rocket::request::Form;
 use rocket_contrib::serve::StaticFiles;
 use rocket_contrib::templates::Template;
 
@@ -10,10 +11,9 @@ mod models;
 
 #[get("/")]
 fn index() -> Template {
-    let page = models::Page {
-        title: String::from("Instance Directory"),
-        topic: String::from("Welcome!"),
-        table: models::Table {
+    let page = models::Page::new_with_table(
+        String::from("Welcome!"),
+        models::Table {
             title: String::from("Version 1.3"),
             header: [String::from("Instance"), String::from("HTTPS"), String::from("Country")],
             body: vec![
@@ -22,8 +22,21 @@ fn index() -> Template {
                 [String::from("baz"), String::from("\u{2718}"), String::from("\u{1F3F4}\u{200D}\u{2620}\u{FE0F}")],
             ]
         }
-    };
+    );
     Template::render("list", &page)
+}
+
+#[get("/add")]
+fn add() -> Template {
+    let page = models::Page::new(String::from("Add instance"));
+    Template::render("add", &page)
+}
+
+#[post("/add", data = "<form>")]
+fn save(form: Form<models::AddForm>) -> Redirect {
+    let form = form.into_inner();
+    println!("{}", form.url);
+    Redirect::to("/add")
 }
 
 #[get("/favicon.ico")]
@@ -33,7 +46,7 @@ fn favicon() -> Redirect {
 
 fn rocket() -> rocket::Rocket {
     rocket::ignite()
-        .mount("/", routes![index, favicon])
+        .mount("/", routes![index, add, save, favicon])
         .mount("/img", StaticFiles::from("/img"))
         .mount("/css", StaticFiles::from("/css"))
         .attach(Template::fairing())
