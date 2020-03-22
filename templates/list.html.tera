@@ -1,13 +1,6 @@
-<!DOCTYPE html>
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<meta name="robots" content="index" />
-		<title>{{ title }}</title>
-	</head>
+{% extends "base" %}
 
-	<body>
+{% block content %}
 		<h1>{{ title }}</h1>
 		<p>{{ body }}</p>
-	</body>
-</html>
+{% endblock content %}
