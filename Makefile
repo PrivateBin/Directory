@@ -10,6 +10,11 @@ build: ## Build the container image (default).
 		-v "$(CURDIR)":/home/rust/src \
 		-v "$(CURDIR)"/.cargo/git:/home/rust/.cargo/git \
 		-v "$(CURDIR)"/.cargo/registry:/home/rust/.cargo/registry \
+		ekidd/rust-musl-builder:nightly-2020-03-12 cargo test
+	docker run --rm -t \
+		-v "$(CURDIR)":/home/rust/src \
+		-v "$(CURDIR)"/.cargo/git:/home/rust/.cargo/git \
+		-v "$(CURDIR)"/.cargo/registry:/home/rust/.cargo/registry \
 		ekidd/rust-musl-builder:nightly-2020-03-12 cargo build --release
 	docker build --build-arg PORT=$(PORT) -t $(IMAGE) .
 

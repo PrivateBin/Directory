@@ -14,9 +14,14 @@ fn favicon() -> Redirect {
     Redirect::permanent("/img/favicon.ico")
 }
 
-fn main() {
+fn rocket() -> rocket::Rocket {
     rocket::ignite()
         .mount("/", routes![index, favicon])
         .mount("/img", StaticFiles::from("/img"))
-        .launch();
+}
+
+#[cfg(test)] mod tests;
+
+fn main() {
+    rocket().launch();
 }
