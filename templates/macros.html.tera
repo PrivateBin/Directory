@@ -1,0 +1,15 @@
+{% macro table(caption, header, table) %}
+		<table>
+			<caption>{{ caption }}</caption>
+			<thead>
+				<tr>{% for head in header %}
+					<th scope="col">{{ head }}</td>{% endfor %}
+				</tr>
+			</thead>
+			<tbody>{% for row in table %}
+				<tr>{% for col in row %}
+					<td>{{ col }}</td>{% endfor %}
+				</tr>{% endfor %}
+			</tbody>
+		</table>
+{% endmacro table %}

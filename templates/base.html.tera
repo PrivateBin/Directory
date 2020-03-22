@@ -3,10 +3,10 @@
 	<head>
 		<meta charset="utf-8" />
 		<meta name="robots" content="index" />
-		<title>{{ title }}</title>
+		<title>{{ title }} - {{ topic }}</title>
 	</head>
 	<body>
-{% block content %}
-{% endblock content %}
+		<h1>{{ topic }}</h1>
+{% block content %}{% endblock content %}
 	</body>
 </html>

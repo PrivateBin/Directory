@@ -1,6 +1,6 @@
 {% extends "base" %}
+{% import "macros" as draw %}
 
 {% block content %}
-		<h1>{{ title }}</h1>
-		<p>{{ body }}</p>
+{{ draw::table(caption=table.title, header=table.header, table=table.body) }}
 {% endblock content %}

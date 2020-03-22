@@ -22,7 +22,7 @@ run: ## Run a container from the image.
 test: ## Launch tests to verify that the service works as expected, requires a running container.
 	@sleep 1
 	nc -z localhost $(PORT)
-	curl -s http://localhost:$(PORT)/ | grep "Hello, world!"
+	curl -s http://localhost:$(PORT)/ | grep "Welcome!"
 
 clean: ## Stops and removes the running container.
 	docker stop $(NAME)
