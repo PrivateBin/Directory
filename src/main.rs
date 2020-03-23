@@ -33,11 +33,12 @@ fn add() -> Template {
 }
 
 #[post("/add", data = "<form>")]
-fn save(form: Form<models::AddForm>) -> Result<Redirect, String> {
+fn save(form: Form<models::AddForm>) -> Result<Redirect, Template> {
     let form = form.into_inner();
     let url = form.url.trim();
     if !url.starts_with("http://") && !url.starts_with("https://") {
-        return Err(format!("Not a valid URL: {}", url));
+        let page = models::Page::new(format!("Not a valid URL: {}", url));
+        return Err(Template::render("add", &page));
     }
     Ok(Redirect::to("/add"))
 }

@@ -31,3 +31,14 @@ fn add_post() {
     let mut headers = response.headers().iter();
     assert_eq!(headers.next(), Some(Header::new("Location", "/add")));
 }
+
+#[test]
+fn add_post_error() {
+    let client = Client::new(rocket()).expect("valid rocket instance");
+    let mut response = client.post("/add")
+        .body("url=example.com")
+        .header(ContentType::Form)
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    assert!(response.body_string().map_or(false, |s| s.contains(&"Not a valid URL: ")));
+}
