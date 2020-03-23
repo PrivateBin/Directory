@@ -11,7 +11,7 @@ mod models;
 
 #[get("/")]
 fn index() -> Template {
-    let page = models::Page::new_with_table(
+    let page = models::TablePage::new(
         String::from("Welcome!"),
         models::Table {
             title: String::from("Version 1.3"),
@@ -26,21 +26,25 @@ fn index() -> Template {
     Template::render("list", &page)
 }
 
+const ADD_TITLE: &str = "Add instance";
+
 #[get("/add")]
 fn add() -> Template {
-    let page = models::Page::new(String::from("Add instance"));
+    let page = models::StatusPage::new(String::from(ADD_TITLE), String::from(""), String::from(""));
     Template::render("add", &page)
 }
 
 #[post("/add", data = "<form>")]
-fn save(form: Form<models::AddForm>) -> Result<Redirect, Template> {
+fn save(form: Form<models::AddForm>) -> Template {
     let form = form.into_inner();
     let url = form.url.trim();
+    let page: models::StatusPage;
     if !url.starts_with("http://") && !url.starts_with("https://") {
-        let page = models::Page::new(format!("Not a valid URL: {}", url));
-        return Err(Template::render("add", &page));
+        page = models::StatusPage::new(String::from(ADD_TITLE), format!("Not a valid URL: {}", url), String::from(""));
+    } else {
+        page = models::StatusPage::new(String::from(ADD_TITLE), String::from(""), format!("Successfully added URL: {}", url));
     }
-    Ok(Redirect::to("/add"))
+    Template::render("add", &page)
 }
 
 #[get("/favicon.ico")]

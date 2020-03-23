@@ -2,14 +2,36 @@
 			<h5>{{ caption }}</h5>
 			<table class="table table-borderless table-hover table-striped">
 				<thead class="thead-light">
-					<tr>{% for head in header %}
-						<th scope="col">{{ head }}</td>{% endfor %}
+					<tr>
+	{%- for head in header %}
+						<th scope="col">{{ head }}</td>
+	{%- endfor %}
 					</tr>
 				</thead>
-				<tbody>{% for row in table %}
-					<tr>{% for col in row %}
-						<td>{{ col }}</td>{% endfor %}
-					</tr>{% endfor %}
+				<tbody>
+	{%- for row in table %}
+					<tr>
+		{%- for col in row %}
+						<td>{{ col }}</td>
+		{%- endfor %}
+					</tr>
+	{%- endfor %}
 				</tbody>
 			</table>
 {% endmacro table %}
+
+{% macro success(message) -%}
+	{%- if message != "" %}
+			<div class="alert alert-success" role="alert">
+				{{ message }}
+			</div>
+	{%- endif -%}
+{% endmacro success %}
+
+{% macro error(message) -%}
+	{%- if message != "" %}
+			<div class="alert alert-danger" role="alert">
+				{{ message }}
+			</div>
+	{%- endif -%}
+{% endmacro error %}

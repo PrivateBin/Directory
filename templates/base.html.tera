@@ -21,12 +21,16 @@
 					<li class="nav-item active">
 						<a class="nav-link" href="/">Home</a>
 					</li>
+					<li class="nav-item">
+						<a class="nav-link" href="/add">Add</a>
+					</li>
 				</ul>
 			</div>
 		</nav>
 		<div class="container-fluid">
 			<h2>{{ topic }}</h2>
-{% block content %}{% endblock content %}
+{% block content -%}
+{% endblock content %}
 		</div>
 	</body>
 </html>

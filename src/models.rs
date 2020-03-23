@@ -1,7 +1,23 @@
 use serde::Serialize;
 
+const TITLE: &str = "Instance Directory";
+
 #[derive(Debug, PartialEq, Eq, Serialize)]
 pub struct Page {
+    pub title: String,
+    pub topic: String,
+}
+
+#[derive(Debug, PartialEq, Eq, Serialize)]
+pub struct StatusPage {
+    pub title: String,
+    pub topic: String,
+    pub error: String,
+    pub success: String,
+}
+
+#[derive(Debug, PartialEq, Eq, Serialize)]
+pub struct TablePage {
     pub title: String,
     pub topic: String,
     pub table: Table,
@@ -9,19 +25,28 @@ pub struct Page {
 
 impl Page {
     pub fn new(topic: String) -> Page {
-        Page::new_with_table(
-            topic,
-            Table {
-                title: String::from(""),
-                header: [String::from(""), String::from(""), String::from("")],
-                body: vec![],
-            },
-        )
-    }
-
-    pub fn new_with_table(topic: String, table: Table) -> Page {
         Page {
-            title: String::from("Instance Directory"),
+            title: String::from(TITLE),
+            topic: topic,
+        }
+    }
+}
+
+impl StatusPage {
+    pub fn new(topic: String, error: String, success: String) -> StatusPage {
+        StatusPage {
+            title: String::from(TITLE),
+            topic: topic,
+            error: error,
+            success: success,
+        }
+    }
+}
+
+impl TablePage {
+    pub fn new(topic: String, table: Table) -> TablePage {
+        TablePage {
+            title: String::from(TITLE),
             topic: topic,
             table: table
         }

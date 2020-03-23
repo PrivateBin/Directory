@@ -1,7 +1,6 @@
 use super::rocket;
 use rocket::local::Client;
 use rocket::http::ContentType;
-use rocket::http::Header;
 use rocket::http::Status;
 
 #[test]
@@ -21,15 +20,14 @@ fn add_get() {
 }
 
 #[test]
-fn add_post() {
+fn add_post_success() {
     let client = Client::new(rocket()).expect("valid rocket instance");
-    let response = client.post("/add")
+    let mut response = client.post("/add")
         .body("url=http://example.com")
         .header(ContentType::Form)
         .dispatch();
-    assert_eq!(response.status(), Status::SeeOther);
-    let mut headers = response.headers().iter();
-    assert_eq!(headers.next(), Some(Header::new("Location", "/add")));
+    assert_eq!(response.status(), Status::Ok);
+    assert!(response.body_string().map_or(false, |s| s.contains(&"Successfully added URL: ")));
 }
 
 #[test]
@@ -40,5 +38,5 @@ fn add_post_error() {
         .header(ContentType::Form)
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    assert!(response.body_string().map_or(false, |s| s.contains(&"Not a valid URL: ")));
+    assert!(response.body_string().map_or(false, |s| s.contains(&"Not a valid URL: example.com")));
 }

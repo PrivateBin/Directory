@@ -2,6 +2,8 @@
 {% import "macros" as draw %}
 
 {% block content %}
+{{ draw::error(message=error) }}
+{{ draw::success(message=success) }}
 			<form  action="/add" method="POST">
 				<div class="form-group">
 					<label for="url">Add an instance:</label>
