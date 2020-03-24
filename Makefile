@@ -1,30 +1,43 @@
-.PHONY: build run test clean help all
+.PHONY: all release test build pack image run check clean help
 
 NAME = directory
 IMAGE = privatebin/$(NAME)
 PORT = 8000
 
-build: ## Build the container image (default).
-	mkdir -p .cargo/registry
+all: test build image run check clean ## Equivalent to "make test build image run check clean" (default).
+
+release: test build pack image run test clean ## Equivalent to "make test build pack image run check clean".
+
+test: .cargo/registry ## Build and run the unit tests.
 	docker run --rm -t \
 		-v "$(CURDIR)":/home/rust/src \
 		-v "$(CURDIR)"/.cargo/registry:/home/rust/.cargo/registry \
-		ekidd/rust-musl-builder:nightly-2020-03-12 cargo test
+		ekidd/rust-musl-builder:nightly-2020-03-12 cargo test --release
+
+build: .cargo/registry ## Build the binary for release.
 	docker run --rm -t \
 		-v "$(CURDIR)":/home/rust/src \
 		-v "$(CURDIR)"/.cargo/registry:/home/rust/.cargo/registry \
 		ekidd/rust-musl-builder:nightly-2020-03-12 cargo build --release
+
+pack: ## Strips and compresses the binary to reduce it's size, only intended for the release.
 	strip target/x86_64-unknown-linux-musl/release/directory
+	upx --ultra-brute target/x86_64-unknown-linux-musl/release/directory
+
+image: ## Build the container image.
 	docker build --build-arg PORT=$(PORT) -t $(IMAGE) .
 
 run: ## Run a container from the image.
 	docker run -d --init --name $(NAME) -p=$(PORT):$(PORT) --read-only --restart=always $(IMAGE)
 
-test: ## Launch tests to verify that the service works as expected, requires a running container.
+check: ## Launch tests to verify that the service works as expected, requires a running container.
 	@sleep 1
 	nc -z localhost $(PORT)
 	curl -s http://localhost:$(PORT)/ | grep "Welcome!"
 	curl -s http://localhost:$(PORT)/add | grep "Add instance"
+
+.cargo/registry:
+	mkdir -p .cargo/registry
 
 clean: ## Stops and removes the running container.
 	docker stop $(NAME)
@@ -36,4 +49,3 @@ help: ## Displays these usage instructions.
 	@echo "Specify one or multiple of the following targets and they will be processed in the given order:"
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "%-16s%s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
-all: build run test clean ## Equivalent to "make build run test clean"
