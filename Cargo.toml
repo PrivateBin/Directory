@@ -15,3 +15,8 @@ features = ["serve", "tera_templates"]
 [dependencies.serde]
 version = "1.0.105"
 features = ["derive"]
+
+[profile.release]
+opt-level = 'z'  # Optimize for size.
+lto = true
+codegen-units = 1

@@ -14,6 +14,7 @@ build: ## Build the container image (default).
 		-v "$(CURDIR)":/home/rust/src \
 		-v "$(CURDIR)"/.cargo/registry:/home/rust/.cargo/registry \
 		ekidd/rust-musl-builder:nightly-2020-03-12 cargo build --release
+	strip target/x86_64-unknown-linux-musl/release/directory
 	docker build --build-arg PORT=$(PORT) -t $(IMAGE) .
 
 run: ## Run a container from the image.
