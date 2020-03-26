@@ -1,2 +1,3 @@
-.cargo/
-target/
+/.cargo/
+/target/
+/TODO.md

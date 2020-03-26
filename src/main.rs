@@ -60,6 +60,7 @@ fn rocket() -> rocket::Rocket {
         .attach(Template::fairing())
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     rocket().launch();
 }

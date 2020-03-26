@@ -6,16 +6,16 @@ PORT = 8000
 
 all: test build image run check clean ## Equivalent to "make test build image run check clean" (default).
 
-release: test build pack image run test clean ## Equivalent to "make test build pack image run check clean".
+release: test build pack image run check clean ## Equivalent to "make test build pack image run check clean".
 
 test: .cargo/registry ## Build and run the unit tests.
 	docker run --rm -t \
 		-v "$(CURDIR)":/home/rust/src \
 		-v "$(CURDIR)"/.cargo/registry:/home/rust/.cargo/registry \
-		ekidd/rust-musl-builder:nightly-2020-03-12 cargo test --release
+		ekidd/rust-musl-builder:nightly-2020-03-12 cargo test --release # -- --nocapture
 
 build: .cargo/registry ## Build the binary for release.
-	docker run --rm -t \
+	docker run --rm -t  \
 		-v "$(CURDIR)":/home/rust/src \
 		-v "$(CURDIR)"/.cargo/registry:/home/rust/.cargo/registry \
 		ekidd/rust-musl-builder:nightly-2020-03-12 cargo build --release
