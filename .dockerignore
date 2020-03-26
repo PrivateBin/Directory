@@ -2,11 +2,8 @@
 /Dockerfile
 /Makefile
 /src
-/target/debug
-/target/release
-/target/rls
-/target/x86_64-unknown-linux-musl/debug/
-/target/x86_64-unknown-linux-musl/release/deps
+/target
+!/target/x86_64-unknown-linux-musl/release/directory
 *.md
 /.cargo
 .git
