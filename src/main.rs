@@ -1,6 +1,7 @@
 #![feature(proc_macro_hygiene, decl_macro)]
 
 #[macro_use] extern crate rocket;
+use futures::executor::block_on;
 use rocket::response::Redirect;
 use rocket::request::Form;
 use rocket_contrib::serve::StaticFiles;
@@ -42,7 +43,11 @@ fn save(form: Form<models::AddForm>) -> Template {
     if !url.starts_with("http://") && !url.starts_with("https://") {
         page = models::StatusPage::new(String::from(ADD_TITLE), format!("Not a valid URL: {}", url), String::from(""));
     } else {
-        page = models::StatusPage::new(String::from(ADD_TITLE), String::from(""), format!("Successfully added URL: {}", url));
+        let privatebin = block_on(models::PrivateBin::new(url.to_string()));
+        match privatebin {
+            Ok(_msg) => page = models::StatusPage::new(String::from(ADD_TITLE), String::from(""), format!("Successfully added URL: {}", url)),
+            Err(e) => page = models::StatusPage::new(String::from(ADD_TITLE), e.to_string(), String::from(""))
+        }
     }
     Template::render("add", &page)
 }

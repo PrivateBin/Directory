@@ -8,6 +8,8 @@ use std::error::Error;
 use std::fmt;
 
 const TITLE: &str = "Instance Directory";
+
+#[test]
 const LATEST_PRIVATEBIN_VERSION: &str = "1.3.4";
 
 pub struct Instance {
