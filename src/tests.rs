@@ -23,7 +23,7 @@ fn add_get() {
 fn add_post_success() {
     let client = Client::new(rocket()).expect("valid rocket instance");
     let mut response = client.post("/add")
-        .body("url=http://example.com")
+        .body("url=https://privatebin.net")
         .header(ContentType::Form)
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
