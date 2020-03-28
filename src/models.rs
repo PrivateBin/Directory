@@ -1,9 +1,11 @@
 extern crate hyper_sync_rustls;
+use dns_lookup::lookup_host;
 use hyper::Client;
 use hyper::client::RedirectPolicy;
 use hyper::header::{Connection, Location, UserAgent};
 use hyper::net::HttpsConnector;
 use hyper::status::{StatusClass, StatusCode};
+use maxminddb::geoip2::Country;
 use regex::Regex;
 use serde::Serialize;
 use std::io::{BufReader, BufRead};
@@ -91,6 +93,32 @@ impl PrivateBin {
             }
         }
 
+        // check country via geo IP database lookup
+        let mut country_code = "AQ".to_string();
+        let hostname_regex = Regex::new(
+            r"^https?://((([[:alnum:]]|[[:alnum:]][[:alnum:]-]*[[:alnum:]])\.)*([[:alnum:]]|[[:alnum:]][[:alnum:]-]*[[:alnum:]])+)/?.*$"
+        ).unwrap();
+        let hostname_matches = hostname_regex.captures(&check_url);
+        if hostname_matches.is_some() {
+            let ips = lookup_host(&hostname_matches.unwrap()[1]);
+            if ips.is_err() {
+                return Err(format!("Host or domain of URL {} is not supported.", check_url).to_string())
+            }
+
+            let reader = maxminddb::Reader::open_readfile(env!("GEOIP_MMDB"));
+            if reader.is_err() {
+                return Err(
+                    format!(
+                        "Error opening geo IP database {} (defined in environment variable GEOIP_MMDB).",
+                        env!("GEOIP_MMDB")
+                    ).to_string()
+                )
+            }
+            let country: Country = reader.unwrap().lookup(ips.unwrap()[0]).unwrap();
+            country_code = country.country.unwrap().iso_code.unwrap();
+        }
+
+        // check version of privatebin / zerobin JS library
         let result = client.get(&check_url)
             .header(Connection::close())
             .header(Self::get_user_agent())
@@ -115,7 +143,12 @@ impl PrivateBin {
                 if matches.is_some() {
                     return Ok(
                         PrivateBin {
-                            instance: Instance::new(check_url, matches.unwrap()[1].to_string(), https_redirect, "AQ"),
+                            instance: Instance::new(
+                                check_url,
+                                matches.unwrap()[1].to_string(),
+                                https_redirect,
+                                &country_code,
+                            ),
                         }
                     )
                 }
@@ -141,7 +174,7 @@ fn test_privatebin() {
     assert_eq!(privatebin.instance.url, url);
     assert_eq!(privatebin.instance.version, LATEST_PRIVATEBIN_VERSION);
     assert_eq!(privatebin.instance.https_redirect, true);
-    assert_eq!(privatebin.instance.country_id, ['A' as u8, 'Q' as u8]);
+    assert_eq!(privatebin.instance.country_id, ['C' as u8, 'H' as u8]);
 }
 
 #[test]
@@ -157,7 +190,7 @@ fn test_zerobin() {
     let privatebin = PrivateBin::new(url.clone()).unwrap();
     assert_eq!(privatebin.instance.url, url);
     assert_eq!(privatebin.instance.version, "0.19.2");
-    assert_eq!(privatebin.instance.country_id, ['A' as u8, 'Q' as u8]);
+    assert_eq!(privatebin.instance.country_id, ['I' as u8, 'E' as u8]);
 }
 
 #[test]
@@ -167,7 +200,7 @@ fn test_privatebin_http() {
     assert_eq!(privatebin.instance.url, url);
     assert_eq!(privatebin.instance.version, LATEST_PRIVATEBIN_VERSION);
     assert_eq!(privatebin.instance.https_redirect, false);
-    assert_eq!(privatebin.instance.country_id, ['A' as u8, 'Q' as u8]);
+    assert_eq!(privatebin.instance.country_id, ['C' as u8, 'H' as u8]);
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize)]

@@ -6,6 +6,7 @@ Software
 ## Volumes
 
 - `/data`: Data
+- `/var/geoip-country.mmdb`: GeoIP database, country level is sufficient
 
 ## Network ports
 
