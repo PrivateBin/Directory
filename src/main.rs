@@ -1,12 +1,18 @@
 #![feature(proc_macro_hygiene, decl_macro)]
 
+#[macro_use] extern crate diesel;
 #[macro_use] extern crate rocket;
+#[macro_use] extern crate rocket_contrib;
+use diesel::prelude::*;
 use rocket::response::Redirect;
 use rocket::request::Form;
+//use rocket_contrib::databases::diesel; not working with current diesel
 use rocket_contrib::serve::StaticFiles;
 use rocket_contrib::templates::Template;
 
-mod models;
+pub mod models;
+pub mod schema;
+use schema::instances;
 #[cfg(test)] mod tests;
 
 #[get("/")]
@@ -35,13 +41,19 @@ fn add() -> Template {
 }
 
 #[post("/add", data = "<form>")]
-fn save(form: Form<models::AddForm>) -> Template {
+fn save(conn: DirectoryDbConn, form: Form<models::AddForm>) -> Template {
     let form = form.into_inner();
     let url = form.url.trim();
     let page: models::StatusPage;
     let privatebin = models::PrivateBin::new(url.to_string());
     match privatebin {
-        Ok(_msg) => page = models::StatusPage::new(String::from(ADD_TITLE), String::from(""), format!("Successfully added URL: {}", url)),
+        Ok(privatebin) => {
+            page = models::StatusPage::new(String::from(ADD_TITLE), String::from(""), format!("Successfully added URL: {}", url));
+            diesel::insert_into(instances::table)
+                .values(&privatebin.instance)
+                .execute(&*conn)
+                .expect("Error saving new post");
+        },
         Err(e) => page = models::StatusPage::new(String::from(ADD_TITLE), e, String::from(""))
     }
     Template::render("add", &page)
@@ -52,11 +64,15 @@ fn favicon() -> Redirect {
     Redirect::permanent("/img/favicon.ico")
 }
 
+#[database("directory")]
+struct DirectoryDbConn(diesel::SqliteConnection);
+
 fn rocket() -> rocket::Rocket {
     rocket::ignite()
         .mount("/", routes![index, add, save, favicon])
         .mount("/img", StaticFiles::from("/img"))
         .mount("/css", StaticFiles::from("/css"))
+        .attach(DirectoryDbConn::fairing())
         .attach(Template::fairing())
 }
 

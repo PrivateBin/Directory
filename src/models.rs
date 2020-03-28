@@ -9,35 +9,53 @@ use maxminddb::geoip2::Country;
 use regex::Regex;
 use serde::Serialize;
 use std::io::{BufReader, BufRead};
+use super::schema::instances;
 
 const TITLE: &str = "Instance Directory";
 const LATEST_PRIVATEBIN_VERSION: &str = "1.3.4";
 
+#[derive(Queryable)]
 pub struct Instance {
+    pub id: i32,
     pub url: String,
     pub version: String,
+    pub https: bool,
     pub https_redirect: bool,
-    pub country_id: [u8; 2],
+    pub country_id: String,
 }
 
-impl Instance {
-    pub fn new(url: String, version: String, https_redirect: bool, country_code: &str) -> Instance {
-        let mut country_chars = country_code.chars();
-        Instance {
+#[derive(Insertable)]
+#[table_name = "instances"]
+pub struct InstanceNew {
+    pub url: String,
+    pub version: String,
+    pub https: bool,
+    pub https_redirect: bool,
+    pub country_id: String,
+}
+
+impl InstanceNew {
+    pub fn new(url: String, version: String, https: bool, https_redirect: bool, country_code: String) -> InstanceNew {
+        InstanceNew {
             url: url,
             version: version,
+            https: https,
             https_redirect: https_redirect,
+            country_id: country_code,
+        }
+        /*
+        let mut country_chars = country_code.chars();
             country_id: [
                 country_chars.next().unwrap() as u8,
                 country_chars.next().unwrap() as u8
             ],
-        }
+        */
         // to convert u8 to char: 65u8 as char -> A
     }
 }
 
 pub struct PrivateBin {
-    pub instance: Instance,
+    pub instance: InstanceNew,
 }
 
 impl PrivateBin {
@@ -58,10 +76,12 @@ impl PrivateBin {
         client.set_redirect_policy(RedirectPolicy::FollowNone);
 
         // check for HTTPS redirect
+        let mut https = false;
         let mut https_redirect = false;
         let mut http_url = url.clone();
         let mut check_url = url;
         if check_url.starts_with("https://") {
+            https = true;
             http_url.replace_range(..5, "http");
         }
         let result = client.head(&http_url)
@@ -105,12 +125,13 @@ impl PrivateBin {
                 return Err(format!("Host or domain of URL {} is not supported.", check_url).to_string())
             }
 
-            let reader = maxminddb::Reader::open_readfile(env!("GEOIP_MMDB"));
+            let geoip_mmdb = std::env::var("GEOIP_MMDB").unwrap();
+            let reader = maxminddb::Reader::open_readfile(&geoip_mmdb);
             if reader.is_err() {
                 return Err(
                     format!(
                         "Error opening geo IP database {} (defined in environment variable GEOIP_MMDB).",
-                        env!("GEOIP_MMDB")
+                        geoip_mmdb
                     ).to_string()
                 )
             }
@@ -143,11 +164,12 @@ impl PrivateBin {
                 if matches.is_some() {
                     return Ok(
                         PrivateBin {
-                            instance: Instance::new(
+                            instance: InstanceNew::new(
                                 check_url,
                                 matches.unwrap()[1].to_string(),
+                                https,
                                 https_redirect,
-                                &country_code,
+                                country_code,
                             ),
                         }
                     )
@@ -173,8 +195,9 @@ fn test_privatebin() {
     let privatebin = PrivateBin::new(url.clone()).unwrap();
     assert_eq!(privatebin.instance.url, url);
     assert_eq!(privatebin.instance.version, LATEST_PRIVATEBIN_VERSION);
+    assert_eq!(privatebin.instance.https, true);
     assert_eq!(privatebin.instance.https_redirect, true);
-    assert_eq!(privatebin.instance.country_id, ['C' as u8, 'H' as u8]);
+    assert_eq!(privatebin.instance.country_id, "CH");
 }
 
 #[test]
@@ -190,7 +213,7 @@ fn test_zerobin() {
     let privatebin = PrivateBin::new(url.clone()).unwrap();
     assert_eq!(privatebin.instance.url, url);
     assert_eq!(privatebin.instance.version, "0.19.2");
-    assert_eq!(privatebin.instance.country_id, ['I' as u8, 'E' as u8]);
+    assert_eq!(privatebin.instance.country_id, "IE");
 }
 
 #[test]
@@ -199,8 +222,9 @@ fn test_privatebin_http() {
     let privatebin = PrivateBin::new(url.clone()).unwrap();
     assert_eq!(privatebin.instance.url, url);
     assert_eq!(privatebin.instance.version, LATEST_PRIVATEBIN_VERSION);
+    assert_eq!(privatebin.instance.https, false);
     assert_eq!(privatebin.instance.https_redirect, false);
-    assert_eq!(privatebin.instance.country_id, ['C' as u8, 'H' as u8]);
+    assert_eq!(privatebin.instance.country_id, "CH");
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize)]
