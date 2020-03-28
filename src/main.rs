@@ -39,14 +39,10 @@ fn save(form: Form<models::AddForm>) -> Template {
     let form = form.into_inner();
     let url = form.url.trim();
     let page: models::StatusPage;
-    if !url.starts_with("http://") && !url.starts_with("https://") {
-        page = models::StatusPage::new(String::from(ADD_TITLE), format!("Not a valid URL: {}", url), String::from(""));
-    } else {
-        let privatebin = models::PrivateBin::new(url.to_string());
-        match privatebin {
-            Ok(_msg) => page = models::StatusPage::new(String::from(ADD_TITLE), String::from(""), format!("Successfully added URL: {}", url)),
-            Err(e) => page = models::StatusPage::new(String::from(ADD_TITLE), e, String::from(""))
-        }
+    let privatebin = models::PrivateBin::new(url.to_string());
+    match privatebin {
+        Ok(_msg) => page = models::StatusPage::new(String::from(ADD_TITLE), String::from(""), format!("Successfully added URL: {}", url)),
+        Err(e) => page = models::StatusPage::new(String::from(ADD_TITLE), e, String::from(""))
     }
     Template::render("add", &page)
 }

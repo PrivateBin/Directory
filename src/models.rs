@@ -1,8 +1,9 @@
 extern crate hyper_sync_rustls;
 use hyper::Client;
-use hyper::header::Connection;
+use hyper::client::RedirectPolicy;
+use hyper::header::{Connection, Location, UserAgent};
 use hyper::net::HttpsConnector;
-use hyper::status::StatusCode;
+use hyper::status::{StatusClass, StatusCode};
 use regex::Regex;
 use serde::Serialize;
 use std::io::{BufReader, BufRead};
@@ -13,15 +14,17 @@ const LATEST_PRIVATEBIN_VERSION: &str = "1.3.4";
 pub struct Instance {
     pub url: String,
     pub version: String,
+    pub https_redirect: bool,
     pub country_id: [u8; 2],
 }
 
 impl Instance {
-    pub fn new(url: String, version: String, country_code: &str) -> Instance {
+    pub fn new(url: String, version: String, https_redirect: bool, country_code: &str) -> Instance {
         let mut country_chars = country_code.chars();
         Instance {
             url: url,
             version: version,
+            https_redirect: https_redirect,
             country_id: [
                 country_chars.next().unwrap() as u8,
                 country_chars.next().unwrap() as u8
@@ -42,16 +45,58 @@ impl PrivateBin {
     }
 
     fn validate(url: String) -> Result<PrivateBin, String> {
-        let client = Client::with_connector(
+        if !url.starts_with("http://") && !url.starts_with("https://") {
+            return Err(format!("Not a valid URL: {}", url).to_string())
+        }
+        let mut client = Client::with_connector(
             HttpsConnector::new(
                 hyper_sync_rustls::TlsClient::new()
             )
         );
-        let result = client.get(&url)
-            .header(Connection::close())
+        client.set_redirect_policy(RedirectPolicy::FollowNone);
+
+        // check for HTTPS redirect
+        let mut https_redirect = false;
+        let mut http_url = url.clone();
+        let mut check_url = url;
+        if check_url.starts_with("https://") {
+            http_url.replace_range(..5, "http");
+        }
+        let result = client.head(&http_url)
+            .header(Connection::keep_alive())
+            .header(Self::get_user_agent())
             .send();
         if result.is_err() {
-            return Err(format!("Web server on URL {} is not responding.", url).to_string())
+            // only emit an error if this server is reported as HTTP,
+            // HTTPS-only webservers are allowed, though uncommon
+            if check_url.starts_with("http://") {
+                return Err(format!("Web server on URL {} is not responding.", check_url).to_string())
+            }
+        } else {
+            let res = result.unwrap();
+            if res.status.class() == StatusClass::Redirection {
+                // check header
+                let location = res.headers.get::<Location>();
+                if location.is_some() {
+                    let location_str = location.unwrap().to_string();
+                    if location_str.starts_with("https://") {
+                        https_redirect = true;
+                    }
+                    if check_url.starts_with("http://") && https_redirect {
+                        // if the given URL was HTTP, but we got redirected to https,
+                        // check & store the HTTPS URL instead
+                        check_url = location_str;
+                    }
+                }
+            }
+        }
+
+        let result = client.get(&check_url)
+            .header(Connection::close())
+            .header(Self::get_user_agent())
+            .send();
+        if result.is_err() {
+            return Err(format!("Web server on URL {} is not responding.", check_url).to_string())
         }
         let res = result.unwrap();
         if res.status != StatusCode::Ok {
@@ -70,13 +115,22 @@ impl PrivateBin {
                 if matches.is_some() {
                     return Ok(
                         PrivateBin {
-                            instance: Instance::new(url, matches.unwrap()[1].to_string(), "AQ"),
+                            instance: Instance::new(check_url, matches.unwrap()[1].to_string(), https_redirect, "AQ"),
                         }
                     )
                 }
             }
         }
-        return Err(format!("The URL {} doesn't seem to be a PrivateBin instance.", url).to_string())
+        return Err(format!("The URL {} doesn't seem to be a PrivateBin instance.", check_url).to_string())
+    }
+
+    fn get_user_agent() -> UserAgent {
+        return UserAgent(
+            format!(
+                "PrivateBinDirectoryBot/{} (+https://privatebin.info/directory/)",
+                env!("CARGO_PKG_VERSION")
+            ).to_owned()
+        )
     }
 }
 
@@ -86,6 +140,7 @@ fn test_privatebin() {
     let privatebin = PrivateBin::new(url.clone()).unwrap();
     assert_eq!(privatebin.instance.url, url);
     assert_eq!(privatebin.instance.version, LATEST_PRIVATEBIN_VERSION);
+    assert_eq!(privatebin.instance.https_redirect, true);
     assert_eq!(privatebin.instance.country_id, ['A' as u8, 'Q' as u8]);
 }
 
@@ -111,6 +166,7 @@ fn test_privatebin_http() {
     let privatebin = PrivateBin::new(url.clone()).unwrap();
     assert_eq!(privatebin.instance.url, url);
     assert_eq!(privatebin.instance.version, LATEST_PRIVATEBIN_VERSION);
+    assert_eq!(privatebin.instance.https_redirect, false);
     assert_eq!(privatebin.instance.country_id, ['A' as u8, 'Q' as u8]);
 }
 
