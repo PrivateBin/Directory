@@ -305,15 +305,15 @@ impl StatusPage {
 pub struct TablePage {
     pub title: String,
     pub topic: String,
-    pub table: HtmlTable,
+    pub tables: Vec<HtmlTable>,
 }
 
 impl TablePage {
-    pub fn new(topic: String, table: HtmlTable) -> TablePage {
+    pub fn new(topic: String, tables: Vec<HtmlTable>) -> TablePage {
         TablePage {
             title: String::from(TITLE),
             topic: topic,
-            table: table
+            tables: tables
         }
     }
 }

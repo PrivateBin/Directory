@@ -40,11 +40,11 @@ fn index(conn: DirectoryDbConn) -> Template {
 
     let page = TablePage::new(
         String::from("Welcome!"),
-        HtmlTable {
+        vec!(HtmlTable {
             title: String::from("Version 1.3"),
             header: [String::from("Address"), String::from("Version"), String::from("HTTPS"), String::from("HTTPS enforced"), String::from("File upload"), String::from("Country")],
             body: table_body
-        }
+        })
     );
     Template::render("list", &page)
 }

@@ -11,7 +11,8 @@ all: test build image run check clean ## Equivalent to "make test build image ru
 
 release: test build pack image run check clean ## Equivalent to "make test build pack image run check clean".
 
-test: .cargo/registry ## Build and run the unit tests.
+test: .cargo/registry var/directory.sqlite ## Build and run the unit tests.
+	git checkout $(DATABASE)
 	docker run --rm -t --init \
 		-e GEOIP_MMDB="$(GEOIP_MMDB)" \
 		-e ROCKET_DATABASES="$(ROCKET_DATABASES)" \
@@ -52,7 +53,7 @@ check: ## Launch tests to verify that the service works as expected, requires a 
 .cargo/registry:
 	mkdir -p .cargo/registry
 
-clean: ## Stops and removes the running container.
+clean: var/directory.sqlite ## Stops and removes the running container.
 	docker stop $(NAME)
 	docker rm $(NAME)
 	git checkout $(DATABASE)
