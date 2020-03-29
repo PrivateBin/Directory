@@ -6,25 +6,41 @@
 use diesel::prelude::*;
 use rocket::response::Redirect;
 use rocket::request::Form;
+use rocket::State;
 //use rocket_contrib::databases::diesel; not working with current diesel
 use rocket_contrib::serve::StaticFiles;
 use rocket_contrib::templates::Template;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::RwLock;
+use std::time::SystemTime;
 
 pub mod models;
 pub mod schema;
 #[cfg(test)] mod tests;
 use models::*;
 
+const CACHE_LIFETIME: u64 = 300;
+
 #[get("/")]
-fn index(conn: DirectoryDbConn) -> Template {
+fn index(conn: DirectoryDbConn, cache: State<InstancesCache>) -> Template {
     use schema::instances::dsl::*;
 
-    let results = instances.order(
-            (version.desc(), https.desc(), https_redirect.desc(), attachments.desc(), url.asc())
-        )
-        .limit(100)
-        .load::<Instance>(&*conn)
-        .unwrap();
+    let now = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs();
+    if now >= cache.timeout.load(Ordering::Relaxed) {
+        // flush cache
+        let mut instances_cache = cache.instances.write().unwrap();
+        cache.timeout.store(now + CACHE_LIFETIME, Ordering::Relaxed);
+        *instances_cache = instances.order((
+                version.desc(),
+                https.desc(),
+                https_redirect.desc(),
+                attachments.desc(),
+                url.asc()
+            ))
+            .limit(100)
+            .load::<Instance>(&*conn)
+            .unwrap();
+    }
 
     let header = [
         String::from("Address"),
@@ -37,7 +53,7 @@ fn index(conn: DirectoryDbConn) -> Template {
     let mut tables = vec![];
     let mut table_body = vec![];
     let (mut major, mut minor) = (0, 0);
-    for instance in results {
+    for instance in &*cache.instances.read().unwrap() {
         // parse the major and minor bits of the version
         let mmp: Vec<u16> = instance.version.split('.')
             .filter_map(|s| s.parse::<u16>().ok())
@@ -68,12 +84,12 @@ fn index(conn: DirectoryDbConn) -> Template {
 
         // format current instance for table display
         table_body.push([
-            instance.url,
-            instance.version,
+            instance.url.clone(),
+            instance.version.clone(),
             Instance::format(instance.https),
             Instance::format(instance.https_redirect),
             Instance::format(instance.attachments),
-            Instance::format_country(instance.country_id)
+            Instance::format_country(instance.country_id.clone())
         ]);
     }
     tables.push(
@@ -95,12 +111,16 @@ const ADD_TITLE: &str = "Add instance";
 
 #[get("/add")]
 fn add() -> Template {
-    let page = StatusPage::new(String::from(ADD_TITLE), String::from(""), String::from(""));
+    let page = StatusPage::new(
+        String::from(ADD_TITLE),
+        String::new(),
+        String::new()
+    );
     Template::render("add", &page)
 }
 
 #[post("/add", data = "<form>")]
-fn save(conn: DirectoryDbConn, form: Form<AddForm>) -> Template {
+fn save(conn: DirectoryDbConn, form: Form<AddForm>, cache: State<InstancesCache>) -> Template {
     use schema::instances::dsl::*;
 
     let form = form.into_inner();
@@ -120,11 +140,27 @@ fn save(conn: DirectoryDbConn, form: Form<AddForm>) -> Template {
                 .values(&privatebin.instance)
                 .execute(&*conn);
             match db_result {
-                Ok(_msg) => page = StatusPage::new(String::from(ADD_TITLE), String::from(""), format!("Successfully added URL: {}", add_url)),
-                Err(e) => page = StatusPage::new(String::from(ADD_TITLE), format!("Error adding URL {}, due to: {:?}", add_url, e), String::from(""))
+                Ok(_msg) => {
+                    page = StatusPage::new(
+                        String::from(ADD_TITLE),
+                        String::from(""),
+                        format!("Successfully added URL: {}", add_url)
+                    );
+                    // flush cache
+                    cache.timeout.store(0, Ordering::Relaxed);
+                },
+                Err(e) => page = StatusPage::new(
+                    String::from(ADD_TITLE),
+                    format!("Error adding URL {}, due to: {:?}", add_url, e),
+                    String::new()
+                )
             }
         },
-        Err(e) => page = StatusPage::new(String::from(ADD_TITLE), e, String::from(""))
+        Err(e) => page = StatusPage::new(
+            String::from(ADD_TITLE),
+            e,
+            String::new()
+        )
     }
     Template::render("add", &page)
 }
@@ -144,6 +180,10 @@ fn rocket() -> rocket::Rocket {
         .mount("/css", StaticFiles::from("/css"))
         .attach(DirectoryDbConn::fairing())
         .attach(Template::fairing())
+        .manage(InstancesCache {
+            timeout: AtomicU64::new(0),
+            instances: RwLock::new(vec![])
+        })
 }
 
 fn main() {

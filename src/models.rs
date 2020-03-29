@@ -9,6 +9,8 @@ use maxminddb::geoip2::Country;
 use regex::Regex;
 use serde::Serialize;
 use std::io::{BufReader, BufRead};
+use std::sync::atomic::AtomicU64;
+use std::sync::RwLock;
 use super::schema::instances;
 
 const TITLE: &str = "Instance Directory";
@@ -69,6 +71,11 @@ impl InstanceNew {
             attachments: attachments,
         }
     }
+}
+
+pub struct InstancesCache {
+    pub timeout: AtomicU64,
+    pub instances: RwLock<Vec<Instance>>
 }
 
 pub struct PrivateBin {
