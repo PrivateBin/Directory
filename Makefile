@@ -3,13 +3,14 @@
 NAME = directory
 IMAGE = privatebin/$(NAME)
 PORT = 8000
-GEOIP_MMDB=var/geoip-country.mmdb
-DATABASE=var/directory.sqlite
-ROCKET_DATABASES="{directory={url=\"$(DATABASE)\"}}"
+BUILD_IMAGE = ekidd/rust-musl-builder:nightly-2020-03-12-sqlite
+GEOIP_MMDB = var/geoip-country.mmdb
+DATABASE = var/directory.sqlite
+ROCKET_DATABASES = "{directory={url=\"$(DATABASE)\"}}"
 
 all: test build image run check clean ## Equivalent to "make test build image run check clean" (default).
 
-release: test build pack image run check clean ## Equivalent to "make test build pack image run check clean".
+release: test build pack license image run check clean ## Equivalent to "make test build pack image run check clean".
 
 test: .cargo/registry var/directory.sqlite ## Build and run the unit tests.
 	git checkout $(DATABASE)
@@ -18,7 +19,7 @@ test: .cargo/registry var/directory.sqlite ## Build and run the unit tests.
 		-e ROCKET_DATABASES="$(ROCKET_DATABASES)" \
 		-v "$(CURDIR)":/home/rust/src \
 		-v "$(CURDIR)"/.cargo/registry:/home/rust/.cargo/registry \
-		ekidd/rust-musl-builder:nightly-2020-03-12-sqlite \
+		$(BUILD_IMAGE) \
 		cargo test --release # -- --nocapture
 
 build: .cargo/registry ## Build the binary for release.
@@ -27,12 +28,19 @@ build: .cargo/registry ## Build the binary for release.
 		-e ROCKET_DATABASES="$(ROCKET_DATABASES)" \
 		-v "$(CURDIR)":/home/rust/src \
 		-v "$(CURDIR)"/.cargo/registry:/home/rust/.cargo/registry \
-		ekidd/rust-musl-builder:nightly-2020-03-12-sqlite \
+		$(BUILD_IMAGE) \
 		cargo build --release
 
 pack: ## Strips and compresses the binary to reduce it's size, only intended for the release.
 	strip target/x86_64-unknown-linux-musl/release/directory
 	upx --ultra-brute target/x86_64-unknown-linux-musl/release/directory
+
+license: ## Generates the LICENSE.md file
+	docker run --rm -t --init \
+		-v "$(CURDIR)":/home/rust/src \
+		-v "$(CURDIR)"/.cargo/registry:/home/rust/.cargo/registry \
+		$(BUILD_IMAGE) \
+		sh -c "cargo install cargo-about && cargo about init && cargo about generate about.hbs > /home/rust/src/LICENSE.md"
 
 image: ## Build the container image.
 	docker build --build-arg PORT=$(PORT) \
