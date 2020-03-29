@@ -26,8 +26,47 @@ fn index(conn: DirectoryDbConn) -> Template {
         .load::<Instance>(&*conn)
         .unwrap();
 
+    let header = [
+        String::from("Address"),
+        String::from("Version"),
+        String::from("HTTPS"),
+        String::from("HTTPS enforced"),
+        String::from("File upload"),
+        String::from("Country")
+    ];
+    let mut tables = vec![];
     let mut table_body = vec![];
+    let (mut major, mut minor) = (0, 0);
     for instance in results {
+        // parse the major and minor bits of the version
+        let mmp: Vec<u16> = instance.version.split('.')
+            .filter_map(|s| s.parse::<u16>().ok())
+            .collect();
+        if mmp.is_empty() {
+            continue;
+        }
+        let (instance_major, instance_minor) = (mmp[0] as u16, mmp[1] as u16);
+
+        if minor == 0 {
+            // this is the first instance in the list
+            major = instance_major;
+            minor = instance_minor;
+        } else if major != instance_major || minor != instance_minor {
+            // close table
+            tables.push(
+                HtmlTable {
+                    title: format!("Version {}.{}", major, minor).to_string(),
+                    header: header.clone(),
+                    body: table_body.clone()
+                }
+            );
+            // start a new one
+            major = instance_major;
+            minor = instance_minor;
+            table_body.clear();
+        }
+
+        // format current instance for table display
         table_body.push([
             instance.url,
             instance.version,
@@ -37,14 +76,17 @@ fn index(conn: DirectoryDbConn) -> Template {
             Instance::format_country(instance.country_id)
         ]);
     }
+    tables.push(
+        HtmlTable {
+            title: format!("Version {}.{}", major, minor).to_string(),
+            header: header,
+            body: table_body
+        }
+    );
 
     let page = TablePage::new(
         String::from("Welcome!"),
-        vec!(HtmlTable {
-            title: String::from("Version 1.3"),
-            header: [String::from("Address"), String::from("Version"), String::from("HTTPS"), String::from("HTTPS enforced"), String::from("File upload"), String::from("Country")],
-            body: table_body
-        })
+        tables
     );
     Template::render("list", &page)
 }
