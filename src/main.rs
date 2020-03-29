@@ -67,11 +67,13 @@ fn save(conn: DirectoryDbConn, form: Form<AddForm>) -> Template {
     let privatebin = PrivateBin::new(add_url.to_string());
     match privatebin {
         Ok(privatebin) => {
-            page = StatusPage::new(String::from(ADD_TITLE), String::from(""), format!("Successfully added URL: {}", add_url));
-            diesel::insert_into(instances)
+            let db_result = diesel::insert_into(instances)
                 .values(&privatebin.instance)
-                .execute(&*conn)
-                .expect("Error saving new post");
+                .execute(&*conn);
+            match db_result {
+                Ok(_msg) => page = StatusPage::new(String::from(ADD_TITLE), String::from(""), format!("Successfully added URL: {}", add_url)),
+                Err(e) => page = StatusPage::new(String::from(ADD_TITLE), format!("Error adding URL {}, due to: {:?}", add_url, e), String::from(""))
+            }
         },
         Err(e) => page = StatusPage::new(String::from(ADD_TITLE), e, String::from(""))
     }
