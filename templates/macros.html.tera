@@ -12,7 +12,21 @@
 	{%- for row in table %}
 					<tr>
 		{%- for col in row %}
-						<td>{{ col }}</td>
+						<td>
+		{%- if col is starting_with("http") %}
+							<a href="{{ col }}">{{ col }}</a>
+		{%- else %}
+			{%- if col == "✔" %}
+							<span class="check_passed">
+			{%- elif col == "✘" %}
+							<span class="check_failed">
+			{%- endif %}
+							{% if col == "✔" or col == "✘" %}	{% endif %}{{ col }}
+			{%- if col == "✔" or col == "✘" %}
+							</span>
+			{%- endif %}
+		{%- endif %}
+						</td>
 		{%- endfor %}
 					</tr>
 	{%- endfor %}

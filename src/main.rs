@@ -12,21 +12,37 @@ use rocket_contrib::templates::Template;
 
 pub mod models;
 pub mod schema;
-use schema::instances;
 #[cfg(test)] mod tests;
+use models::*;
 
 #[get("/")]
-fn index() -> Template {
-    let page = models::TablePage::new(
+fn index(conn: DirectoryDbConn) -> Template {
+    use schema::instances::dsl::*;
+
+    let results = instances.order(
+            (version.desc(), https.desc(), https_redirect.desc(), url.asc())
+        )
+        .limit(100)
+        .load::<Instance>(&*conn)
+        .unwrap();
+
+    let mut table_body = vec![];
+    for instance in results {
+        table_body.push([
+            instance.url,
+            instance.version,
+            Instance::format(instance.https),
+            Instance::format(instance.https_redirect),
+            Instance::format_country(instance.country_id)
+        ]);
+    }
+
+    let page = TablePage::new(
         String::from("Welcome!"),
-        models::Table {
+        HtmlTable {
             title: String::from("Version 1.3"),
-            header: [String::from("Instance"), String::from("HTTPS"), String::from("Country")],
-            body: vec![
-                [String::from("foo"), String::from("\u{2714}"), String::from("\u{1F1E6}\u{1F1F6}")],
-                [String::from("bar"), String::from("\u{2714}"), String::from("\u{1F3F3}\u{FE0F}\u{200D}\u{1F308}")],
-                [String::from("baz"), String::from("\u{2718}"), String::from("\u{1F3F4}\u{200D}\u{2620}\u{FE0F}")],
-            ]
+            header: [String::from("Address"), String::from("Version"), String::from("HTTPS"), String::from("HTTPS enforced"), String::from("Country")],
+            body: table_body
         }
     );
     Template::render("list", &page)
@@ -36,25 +52,27 @@ const ADD_TITLE: &str = "Add instance";
 
 #[get("/add")]
 fn add() -> Template {
-    let page = models::StatusPage::new(String::from(ADD_TITLE), String::from(""), String::from(""));
+    let page = StatusPage::new(String::from(ADD_TITLE), String::from(""), String::from(""));
     Template::render("add", &page)
 }
 
 #[post("/add", data = "<form>")]
-fn save(conn: DirectoryDbConn, form: Form<models::AddForm>) -> Template {
+fn save(conn: DirectoryDbConn, form: Form<AddForm>) -> Template {
+    use schema::instances::dsl::*;
+
     let form = form.into_inner();
-    let url = form.url.trim();
-    let page: models::StatusPage;
-    let privatebin = models::PrivateBin::new(url.to_string());
+    let add_url = form.url.trim();
+    let page: StatusPage;
+    let privatebin = PrivateBin::new(add_url.to_string());
     match privatebin {
         Ok(privatebin) => {
-            page = models::StatusPage::new(String::from(ADD_TITLE), String::from(""), format!("Successfully added URL: {}", url));
-            diesel::insert_into(instances::table)
+            page = StatusPage::new(String::from(ADD_TITLE), String::from(""), format!("Successfully added URL: {}", add_url));
+            diesel::insert_into(instances)
                 .values(&privatebin.instance)
                 .execute(&*conn)
                 .expect("Error saving new post");
         },
-        Err(e) => page = models::StatusPage::new(String::from(ADD_TITLE), e, String::from(""))
+        Err(e) => page = StatusPage::new(String::from(ADD_TITLE), e, String::from(""))
     }
     Template::render("add", &page)
 }

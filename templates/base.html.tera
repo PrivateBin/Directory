@@ -6,6 +6,7 @@
 		<meta name="robots" content="index">
 		<title>{{ title }} - {{ topic }}</title>
 		<link rel="stylesheet" href="/css/bootstrap.min.css">
+		<link rel="stylesheet" href="/css/directory.css">
 	</head>
 	<body>
 		<nav class="navbar navbar-expand-lg navbar-light bg-light">

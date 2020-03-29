@@ -1,0 +1,6 @@
+.check_passed {
+	color: green;
+}
+.check_failed {
+	color: red;
+}

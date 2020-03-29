@@ -24,6 +24,28 @@ pub struct Instance {
     pub country_id: String,
 }
 
+impl Instance {
+    pub fn format(flag: bool) -> String {
+        if flag {
+            return String::from("\u{2714}")
+        } else {
+            return String::from("\u{2718}")
+        }
+    }
+
+    pub fn format_country(country_id: String) -> String {
+        // 1F1E6 is the unicode code point for the "REGIONAL INDICATOR SYMBOL
+        // LETTER A" and A is 65 in unicode and ASCII, so we can calculate the
+        // the unicode flags as follows:
+        let mut country_chars = country_id.chars();
+        let country_code_points = [
+            std::char::from_u32(0x1F1E6 - 65 + country_chars.next().unwrap() as u32).unwrap(),
+            std::char::from_u32(0x1F1E6 - 65 + country_chars.next().unwrap() as u32).unwrap()
+        ];
+        return country_code_points.iter().cloned().collect::<String>()
+    }
+}
+
 #[derive(Insertable)]
 #[table_name = "instances"]
 pub struct InstanceNew {
@@ -43,14 +65,6 @@ impl InstanceNew {
             https_redirect: https_redirect,
             country_id: country_code,
         }
-        /*
-        let mut country_chars = country_code.chars();
-            country_id: [
-                country_chars.next().unwrap() as u8,
-                country_chars.next().unwrap() as u8
-            ],
-        */
-        // to convert u8 to char: 65u8 as char -> A
     }
 }
 
@@ -92,7 +106,7 @@ impl PrivateBin {
             // only emit an error if this server is reported as HTTP,
             // HTTPS-only webservers are allowed, though uncommon
             if check_url.starts_with("http://") {
-                return Err(format!("Web server on URL {} is not responding.", check_url).to_string())
+                return Err(format!("Web server on URL {} is not responding.", http_url).to_string())
             }
         } else {
             let res = result.unwrap();
@@ -108,6 +122,7 @@ impl PrivateBin {
                         // if the given URL was HTTP, but we got redirected to https,
                         // check & store the HTTPS URL instead
                         check_url = location_str;
+                        https = true;
                     }
                 }
             }
@@ -265,11 +280,11 @@ impl StatusPage {
 pub struct TablePage {
     pub title: String,
     pub topic: String,
-    pub table: Table,
+    pub table: HtmlTable,
 }
 
 impl TablePage {
-    pub fn new(topic: String, table: Table) -> TablePage {
+    pub fn new(topic: String, table: HtmlTable) -> TablePage {
         TablePage {
             title: String::from(TITLE),
             topic: topic,
@@ -279,10 +294,10 @@ impl TablePage {
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize)]
-pub struct Table {
+pub struct HtmlTable {
     pub title: String,
-    pub header: [String; 3],
-    pub body: Vec<[String; 3]>,
+    pub header: [String; 5],
+    pub body: Vec<[String; 5]>,
 }
 
 #[derive(Debug, FromForm)]
