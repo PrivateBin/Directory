@@ -24,8 +24,6 @@ test: .cargo/registry var/directory.sqlite ## Build and run the unit tests.
 
 build: .cargo/registry ## Build the binary for release.
 	docker run --rm -t --init \
-		-e GEOIP_MMDB="$(GEOIP_MMDB)" \
-		-e ROCKET_DATABASES="$(ROCKET_DATABASES)" \
 		-v "$(CURDIR)":/home/rust/src \
 		-v "$(CURDIR)"/.cargo/registry:/home/rust/.cargo/registry \
 		$(BUILD_IMAGE) \
