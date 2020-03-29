@@ -62,7 +62,14 @@ fn save(conn: DirectoryDbConn, form: Form<AddForm>) -> Template {
     use schema::instances::dsl::*;
 
     let form = form.into_inner();
-    let add_url = form.url.trim();
+    let mut add_url = form.url.trim();
+
+    // remove trailing slash, but only for web root, not for paths
+    // https://example.com/ -> https://example.com BUT NOT https://example.com/path/
+    if add_url.matches("/").count() == 3 {
+        add_url = add_url.trim_end_matches('/');
+    }
+
     let page: StatusPage;
     let privatebin = PrivateBin::new(add_url.to_string());
     match privatebin {
