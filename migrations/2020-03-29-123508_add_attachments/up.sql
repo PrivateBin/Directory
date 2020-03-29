@@ -1,0 +1,2 @@
+ALTER TABLE instances
+ADD attachments BOOLEAN NOT NULL DEFAULT 0;

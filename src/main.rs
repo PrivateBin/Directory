@@ -20,7 +20,7 @@ fn index(conn: DirectoryDbConn) -> Template {
     use schema::instances::dsl::*;
 
     let results = instances.order(
-            (version.desc(), https.desc(), https_redirect.desc(), url.asc())
+            (version.desc(), https.desc(), https_redirect.desc(), attachments.desc(), url.asc())
         )
         .limit(100)
         .load::<Instance>(&*conn)
@@ -33,6 +33,7 @@ fn index(conn: DirectoryDbConn) -> Template {
             instance.version,
             Instance::format(instance.https),
             Instance::format(instance.https_redirect),
+            Instance::format(instance.attachments),
             Instance::format_country(instance.country_id)
         ]);
     }
@@ -41,7 +42,7 @@ fn index(conn: DirectoryDbConn) -> Template {
         String::from("Welcome!"),
         HtmlTable {
             title: String::from("Version 1.3"),
-            header: [String::from("Address"), String::from("Version"), String::from("HTTPS"), String::from("HTTPS enforced"), String::from("Country")],
+            header: [String::from("Address"), String::from("Version"), String::from("HTTPS"), String::from("HTTPS enforced"), String::from("File upload"), String::from("Country")],
             body: table_body
         }
     );

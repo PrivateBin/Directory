@@ -6,5 +6,6 @@ table! {
         https -> Bool,
         https_redirect -> Bool,
         country_id -> Text,
+        attachments -> Bool,
     }
 }

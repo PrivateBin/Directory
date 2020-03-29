@@ -22,6 +22,7 @@ pub struct Instance {
     pub https: bool,
     pub https_redirect: bool,
     pub country_id: String,
+    pub attachments: bool,
 }
 
 impl Instance {
@@ -54,16 +55,18 @@ pub struct InstanceNew {
     pub https: bool,
     pub https_redirect: bool,
     pub country_id: String,
+    pub attachments: bool,
 }
 
 impl InstanceNew {
-    pub fn new(url: String, version: String, https: bool, https_redirect: bool, country_code: String) -> InstanceNew {
+    pub fn new(url: String, version: String, https: bool, https_redirect: bool, country_code: String, attachments: bool) -> InstanceNew {
         InstanceNew {
             url: url,
             version: version,
             https: https,
             https_redirect: https_redirect,
             country_id: country_code,
+            attachments: attachments,
         }
     }
 }
@@ -167,6 +170,8 @@ impl PrivateBin {
             return Err(format!("Web server responded with status code {}.", res.status).to_string())
         }
 
+        let mut version = String::new();
+        let mut attachments = false;
         let version_regexen = [
             Regex::new(r"js/privatebin.js\?(\d+\.\d+\.*\d*)").unwrap(),
             Regex::new(r"js/zerobin.js\?Alpha%20(\d+\.\d+\.*\d*)").unwrap()
@@ -174,22 +179,39 @@ impl PrivateBin {
         let buffer = BufReader::new(res);
         for line in buffer.lines() {
             let line_str = line.unwrap();
+            if line_str.contains(" id=\"attachment\" ") {
+                attachments = true;
+                if version.len() > 0 {
+                    // we got both version and attachment, stop parsing
+                    break;
+                }
+            }
+            if version.len() > 0 {
+                // we got the version already, keep looking for the attachment
+                continue;
+            }
             for version_regex in version_regexen.iter() {
                 let matches = version_regex.captures(&line_str);
                 if matches.is_some() {
-                    return Ok(
-                        PrivateBin {
-                            instance: InstanceNew::new(
-                                check_url,
-                                matches.unwrap()[1].to_string(),
-                                https,
-                                https_redirect,
-                                country_code,
-                            ),
-                        }
-                    )
+                    version = matches.unwrap()[1].to_string();
+                    // we got the version, skip the other regex, if there is one
+                    continue;
                 }
             }
+        }
+        if version.len() > 0 {
+            return Ok(
+                PrivateBin {
+                    instance: InstanceNew::new(
+                        check_url,
+                        version,
+                        https,
+                        https_redirect,
+                        country_code,
+                        attachments,
+                    ),
+                }
+            )
         }
         return Err(format!("The URL {} doesn't seem to be a PrivateBin instance.", check_url).to_string())
     }
@@ -212,6 +234,7 @@ fn test_privatebin() {
     assert_eq!(privatebin.instance.version, LATEST_PRIVATEBIN_VERSION);
     assert_eq!(privatebin.instance.https, true);
     assert_eq!(privatebin.instance.https_redirect, true);
+    assert_eq!(privatebin.instance.attachments, false);
     assert_eq!(privatebin.instance.country_id, "CH");
 }
 
@@ -228,6 +251,7 @@ fn test_zerobin() {
     let privatebin = PrivateBin::new(url.clone()).unwrap();
     assert_eq!(privatebin.instance.url, url);
     assert_eq!(privatebin.instance.version, "0.19.2");
+    assert_eq!(privatebin.instance.attachments, false);
     assert_eq!(privatebin.instance.country_id, "IE");
 }
 
@@ -239,6 +263,7 @@ fn test_privatebin_http() {
     assert_eq!(privatebin.instance.version, LATEST_PRIVATEBIN_VERSION);
     assert_eq!(privatebin.instance.https, false);
     assert_eq!(privatebin.instance.https_redirect, false);
+    assert_eq!(privatebin.instance.attachments, true);
     assert_eq!(privatebin.instance.country_id, "CH");
 }
 
@@ -296,8 +321,8 @@ impl TablePage {
 #[derive(Debug, PartialEq, Eq, Serialize)]
 pub struct HtmlTable {
     pub title: String,
-    pub header: [String; 5],
-    pub body: Vec<[String; 5]>,
+    pub header: [String; 6],
+    pub body: Vec<[String; 6]>,
 }
 
 #[derive(Debug, FromForm)]
