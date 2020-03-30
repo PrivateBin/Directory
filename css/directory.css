@@ -1,6 +1,13 @@
+/*
+ * color-fonts display check marks and crosses using their built-in colors,
+ * the trick below ensures that the selected colors get used instead
+ */
 .check_passed {
-	color: green;
+	color: transparent;
+	text-shadow: 0 0 0 green;
 }
+
 .check_failed {
-	color: red;
+	color: transparent;
+	text-shadow:0 0 0 red;
 }
