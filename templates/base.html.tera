@@ -6,11 +6,12 @@
 		<meta name="robots" content="index">
 		<title>{{ title }} - {{ topic }}</title>
 		<link rel="stylesheet" href="/css/bootstrap.min.css">
+		<link rel="stylesheet" href="/css/dark-mode.css">
 		<link rel="stylesheet" href="/css/directory.css">
 		<link rel="stylesheet" href="/css/gh-fork-ribbon.css">
 	</head>
 	<body>
-		<nav class="navbar navbar-expand-lg navbar-light bg-light">
+		<nav class="navbar navbar-expand-lg bg-light">
 			<a class="navbar-brand" href="/">
 				<img src="/img/icon.svg" width="38" alt="PrivateBin">
 				{{ title }}
@@ -25,6 +26,16 @@
 					</li>
 					<li class="nav-item">
 						<a class="nav-link" href="/add">Add</a>
+					</li>
+					<li class="nav-item">
+						<span class="navbar-text">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+					</li>
+					<li class="nav-item">
+						<div class="custom-control custom-switch navbar-text">
+							<input id="darkSwitch" type="checkbox" class="custom-control-input">
+							<label for="darkSwitch" class="custom-control-label">Dark Mode</label>
+						</div>
+						<script src="/css/dark-mode-switch.js"></script>
 					</li>
 				</ul>
 			</div>
