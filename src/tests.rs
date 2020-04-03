@@ -12,6 +12,14 @@ fn index() {
 }
 
 #[test]
+fn about() {
+    let client = Client::new(rocket()).expect("valid rocket instance");
+    let mut response = client.get("/about").dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    assert!(response.body_string().map_or(false, |s| s.contains(&"About")));
+}
+
+#[test]
 fn add_get() {
     let client = Client::new(rocket()).expect("valid rocket instance");
     let mut response = client.get("/add").dispatch();

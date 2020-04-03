@@ -13,7 +13,7 @@ use std::sync::atomic::AtomicU64;
 use std::sync::RwLock;
 use super::schema::instances;
 
-const TITLE: &str = "Instance Directory";
+pub const TITLE: &str = "Instance Directory";
 const LATEST_PRIVATEBIN_VERSION: &str = "1.3.4";
 
 #[derive(Queryable)]
@@ -226,7 +226,7 @@ impl PrivateBin {
     fn get_user_agent() -> UserAgent {
         return UserAgent(
             format!(
-                "PrivateBinDirectoryBot/{} (+https://privatebin.info/directory/)",
+                "PrivateBinDirectoryBot/{} (+https://privatebin.info/directory/about)",
                 env!("CARGO_PKG_VERSION")
             ).to_owned()
         )
@@ -298,12 +298,14 @@ pub struct StatusPage {
 }
 
 impl StatusPage {
-    pub fn new(topic: String, error: String, success: String) -> StatusPage {
+    pub fn new(topic: String, error: Option<String>, success: Option<String>) -> StatusPage {
+        let error_string   = error.unwrap_or(String::new());
+        let success_string = success.unwrap_or(String::new());
         StatusPage {
             title: String::from(TITLE),
             topic: topic,
-            error: error,
-            success: success,
+            error: error_string,
+            success: success_string,
         }
     }
 }

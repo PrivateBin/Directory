@@ -109,12 +109,18 @@ fn index(conn: DirectoryDbConn, cache: State<InstancesCache>) -> Template {
 
 const ADD_TITLE: &str = "Add instance";
 
+#[get("/about")]
+fn about() -> Template {
+    let page = StatusPage::new(
+        format!("About the {}", TITLE), None, None
+    );
+    Template::render("about", &page)
+}
+
 #[get("/add")]
 fn add() -> Template {
     let page = StatusPage::new(
-        String::from(ADD_TITLE),
-        String::new(),
-        String::new()
+        String::from(ADD_TITLE), None, None
     );
     Template::render("add", &page)
 }
@@ -143,23 +149,23 @@ fn save(conn: DirectoryDbConn, form: Form<AddForm>, cache: State<InstancesCache>
                 Ok(_msg) => {
                     page = StatusPage::new(
                         String::from(ADD_TITLE),
-                        String::from(""),
-                        format!("Successfully added URL: {}", add_url)
+                        None,
+                        Some(format!("Successfully added URL: {}", add_url))
                     );
                     // flush cache
                     cache.timeout.store(0, Ordering::Relaxed);
                 },
                 Err(e) => page = StatusPage::new(
                     String::from(ADD_TITLE),
-                    format!("Error adding URL {}, due to: {:?}", add_url, e),
-                    String::new()
+                    Some(format!("Error adding URL {}, due to: {:?}", add_url, e)),
+                    None
                 )
             }
         },
         Err(e) => page = StatusPage::new(
             String::from(ADD_TITLE),
-            e,
-            String::new()
+            Some(e),
+            None
         )
     }
     Template::render("add", &page)
@@ -175,7 +181,7 @@ struct DirectoryDbConn(diesel::SqliteConnection);
 
 fn rocket() -> rocket::Rocket {
     rocket::ignite()
-        .mount("/", routes![index, add, save, favicon])
+        .mount("/", routes![index, about, add, save, favicon])
         .mount("/img", StaticFiles::from("/img"))
         .mount("/css", StaticFiles::from("/css"))
         .attach(DirectoryDbConn::fairing())

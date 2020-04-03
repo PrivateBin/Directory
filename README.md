@@ -6,7 +6,8 @@ software.
 The application is built primarily using the following libraries:
 
 - https://rocket.rs - web framework, including a web server and multi-threaded request handler
-- hyper - http client and server
+- https://hyper.rs - http client and server
+- https://tera.netlify.com - template engine
 - https://diesel.rs - database ORM and query builder
 
 ## Configuration

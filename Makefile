@@ -54,6 +54,7 @@ check: ## Launch tests to verify that the service works as expected, requires a 
 	@sleep 1
 	nc -z localhost $(PORT)
 	curl -s http://localhost:$(PORT)/ | grep "Welcome!"
+	curl -s http://localhost:$(PORT)/about | grep "About"
 	curl -s http://localhost:$(PORT)/add | grep "Add instance"
 
 .cargo/registry:
@@ -69,4 +70,3 @@ help: ## Displays these usage instructions.
 	@echo
 	@echo "Specify one or multiple of the following targets and they will be processed in the given order:"
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "%-16s%s\n", $$1, $$2}' $(MAKEFILE_LIST)
-
