@@ -7,6 +7,7 @@ BUILD_IMAGE = ekidd/rust-musl-builder:nightly-2020-03-12-sqlite
 GEOIP_MMDB = var/geoip-country.mmdb
 DATABASE = var/directory.sqlite
 ROCKET_DATABASES = "{directory={url=\"$(DATABASE)\"}}"
+ROCKET_CRON_KEY = $(shell openssl rand -base64 32)
 
 all: test build image run check clean ## Equivalent to "make test build image run check clean" (default).
 
@@ -16,7 +17,8 @@ test: .cargo/registry var/directory.sqlite ## Build and run the unit tests.
 	git checkout $(DATABASE)
 	docker run --rm -t --init \
 		-e GEOIP_MMDB="$(GEOIP_MMDB)" \
-		-e ROCKET_DATABASES="$(ROCKET_DATABASES)" \
+		-e ROCKET_DATABASES=$(ROCKET_DATABASES) \
+		-e ROCKET_CRON_KEY=$(ROCKET_CRON_KEY) \
 		-v "$(CURDIR)":/home/rust/src \
 		-v "$(CURDIR)"/.cargo/registry:/home/rust/.cargo/registry \
 		$(BUILD_IMAGE) \
@@ -48,6 +50,7 @@ image: ## Build the container image.
 
 run: ## Run a container from the image.
 	docker run -d --init --name $(NAME) -p=$(PORT):$(PORT) \
+		-e ROCKET_CRON_KEY=$(ROCKET_CRON_KEY) \
 		--read-only -v "$(CURDIR)/var":/var --restart=always $(IMAGE)
 
 check: ## Launch tests to verify that the service works as expected, requires a running container.

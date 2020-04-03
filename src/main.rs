@@ -14,10 +14,12 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::RwLock;
 use std::time::SystemTime;
 
+pub mod fairings;
 pub mod models;
 pub mod schema;
-#[cfg(test)] mod tests;
+use fairings::{Lock, LockFairing};
 use models::*;
+#[cfg(test)] mod tests;
 
 const CACHE_LIFETIME: u64 = 300;
 
@@ -171,6 +173,14 @@ fn save(conn: DirectoryDbConn, form: Form<AddForm>, cache: State<InstancesCache>
     Template::render("add", &page)
 }
 
+#[get("/update/<key>")]
+fn cron(key: String, lock: State<Lock>) -> String {
+    if key != lock.keyhole {
+        return String::from("Wrong key, no update was triggered.\n");
+    }
+    format!("{} / {}\n", key, lock.keyhole)
+}
+
 #[get("/favicon.ico")]
 fn favicon() -> Redirect {
     Redirect::permanent("/img/favicon.ico")
@@ -181,9 +191,10 @@ struct DirectoryDbConn(diesel::SqliteConnection);
 
 fn rocket() -> rocket::Rocket {
     rocket::ignite()
-        .mount("/", routes![index, about, add, save, favicon])
+        .mount("/", routes![index, about, add, cron, save, favicon])
         .mount("/img", StaticFiles::from("/img"))
         .mount("/css", StaticFiles::from("/css"))
+        .attach(LockFairing)
         .attach(DirectoryDbConn::fairing())
         .attach(Template::fairing())
         .manage(InstancesCache {
