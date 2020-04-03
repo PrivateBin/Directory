@@ -14,10 +14,8 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::RwLock;
 use std::time::SystemTime;
 
-pub mod fairings;
-pub mod models;
 pub mod schema;
-use fairings::{Lock, LockFairing};
+pub mod models;
 use models::*;
 #[cfg(test)] mod tests;
 
@@ -174,11 +172,11 @@ fn save(conn: DirectoryDbConn, form: Form<AddForm>, cache: State<InstancesCache>
 }
 
 #[get("/update/<key>")]
-fn cron(key: String, lock: State<Lock>) -> String {
-    if key != lock.keyhole {
+fn cron(key: String) -> String {
+    if key != std::env::var("CRON_KEY").unwrap() {
         return String::from("Wrong key, no update was triggered.\n");
     }
-    format!("{} / {}\n", key, lock.keyhole)
+    format!("{}\n", key)
 }
 
 #[get("/favicon.ico")]
@@ -194,7 +192,6 @@ fn rocket() -> rocket::Rocket {
         .mount("/", routes![index, about, add, cron, save, favicon])
         .mount("/img", StaticFiles::from("/img"))
         .mount("/css", StaticFiles::from("/css"))
-        .attach(LockFairing)
         .attach(DirectoryDbConn::fairing())
         .attach(Template::fairing())
         .manage(InstancesCache {

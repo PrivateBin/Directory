@@ -16,9 +16,9 @@ release: test build pack license image run check clean ## Equivalent to "make te
 test: .cargo/registry var/directory.sqlite ## Build and run the unit tests.
 	git checkout $(DATABASE)
 	docker run --rm -t --init \
+		-e CRON_KEY=$(ROCKET_CRON_KEY) \
 		-e GEOIP_MMDB="$(GEOIP_MMDB)" \
 		-e ROCKET_DATABASES=$(ROCKET_DATABASES) \
-		-e ROCKET_CRON_KEY=$(ROCKET_CRON_KEY) \
 		-v "$(CURDIR)":/home/rust/src \
 		-v "$(CURDIR)"/.cargo/registry:/home/rust/.cargo/registry \
 		$(BUILD_IMAGE) \
@@ -50,7 +50,7 @@ image: ## Build the container image.
 
 run: ## Run a container from the image.
 	docker run -d --init --name $(NAME) -p=$(PORT):$(PORT) \
-		-e ROCKET_CRON_KEY=$(ROCKET_CRON_KEY) \
+		-e CRON_KEY=$(ROCKET_CRON_KEY) \
 		--read-only -v "$(CURDIR)/var":/var --restart=always $(IMAGE)
 
 check: ## Launch tests to verify that the service works as expected, requires a running container.
@@ -59,6 +59,7 @@ check: ## Launch tests to verify that the service works as expected, requires a 
 	curl -s http://localhost:$(PORT)/ | grep "Welcome!"
 	curl -s http://localhost:$(PORT)/about | grep "About"
 	curl -s http://localhost:$(PORT)/add | grep "Add instance"
+	curl -s http://localhost:$(PORT)/update/foo | grep "Wrong key"
 
 .cargo/registry:
 	mkdir -p .cargo/registry
