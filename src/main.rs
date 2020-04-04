@@ -20,7 +20,9 @@ pub mod models;
 use models::*;
 #[cfg(test)] mod tests;
 
-const CACHE_LIFETIME: u64 = 300;
+const CACHE_LIFETIME: u64 = 300; // 5 minutes
+const CRON_INTERVAL: u64 = 900; // 15 minutes
+const CHECKS_TO_STORE: u64 = 100; // amount of checks to keep
 
 #[get("/")]
 fn index(conn: DirectoryDbConn, cache: State<InstancesCache>) -> Template {
@@ -179,13 +181,20 @@ fn cron(key: String, conn: DirectoryDbConn, cache: State<InstancesCache>) -> Str
     }
 
     use schema::instances::dsl::*;
+    use schema::checks::dsl::{checks, updated};
 
     let mut result = String::new();
-    let mut updated = false;
+    let mut instances_updated = false;
+    let mut instance_checks = vec![];
     for instance in &*cache.instances.read().unwrap() {
         let privatebin = PrivateBin::new(instance.url.clone());
         match privatebin {
             Ok(privatebin) => {
+                // record instance being up
+                instance_checks.push(
+                    CheckNew::new(true, instance.id.clone())
+                );
+
                 // compare result with cache
                 let instance_options = [
                     (
@@ -215,9 +224,10 @@ fn cron(key: String, conn: DirectoryDbConn, cache: State<InstancesCache>) -> Str
                     ),
                 ];
                 if  instance_options.iter().any(|x| x.1 != x.2) {
-                    let db_result = diesel::update(instances
-                        .filter(
-                            id.eq(instance.id))
+                    let db_result = diesel::update(
+                            instances.filter(
+                                id.eq(instance.id)
+                            )
                         )
                         .set((
                             version.eq(privatebin.instance.version),
@@ -229,7 +239,7 @@ fn cron(key: String, conn: DirectoryDbConn, cache: State<InstancesCache>) -> Str
                         .execute(&*conn);
                     match db_result {
                         Ok(_) => {
-                            updated = true;
+                            instances_updated = true;
                             write!(
                                 &mut result,
                                 "Instance {} checked and updated:\n",
@@ -262,6 +272,9 @@ fn cron(key: String, conn: DirectoryDbConn, cache: State<InstancesCache>) -> Str
                 }
             },
             Err(e) => {
+                instance_checks.push(
+                    CheckNew::new(false, instance.id.clone())
+                );
                 write!(
                     &mut result,
                     "Instance {} failed to be checked with error: {}\n",
@@ -271,8 +284,56 @@ fn cron(key: String, conn: DirectoryDbConn, cache: State<InstancesCache>) -> Str
         }
     }
 
+    // store checks
+    let check_insert_result = diesel::insert_into(checks)
+        .values(&instance_checks)
+        .execute(&*conn);
+    match check_insert_result {
+        Ok(_) => {
+            result.push_str("stored uptime checks\n");
+            let cutoff = SystemTime::now()
+                .duration_since(SystemTime::UNIX_EPOCH)
+                .unwrap()
+                .as_secs() - (
+                    (CHECKS_TO_STORE - 1) * CRON_INTERVAL
+                );
+            let check_delete_result = diesel::delete(checks)
+                .filter(
+                    updated.lt(
+                        diesel::dsl::sql(
+                            &format!("{}", cutoff)
+                        )
+                    )
+                )
+                .execute(&*conn);
+            match check_delete_result {
+                Ok(_) => {
+                    write!(
+                        &mut result,
+                        "cleaned up checks stored before {}\n",
+                        cutoff
+                    ).unwrap();
+                },
+                Err(e) => {
+                    write!(
+                        &mut result,
+                        "failed to cleanup checks stored before {}, with error: {}\n",
+                        cutoff, e
+                    ).unwrap();
+                }
+            }
+        },
+        Err(e) => {
+            write!(
+                &mut result,
+                "failed to store uptime checks with error: {}\n",
+                e
+            ).unwrap();
+        }
+    }
+
     // if any entry had to be updated, invalidate the cache
-    if updated {
+    if instances_updated {
         cache.timeout.store(0, Ordering::Relaxed);
         result.push_str("cache flushed\n");
     }

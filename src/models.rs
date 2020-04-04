@@ -12,9 +12,34 @@ use std::io::{BufReader, BufRead};
 use std::sync::atomic::AtomicU64;
 use std::sync::RwLock;
 use super::schema::instances;
+use super::schema::checks;
 
 pub const TITLE: &str = "Instance Directory";
 const LATEST_PRIVATEBIN_VERSION: &str = "1.3.4";
+
+#[derive(Queryable)]
+pub struct Check {
+    pub id: i32,
+    pub updated: u64,
+    pub up: bool,
+    pub instance_id: i32,
+}
+
+#[derive(Insertable)]
+#[table_name = "checks"]
+pub struct CheckNew {
+    pub up: bool,
+    pub instance_id: i32,
+}
+
+impl CheckNew {
+    pub fn new(up: bool, instance_id: i32) -> CheckNew {
+        CheckNew {
+            up: up,
+            instance_id: instance_id,
+        }
+    }
+}
 
 #[derive(Queryable)]
 pub struct Instance {
