@@ -60,6 +60,7 @@ check: ## Launch tests to verify that the service works as expected, requires a 
 	curl -s http://localhost:$(PORT)/about | grep "About"
 	curl -s http://localhost:$(PORT)/add | grep "Add instance"
 	curl -s http://localhost:$(PORT)/update/foo | grep "Wrong key"
+	@echo "Checks: \033[92mOK\033[0m"
 
 .cargo/registry:
 	mkdir -p .cargo/registry

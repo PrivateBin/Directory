@@ -10,6 +10,7 @@ use rocket::State;
 //use rocket_contrib::databases::diesel; not working with current diesel
 use rocket_contrib::serve::StaticFiles;
 use rocket_contrib::templates::Template;
+use std::fmt::Write;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::RwLock;
 use std::time::SystemTime;
@@ -146,7 +147,7 @@ fn save(conn: DirectoryDbConn, form: Form<AddForm>, cache: State<InstancesCache>
                 .values(&privatebin.instance)
                 .execute(&*conn);
             match db_result {
-                Ok(_msg) => {
+                Ok(_) => {
                     page = StatusPage::new(
                         String::from(ADD_TITLE),
                         None,
@@ -172,11 +173,111 @@ fn save(conn: DirectoryDbConn, form: Form<AddForm>, cache: State<InstancesCache>
 }
 
 #[get("/update/<key>")]
-fn cron(key: String) -> String {
+fn cron(key: String, conn: DirectoryDbConn, cache: State<InstancesCache>) -> String {
     if key != std::env::var("CRON_KEY").unwrap() {
         return String::from("Wrong key, no update was triggered.\n");
     }
-    format!("{}\n", key)
+
+    use schema::instances::dsl::*;
+
+    let mut result = String::new();
+    let mut updated = false;
+    for instance in &*cache.instances.read().unwrap() {
+        let privatebin = PrivateBin::new(instance.url.clone());
+        match privatebin {
+            Ok(privatebin) => {
+                // compare result with cache
+                let instance_options = [
+                    (
+                        "version",
+                        instance.version.clone(),
+                        privatebin.instance.version.clone()
+                    ),
+                    (
+                        "https",
+                        format!("{:?}", instance.https.clone()),
+                        format!("{:?}", privatebin.instance.https.clone())
+                    ),
+                    (
+                        "https_redirect",
+                        format!("{:?}", instance.https_redirect.clone()),
+                        format!("{:?}", privatebin.instance.https_redirect.clone())
+                    ),
+                    (
+                        "attachments",
+                        format!("{:?}", instance.attachments.clone()),
+                        format!("{:?}", privatebin.instance.attachments.clone())
+                    ),
+                    (
+                        "country_id",
+                        instance.country_id.clone(),
+                        privatebin.instance.country_id.clone()
+                    ),
+                ];
+                if  instance_options.iter().any(|x| x.1 != x.2) {
+                    let db_result = diesel::update(instances
+                        .filter(
+                            id.eq(instance.id))
+                        )
+                        .set((
+                            version.eq(privatebin.instance.version),
+                            https.eq(privatebin.instance.https),
+                            https_redirect.eq(privatebin.instance.https_redirect),
+                            attachments.eq(privatebin.instance.attachments),
+                            country_id.eq(privatebin.instance.country_id)
+                        ))
+                        .execute(&*conn);
+                    match db_result {
+                        Ok(_) => {
+                            updated = true;
+                            write!(
+                                &mut result,
+                                "Instance {} checked and updated:\n",
+                                instance.url.clone()
+                            ).unwrap();
+                            for (label, old, new) in instance_options.iter() {
+                                if old != new {
+                                    write!(
+                                        &mut result,
+                                        "    {} was {}, updated to {}\n",
+                                        label, old, new
+                                    ).unwrap();
+                                }
+                            }
+                        },
+                        Err(e) => {
+                            write!(
+                                &mut result,
+                                "Instance {} failed to be updated with error: {:?}\n",
+                                instance.url.clone(), e
+                            ).unwrap();
+                        }
+                    }
+                } else {
+                    write!(
+                        &mut result,
+                        "Instance {} checked, no update required\n",
+                        instance.url.clone()
+                    ).unwrap();
+                }
+            },
+            Err(e) => {
+                write!(
+                    &mut result,
+                    "Instance {} failed to be checked with error: {}\n",
+                    instance.url.clone(), e
+                ).unwrap();
+            }
+        }
+    }
+
+    // if any entry had to be updated, invalidate the cache
+    if updated {
+        cache.timeout.store(0, Ordering::Relaxed);
+        result.push_str("cache flushed\n");
+    }
+
+    result
 }
 
 #[get("/favicon.ico")]
