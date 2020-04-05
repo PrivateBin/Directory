@@ -2109,9 +2109,15 @@ limitations under the License.
 
 - [diesel_derives](https://github.com/diesel-rs/diesel/tree/master/diesel_derives) 1.4.1
 
+- [diesel_migrations](https://crates.io/crates/diesel_migrations) 1.4.0
+
 - [humansize](https://github.com/LeopoldArkham/humansize) 1.1.0
 
 - [hyper-sync-rustls](https://github.com/SergioBenitez/hyper-sync-rustls) 0.3.0-rc.4
+
+- [migrations_internals](https://crates.io/crates/migrations_internals) 1.4.1
+
+- [migrations_macros](https://crates.io/crates/migrations_macros) 1.4.2
 
 - [pear](https://crates.io/crates/pear) 0.1.2
 

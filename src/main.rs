@@ -178,7 +178,7 @@ fn save(conn: DirectoryDbConn, form: Form<AddForm>, cache: State<InstancesCache>
 
 #[get("/update/<key>")]
 fn cron(key: String, conn: DirectoryDbConn, cache: State<InstancesCache>) -> String {
-    if key != std::env::var("CRON_KEY").unwrap() {
+    if key != std::env::var("CRON_KEY").expect("environment variable CRON_KEY needs to be set") {
         return String::from("Wrong key, no update was triggered.\n");
     }
 
@@ -369,7 +369,6 @@ fn rocket() -> Rocket {
         .mount("/img", StaticFiles::from("/img"))
         .mount("/css", StaticFiles::from("/css"))
         .attach(DirectoryDbConn::fairing())
-        .attach(AdHoc::on_attach("Database Migrations", run_db_migrations))
         .attach(Template::fairing())
         .manage(InstancesCache {
             timeout: AtomicU64::new(0),
@@ -378,5 +377,7 @@ fn rocket() -> Rocket {
 }
 
 fn main() {
-    rocket().launch();
+    rocket()
+        .attach(AdHoc::on_attach("Database Migrations", run_db_migrations))
+        .launch();
 }

@@ -1,7 +1,10 @@
+use diesel::prelude::*;
 use super::rocket;
 use rocket::local::Client;
 use rocket::http::ContentType;
 use rocket::http::Status;
+use std::fmt::Write;
+use std::time::SystemTime;
 
 #[test]
 fn index() {
@@ -28,17 +31,6 @@ fn add_get() {
 }
 
 #[test]
-fn add_post_success() {
-    let client = Client::new(rocket()).expect("valid rocket instance");
-    let mut response = client.post("/add")
-        .body("url=https://privatebin.net")
-        .header(ContentType::Form)
-        .dispatch();
-    assert_eq!(response.status(), Status::Ok);
-    assert!(response.body_string().map_or(false, |s| s.contains(&"Successfully added URL: ")));
-}
-
-#[test]
 fn add_post_error() {
     let client = Client::new(rocket()).expect("valid rocket instance");
     let mut response = client.post("/add")
@@ -47,4 +39,71 @@ fn add_post_error() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     assert!(response.body_string().map_or(false, |s| s.contains(&"Not a valid URL: example.com")));
+}
+
+#[test]
+// incorporate add POST success test, as update depends on it running first
+fn add_and_update() {
+    use super::schema::checks::dsl::*;
+
+    let rocket = rocket();
+    let conn = super::DirectoryDbConn::get_one(&rocket).expect("database connection");
+    let client = Client::new(rocket).expect("valid rocket instance");
+    let now = SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+
+    // insert at one instance (tests run in parallel, so add_post_success() may not be ready)
+    let mut add_response = client.post("/add")
+        .body("url=https://privatebin.net")
+        .header(ContentType::Form)
+        .dispatch();
+    assert_eq!(add_response.status(), Status::Ok);
+    assert!(add_response.body_string().map_or(false, |s| s.contains(&"Successfully added URL: ")));
+
+    // insert checks
+    let mut query = "INSERT INTO checks (updated, up, instance_id) VALUES (".to_string();
+    let mut instance_checks = vec![];
+    for interval in 0..(super::CHECKS_TO_STORE + 1) {
+        instance_checks.push(
+            format!("{}, 1, 1", now - (interval * super::CRON_INTERVAL))
+        );
+    }
+    write!(
+        &mut query,
+        "{})",
+        instance_checks.join("), (")
+    ).unwrap();
+    conn.execute(&query)
+        .expect("inserting test checks for instance ID 1");
+    let oldest_update = now - (super::CHECKS_TO_STORE * super::CRON_INTERVAL);
+    let oldest_check: Vec<i32> = checks.select(instance_id)
+        .filter(
+            updated.eq(
+                diesel::dsl::sql(
+                    &format!("{}", oldest_update)
+                )
+            )
+        )
+        .load(&*conn)
+        .expect("selecting oldest check");
+    assert_eq!(vec![1], oldest_check);
+
+    let key = std::env::var("CRON_KEY").expect("environment variable CRON_KEY needs to be set");
+    let mut response = client.get(format!("/update/{}", key.replace("/", "%2F"))).dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    assert!(response.body_string().map_or(false, |s| s.contains(&"cleaned up checks stored before")));
+    let oldest_check: Vec<i32> = checks.select(instance_id)
+        .filter(
+            updated.eq(
+                diesel::dsl::sql(
+                    &format!("{}", oldest_update)
+                )
+            )
+        )
+        .load(&*conn)
+        .expect("selecting oldest check, now deleted");
+    let empty: Vec::<i32> = vec![]; // need to do this, so Rust can infer the type of the empty vector
+    assert_eq!(empty, oldest_check);
 }

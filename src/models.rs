@@ -175,7 +175,7 @@ impl PrivateBin {
                 return Err(format!("Host or domain of URL {} is not supported.", check_url).to_string())
             }
 
-            let geoip_mmdb = std::env::var("GEOIP_MMDB").unwrap();
+            let geoip_mmdb = std::env::var("GEOIP_MMDB").expect("environment variable GEOIP_MMDB needs to be set");
             let reader = maxminddb::Reader::open_readfile(&geoip_mmdb);
             if reader.is_err() {
                 return Err(
