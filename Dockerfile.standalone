@@ -27,6 +27,5 @@ CMD ["directory"]
 
 COPY --from=0 /home/rust/src/css /css
 COPY --from=0 /home/rust/src/img /img
-COPY --from=0 /home/rust/src/migrations /bin/migrations
 COPY --from=0 /home/rust/src/directory /bin/
 COPY --from=0 /home/rust/src/templates /bin/templates

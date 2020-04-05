@@ -66,9 +66,9 @@ check: ## Launch tests to verify that the service works as expected, requires a 
 	mkdir -p .cargo/registry
 
 clean: var/directory.sqlite ## Stops and removes the running container.
+	git checkout $(DATABASE)
 	docker stop $(NAME)
 	docker rm $(NAME)
-	git checkout $(DATABASE)
 
 help: ## Displays these usage instructions.
 	@echo "Usage: make <target(s)>"

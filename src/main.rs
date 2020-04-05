@@ -1,12 +1,14 @@
 #![feature(proc_macro_hygiene, decl_macro)]
 
 #[macro_use] extern crate diesel;
+#[macro_use] extern crate diesel_migrations;
 #[macro_use] extern crate rocket;
 #[macro_use] extern crate rocket_contrib;
 use diesel::prelude::*;
+use rocket::fairing::AdHoc;
 use rocket::response::Redirect;
 use rocket::request::Form;
-use rocket::State;
+use rocket::{Rocket, State};
 //use rocket_contrib::databases::diesel; not working with current diesel
 use rocket_contrib::serve::StaticFiles;
 use rocket_contrib::templates::Template;
@@ -348,13 +350,26 @@ fn favicon() -> Redirect {
 
 #[database("directory")]
 struct DirectoryDbConn(diesel::SqliteConnection);
+embed_migrations!();
 
-fn rocket() -> rocket::Rocket {
+fn run_db_migrations(rocket: Rocket) -> Result<Rocket, Rocket> {
+    let conn = DirectoryDbConn::get_one(&rocket).expect("database connection");
+    match embedded_migrations::run(&*conn) {
+        Ok(()) => Ok(rocket),
+        Err(e) => {
+            println!("Failed to run database migrations: {:?}", e);
+            Err(rocket)
+        }
+    }
+}
+
+fn rocket() -> Rocket {
     rocket::ignite()
         .mount("/", routes![index, about, add, cron, save, favicon])
         .mount("/img", StaticFiles::from("/img"))
         .mount("/css", StaticFiles::from("/css"))
         .attach(DirectoryDbConn::fairing())
+        .attach(AdHoc::on_attach("Database Migrations", run_db_migrations))
         .attach(Template::fairing())
         .manage(InstancesCache {
             timeout: AtomicU64::new(0),

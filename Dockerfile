@@ -14,6 +14,5 @@ CMD ["directory"]
 
 COPY css /css
 COPY img /img
-COPY migrations /bin/migrations
 COPY target/x86_64-unknown-linux-musl/release/directory /bin/
 COPY templates /bin/templates
