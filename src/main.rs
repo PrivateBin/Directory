@@ -18,6 +18,8 @@ use std::sync::RwLock;
 use std::time::SystemTime;
 
 pub mod schema;
+use schema::instances::dsl::*;
+use schema::checks::dsl::{checks, updated};
 pub mod models;
 use models::*;
 #[cfg(test)] mod tests;
@@ -28,23 +30,27 @@ const CHECKS_TO_STORE: u64 = 100; // amount of checks to keep
 
 #[get("/")]
 fn index(conn: DirectoryDbConn, cache: State<InstancesCache>) -> Template {
-    use schema::instances::dsl::*;
+    use diesel::dsl::sql_query;
 
     let now = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs();
     if now >= cache.timeout.load(Ordering::Relaxed) {
         // flush cache
         let mut instances_cache = cache.instances.write().unwrap();
         cache.timeout.store(now + CACHE_LIFETIME, Ordering::Relaxed);
-        *instances_cache = instances.order((
-                version.desc(),
-                https.desc(),
-                https_redirect.desc(),
-                attachments.desc(),
-                url.asc()
-            ))
-            .limit(100)
-            .load::<Instance>(&*conn)
-            .unwrap();
+        let instances_result = sql_query(
+                "SELECT instances.id, url, version, https, https_redirect, attachments, \
+                country_id, (100 * SUM(checks.up) / COUNT(checks.up)) AS uptime \
+                FROM instances JOIN checks ON instances.id = checks.instance_id \
+                GROUP BY instances.id \
+                ORDER BY version DESC, https DESC, https_redirect DESC, \
+                attachments DESC, url ASC, uptime DESC \
+                LIMIT 100"
+            )
+            .load::<Instance>(&*conn);
+        match instances_result {
+            Ok(instances_live) => *instances_cache = instances_live,
+            Err(_) => *instances_cache = vec![]
+        }
     }
 
     let header = [
@@ -53,6 +59,7 @@ fn index(conn: DirectoryDbConn, cache: State<InstancesCache>) -> Template {
         String::from("HTTPS"),
         String::from("HTTPS enforced"),
         String::from("File upload"),
+        String::from("Uptime"),
         String::from("Country")
     ];
     let mut tables = vec![];
@@ -94,6 +101,7 @@ fn index(conn: DirectoryDbConn, cache: State<InstancesCache>) -> Template {
             Instance::format(instance.https),
             Instance::format(instance.https_redirect),
             Instance::format(instance.attachments),
+            format!("{}%", instance.uptime),
             Instance::format_country(instance.country_id.clone())
         ]);
     }
@@ -132,16 +140,8 @@ fn add() -> Template {
 
 #[post("/add", data = "<form>")]
 fn save(conn: DirectoryDbConn, form: Form<AddForm>, cache: State<InstancesCache>) -> Template {
-    use schema::instances::dsl::*;
-
     let form = form.into_inner();
     let mut add_url = form.url.trim();
-
-    // remove trailing slash, but only for web root, not for paths
-    // https://example.com/ -> https://example.com BUT NOT https://example.com/path/
-    if add_url.matches("/").count() == 3 {
-        add_url = add_url.trim_end_matches('/');
-    }
 
     let page: StatusPage;
     let privatebin = PrivateBin::new(add_url.to_string());
@@ -152,10 +152,21 @@ fn save(conn: DirectoryDbConn, form: Form<AddForm>, cache: State<InstancesCache>
                 .execute(&*conn);
             match db_result {
                 Ok(_) => {
+                    // need to store at least one check, or the JOIN in /index produces NULL
+                    let instance: i32 = instances.select(id)
+                        .filter(url.eq(privatebin.instance.url.clone()))
+                        .limit(1)
+                        .first(&*conn)
+                        .expect("we just inserted the instance with no error, so selecting it is expected to work");
+                    diesel::insert_into(checks)
+                        .values(CheckNew::new(true, instance))
+                        .execute(&*conn)
+                        .expect("inserting first check on a newly created instance");
+
                     page = StatusPage::new(
                         String::from(ADD_TITLE),
                         None,
-                        Some(format!("Successfully added URL: {}", add_url))
+                        Some(format!("Successfully added URL: {}", privatebin.instance.url.clone()))
                     );
                     // flush cache
                     cache.timeout.store(0, Ordering::Relaxed);
@@ -181,9 +192,6 @@ fn cron(key: String, conn: DirectoryDbConn, cache: State<InstancesCache>) -> Str
     if key != std::env::var("CRON_KEY").expect("environment variable CRON_KEY needs to be set") {
         return String::from("Wrong key, no update was triggered.\n");
     }
-
-    use schema::instances::dsl::*;
-    use schema::checks::dsl::{checks, updated};
 
     let mut result = String::new();
     let mut instances_updated = false;

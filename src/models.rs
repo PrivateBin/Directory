@@ -41,7 +41,8 @@ impl CheckNew {
     }
 }
 
-#[derive(Queryable)]
+#[derive(QueryableByName, Queryable)]
+#[table_name = "instances"]
 pub struct Instance {
     pub id: i32,
     pub url: String,
@@ -50,6 +51,8 @@ pub struct Instance {
     pub https_redirect: bool,
     pub country_id: String,
     pub attachments: bool,
+    #[sql_type = "diesel::sql_types::Integer"]
+    pub uptime: i32,
 }
 
 impl Instance {
@@ -117,6 +120,14 @@ impl PrivateBin {
         if !url.starts_with("http://") && !url.starts_with("https://") {
             return Err(format!("Not a valid URL: {}", url).to_string())
         }
+
+        let mut check_url = url;
+        // remove trailing slash, but only for web root, not for paths
+        // https://example.com/ -> https://example.com BUT NOT https://example.com/path/
+        if check_url.matches("/").count() == 3 {
+            check_url = check_url.trim_end_matches('/');
+        }
+
         let mut client = Client::with_connector(
             HttpsConnector::new(
                 hyper_sync_rustls::TlsClient::new()
@@ -127,8 +138,8 @@ impl PrivateBin {
         // check for HTTPS redirect
         let mut https = false;
         let mut https_redirect = false;
-        let mut http_url = url.clone();
-        let mut check_url = url;
+        let mut http_url = check_url.clone();
+
         if check_url.starts_with("https://") {
             https = true;
             http_url.replace_range(..5, "http");
@@ -157,6 +168,10 @@ impl PrivateBin {
                         // if the given URL was HTTP, but we got redirected to https,
                         // check & store the HTTPS URL instead
                         check_url = location_str;
+                        // and trim trailing slashes again, only for web root
+                        if check_url.matches("/").count() == 3 {
+                            check_url = check_url.trim_end_matches('/');
+                        }
                         https = true;
                     }
                 }
@@ -355,8 +370,8 @@ impl TablePage {
 #[derive(Debug, PartialEq, Eq, Serialize)]
 pub struct HtmlTable {
     pub title: String,
-    pub header: [String; 6],
-    pub body: Vec<[String; 6]>,
+    pub header: [String; 7],
+    pub body: Vec<[String; 7]>,
 }
 
 #[derive(Debug, FromForm)]
