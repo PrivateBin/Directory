@@ -125,7 +125,7 @@ impl PrivateBin {
         // remove trailing slash, but only for web root, not for paths
         // https://example.com/ -> https://example.com BUT NOT https://example.com/path/
         if check_url.matches("/").count() == 3 {
-            check_url = check_url.trim_end_matches('/');
+            check_url = check_url.trim_end_matches('/').to_string();
         }
 
         let mut client = Client::with_connector(
@@ -170,7 +170,7 @@ impl PrivateBin {
                         check_url = location_str;
                         // and trim trailing slashes again, only for web root
                         if check_url.matches("/").count() == 3 {
-                            check_url = check_url.trim_end_matches('/');
+                            check_url = check_url.trim_end_matches('/').to_string();
                         }
                         https = true;
                     }
@@ -306,7 +306,7 @@ fn test_zerobin() {
 fn test_privatebin_http() {
     let url = String::from("http://zerobin-test.dssr.ch/");
     let privatebin = PrivateBin::new(url.clone()).unwrap();
-    assert_eq!(privatebin.instance.url, url);
+    assert_eq!(privatebin.instance.url, url.trim_end_matches('/'));
     assert_eq!(privatebin.instance.version, LATEST_PRIVATEBIN_VERSION);
     assert_eq!(privatebin.instance.https, false);
     assert_eq!(privatebin.instance.https_redirect, false);

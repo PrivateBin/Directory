@@ -67,7 +67,7 @@ fn add_and_update() {
     let mut instance_checks = vec![];
     for interval in 0..(super::CHECKS_TO_STORE + 1) {
         instance_checks.push(
-            format!("{}, 1, 1", now - (interval * super::CRON_INTERVAL))
+            format!("datetime({}, 'unixepoch'), 1, 1", now - (interval * super::CRON_INTERVAL))
         );
     }
     write!(
@@ -82,7 +82,7 @@ fn add_and_update() {
         .filter(
             updated.eq(
                 diesel::dsl::sql(
-                    &format!("{}", oldest_update)
+                    &format!("datetime({}, 'unixepoch')", oldest_update)
                 )
             )
         )

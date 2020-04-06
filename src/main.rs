@@ -141,7 +141,7 @@ fn add() -> Template {
 #[post("/add", data = "<form>")]
 fn save(conn: DirectoryDbConn, form: Form<AddForm>, cache: State<InstancesCache>) -> Template {
     let form = form.into_inner();
-    let mut add_url = form.url.trim();
+    let add_url = form.url.trim();
 
     let page: StatusPage;
     let privatebin = PrivateBin::new(add_url.to_string());
@@ -311,7 +311,7 @@ fn cron(key: String, conn: DirectoryDbConn, cache: State<InstancesCache>) -> Str
                 .filter(
                     updated.lt(
                         diesel::dsl::sql(
-                            &format!("{}", cutoff)
+                            &format!("datetime({}, 'unixepoch')", cutoff)
                         )
                     )
                 )

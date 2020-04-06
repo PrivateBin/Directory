@@ -7,7 +7,7 @@ BUILD_IMAGE = ekidd/rust-musl-builder:nightly-2020-03-12-sqlite
 GEOIP_MMDB = var/geoip-country.mmdb
 DATABASE = var/directory.sqlite
 ROCKET_DATABASES = "{directory={url=\"$(DATABASE)\"}}"
-ROCKET_CRON_KEY = $(shell openssl rand -base64 32)
+ROCKET_CRON_KEY = $(shell openssl rand -hex 32)
 
 all: test build image run check clean ## Equivalent to "make test build image run check clean" (default).
 
