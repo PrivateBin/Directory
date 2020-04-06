@@ -14,6 +14,9 @@ The application is built primarily using the following libraries:
 
 The image supports the use of the following environment variables:
 
+- `CRON_KEY`: Needed to trigger an /update run, prevents third parties to
+  use this app to hammer the listed instances. Any string works, for example
+  one generated using `openssl rand -hex 32`
 - `GEOIP_MMDB`: path to the GeoIP database, in MaxMind format
 - `ROCKET_DATABASES`: [database dict](https://api.rocket.rs/v0.4/rocket_contrib/databases/index.html#environment-variables)
   for Diesel SQLite library integration into Rocket
