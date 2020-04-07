@@ -232,7 +232,7 @@ dependencies = [
 
 [[package]]
 name = "directory"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "diesel",
  "diesel_migrations",
