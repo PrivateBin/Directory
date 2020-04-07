@@ -43,7 +43,7 @@ fn index(conn: DirectoryDbConn, cache: State<InstancesCache>) -> Template {
                 FROM instances JOIN checks ON instances.id = checks.instance_id \
                 GROUP BY instances.id \
                 ORDER BY version DESC, https DESC, https_redirect DESC, \
-                attachments DESC, url ASC, uptime DESC \
+                attachments DESC, uptime DESC, url ASC \
                 LIMIT 100"
             )
             .load::<Instance>(&*conn);
