@@ -1,6 +1,14 @@
+h2 {
+  margin-top: .5rem;
+}
+
 [data-theme="dark"] {
   background-color: #111 !important;
   color: #eee;
+}
+
+[data-theme="dark"] pre {
+  color: #ccc;
 }
 
 [data-theme="dark"] .bg-light {
