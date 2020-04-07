@@ -96,6 +96,7 @@ fn index(conn: DirectoryDbConn, cache: State<InstancesCache>) -> Template {
 
         // format current instance for table display
         table_body.push([
+            format!("opacity{}", instance.uptime / 25),
             instance.url.clone(),
             instance.version.clone(),
             Instance::format(instance.https),

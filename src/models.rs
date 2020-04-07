@@ -411,7 +411,7 @@ impl TablePage {
 pub struct HtmlTable {
     pub title: String,
     pub header: [String; 7],
-    pub body: Vec<[String; 7]>,
+    pub body: Vec<[String; 8]>,
 }
 
 #[derive(Debug, FromForm)]

@@ -10,8 +10,9 @@
 				</thead>
 				<tbody>
 	{%- for row in table %}
-					<tr>
+					<tr class="{{ row | first }}">
 		{%- for col in row %}
+			{%- if col is starting_with("opacity") %}{% continue %}{% endif %}
 						<td>
 		{%- if col is starting_with("http") %}
 							<a href="{{ col }}">{{ col }}</a>
