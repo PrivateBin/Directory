@@ -122,8 +122,9 @@ impl PrivateBin {
         }
 
         let mut check_url = url;
-        // remove trailing slash, but only for web root, not for paths
-        // https://example.com/ -> https://example.com BUT NOT https://example.com/path/
+        // remove trailing slash, but only for web root, not for paths:
+        // - https://example.com/ -> https://example.com
+        // - but https://example.com/path/ remains unchanged
         if check_url.matches("/").count() == 3 {
             check_url = check_url.trim_end_matches('/').to_string();
         }
@@ -135,59 +136,39 @@ impl PrivateBin {
         );
         client.set_redirect_policy(RedirectPolicy::FollowNone);
 
-        // check for HTTPS redirect
-        let mut https = false;
-        let mut https_redirect = false;
-        let mut http_url = check_url.clone();
+        let (https, https_redirect, check_url) = Self::check_http(&check_url, &client)?;
+        Self::check_robots(&check_url, &client)?;
+        let country_code = Self::check_country(&check_url)?;
+        let (version, attachments) = Self::check_version(&check_url, &client)?;
 
-        if check_url.starts_with("https://") {
-            https = true;
-            http_url.replace_range(..5, "http");
-        }
-        let result = client.head(&http_url)
-            .header(Connection::keep_alive())
-            .header(Self::get_user_agent())
-            .send();
-        if result.is_err() {
-            // only emit an error if this server is reported as HTTP,
-            // HTTPS-only webservers are allowed, though uncommon
-            if check_url.starts_with("http://") {
-                return Err(format!("Web server on URL {} is not responding.", http_url).to_string())
-            }
-        } else {
-            let res = result.unwrap();
-            if res.status.class() == StatusClass::Redirection {
-                // check header
-                let location = res.headers.get::<Location>();
-                if location.is_some() {
-                    let location_str = location.unwrap().to_string();
-                    if location_str.starts_with("https://") {
-                        https_redirect = true;
-                    }
-                    if check_url.starts_with("http://") && https_redirect {
-                        // if the given URL was HTTP, but we got redirected to https,
-                        // check & store the HTTPS URL instead
-                        check_url = location_str;
-                        // and trim trailing slashes again, only for web root
-                        if check_url.matches("/").count() == 3 {
-                            check_url = check_url.trim_end_matches('/').to_string();
-                        }
-                        https = true;
-                    }
+        if version.len() > 0 {
+            return Ok(
+                PrivateBin {
+                    instance: InstanceNew::new(
+                        check_url,
+                        version,
+                        https,
+                        https_redirect,
+                        country_code,
+                        attachments,
+                    ),
                 }
-            }
+            )
         }
+        return Err(format!("The URL {} doesn't seem to be a PrivateBin instance.", check_url).to_string())
+    }
 
-        // check country via geo IP database lookup
+    // check country via geo IP database lookup
+    fn check_country(url: &str) -> Result<String, String> {
         let mut country_code = "AQ".to_string();
         let hostname_regex = Regex::new(
             r"^https?://((([[:alnum:]]|[[:alnum:]][[:alnum:]-]*[[:alnum:]])\.)*([[:alnum:]]|[[:alnum:]][[:alnum:]-]*[[:alnum:]])+)/?.*$"
         ).unwrap();
-        let hostname_matches = hostname_regex.captures(&check_url);
+        let hostname_matches = hostname_regex.captures(url);
         if hostname_matches.is_some() {
             let ips = lookup_host(&hostname_matches.unwrap()[1]);
             if ips.is_err() {
-                return Err(format!("Host or domain of URL {} is not supported.", check_url).to_string())
+                return Err(format!("Host or domain of URL {} is not supported.", url).to_string())
             }
 
             let geoip_mmdb = std::env::var("GEOIP_MMDB").expect("environment variable GEOIP_MMDB needs to be set");
@@ -203,14 +184,99 @@ impl PrivateBin {
             let country: Country = reader.unwrap().lookup(ips.unwrap()[0]).unwrap();
             country_code = country.country.unwrap().iso_code.unwrap();
         }
+        return Ok(country_code);
+    }
 
-        // check version of privatebin / zerobin JS library
-        let result = client.get(&check_url)
+    // check for HTTP to HTTPS redirect
+    fn check_http(url: &str, client: &Client) -> Result<(bool, bool, String), String> {
+        let mut https = false;
+        let mut https_redirect = false;
+        let mut http_url = url.clone().to_string();
+        let mut resulting_url = url.to_string();
+
+        if url.starts_with("https://") {
+            https = true;
+            http_url.replace_range(..5, "http");
+        }
+        let result = client.head(&http_url)
+            .header(Connection::keep_alive())
+            .header(Self::get_user_agent())
+            .send();
+        if result.is_err() {
+            // only emit an error if this server is reported as HTTP,
+            // HTTPS-only webservers are allowed, though uncommon
+            if url.starts_with("http://") {
+                return Err(format!("Web server on URL {} is not responding.", http_url).to_string())
+            }
+        } else {
+            let res = result.unwrap();
+            if res.status.class() == StatusClass::Redirection {
+                // check header
+                let location = res.headers.get::<Location>();
+                if location.is_some() {
+                    let location_str = location.unwrap().to_string();
+                    if location_str.starts_with("https://") {
+                        https_redirect = true;
+                    }
+                    if !https && https_redirect {
+                        // if the given URL was HTTP, but we got redirected to https,
+                        // check & store the HTTPS URL instead
+                        resulting_url = location_str;
+                        // and trim trailing slashes again, only for web root
+                        if url.matches("/").count() == 3 {
+                            resulting_url = resulting_url.trim_end_matches('/').to_string();
+                        }
+                        https = true;
+                    }
+                }
+            }
+        }
+        Ok((https, https_redirect, resulting_url))
+    }
+
+    // check robots.txt and bail if server doesn't want us to index the instance
+    fn check_robots(url: &str, client: &Client) -> Result<bool, String> {
+        let robots_url;
+        if url.ends_with("/") {
+            robots_url = format!("{}robots.txt", url);
+        } else {
+            robots_url = format!("{}/robots.txt", url);
+        }
+        let result = client.get(&robots_url)
+            .header(Connection::keep_alive())
+            .header(Self::get_user_agent())
+            .send();
+        if result.is_ok() {
+            let res = result.unwrap();
+            if res.status == StatusCode::Ok {
+                let mut rule_for_us = false;
+                let buffer = BufReader::new(res);
+                for line in buffer.lines() {
+                    let line_str = line.unwrap();
+                    if !rule_for_us && line_str.starts_with("User-agent: PrivateBinDirectoryBot") {
+                        rule_for_us = true;
+                        continue;
+                    }
+                    if rule_for_us {
+                        if line_str.starts_with("Disallow: /") {
+                            return Err(format!("Web server on URL {} doesn't want to get added to the directory.", url).to_string())
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+        Ok(true)
+    }
+
+    // check version of privatebin / zerobin JS library & attachment support
+    fn check_version(url: &str, client: &Client) -> Result<(String, bool), String> {
+        let result = client.get(url)
             .header(Connection::close())
             .header(Self::get_user_agent())
             .send();
         if result.is_err() {
-            return Err(format!("Web server on URL {} is not responding.", check_url).to_string())
+            return Err(format!("Web server on URL {} is not responding.", url).to_string())
         }
         let res = result.unwrap();
         if res.status != StatusCode::Ok {
@@ -246,25 +312,11 @@ impl PrivateBin {
                 }
             }
         }
-        if version.len() > 0 {
-            return Ok(
-                PrivateBin {
-                    instance: InstanceNew::new(
-                        check_url,
-                        version,
-                        https,
-                        https_redirect,
-                        country_code,
-                        attachments,
-                    ),
-                }
-            )
-        }
-        return Err(format!("The URL {} doesn't seem to be a PrivateBin instance.", check_url).to_string())
+        Ok((version, attachments))
     }
 
     fn get_user_agent() -> UserAgent {
-        return UserAgent(
+        UserAgent(
             format!(
                 "PrivateBinDirectoryBot/{} (+https://privatebin.info/directory/about)",
                 env!("CARGO_PKG_VERSION")
@@ -300,18 +352,6 @@ fn test_zerobin() {
     assert_eq!(privatebin.instance.version, "0.19.2");
     assert_eq!(privatebin.instance.attachments, false);
     assert_eq!(privatebin.instance.country_id, "IE");
-}
-
-#[test]
-fn test_privatebin_http() {
-    let url = String::from("http://zerobin-test.dssr.ch/");
-    let privatebin = PrivateBin::new(url.clone()).unwrap();
-    assert_eq!(privatebin.instance.url, url.trim_end_matches('/'));
-    assert_eq!(privatebin.instance.version, LATEST_PRIVATEBIN_VERSION);
-    assert_eq!(privatebin.instance.https, false);
-    assert_eq!(privatebin.instance.https_redirect, false);
-    assert_eq!(privatebin.instance.attachments, true);
-    assert_eq!(privatebin.instance.country_id, "CH");
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize)]
