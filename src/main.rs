@@ -24,7 +24,6 @@ pub mod models;
 use models::*;
 #[cfg(test)] mod tests;
 
-const CACHE_LIFETIME: u64 = 300; // 5 minutes
 const CRON_INTERVAL: u64 = 900; // 15 minutes
 const CHECKS_TO_STORE: u64 = 100; // amount of checks to keep
 
@@ -34,9 +33,6 @@ fn index(conn: DirectoryDbConn, cache: State<InstancesCache>) -> Template {
 
     let now = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs();
     if now >= cache.timeout.load(Ordering::Relaxed) {
-        // flush cache
-        let mut instances_cache = cache.instances.write().unwrap();
-        cache.timeout.store(now + CACHE_LIFETIME, Ordering::Relaxed);
         let instances_result = sql_query(
                 "SELECT instances.id, url, version, https, https_redirect, attachments, \
                 country_id, (100 * SUM(checks.up) / COUNT(checks.up)) AS uptime \
@@ -48,8 +44,14 @@ fn index(conn: DirectoryDbConn, cache: State<InstancesCache>) -> Template {
             )
             .load::<Instance>(&*conn);
         match instances_result {
-            Ok(instances_live) => *instances_cache = instances_live,
-            Err(_) => *instances_cache = vec![]
+            // flush cache
+            Ok(instances_live) => {
+                cache.timeout.store(now + CRON_INTERVAL, Ordering::Relaxed);
+                let mut instances_cache = cache.instances.write().unwrap();
+                *instances_cache = instances_live;
+            },
+            // database might be write-locked, try it again in a minute
+            Err(_) => cache.timeout.store(now + 60, Ordering::Relaxed)
         }
     }
 
