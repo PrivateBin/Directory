@@ -287,10 +287,7 @@ impl PrivateBin {
 
         let mut version = String::new();
         let mut attachments = false;
-        let version_regexen = [
-            Regex::new(r"js/privatebin.js\?(\d+\.\d+\.*\d*)").unwrap(),
-            Regex::new(r"js/zerobin.js\?Alpha%20(\d+\.\d+\.*\d*)").unwrap()
-        ];
+        let version_regex = Regex::new(r"js/(privatebin|zerobin).js\?(Alpha%20)?(\d+\.\d+\.*\d*)").unwrap();
         let buffer = BufReader::new(res);
         for line in buffer.lines() {
             let line_str = line.unwrap();
@@ -305,12 +302,8 @@ impl PrivateBin {
                 // we got the version already, keep looking for the attachment
                 continue;
             }
-            for version_regex in version_regexen.iter() {
-                if let Some(matches) = version_regex.captures(&line_str) {
-                    version = matches[1].to_string();
-                    // we got the version, skip the other regex, if there is one
-                    continue;
-                }
+            if let Some(matches) = version_regex.captures(&line_str) {
+                version = matches[3].to_string();
             }
         }
         Ok((version, attachments))
@@ -347,12 +340,14 @@ fn test_non_privatebin() {
 
 #[test]
 fn test_zerobin() {
-    let url = String::from("https://sebsauvage.net/paste/");
+    let url = String::from("http://zerobin-legacy.dssr.ch/");
     let privatebin = PrivateBin::new(url.clone()).unwrap();
-    assert_eq!(privatebin.instance.url, url);
-    assert_eq!(privatebin.instance.version, "0.19.2");
+    assert_eq!(privatebin.instance.url, url.trim_end_matches('/').to_string());
+    assert_eq!(privatebin.instance.https, false);
+    assert_eq!(privatebin.instance.https_redirect, false);
+    assert_eq!(privatebin.instance.version, "0.20");
     assert_eq!(privatebin.instance.attachments, false);
-    assert_eq!(privatebin.instance.country_id, "IE");
+    assert_eq!(privatebin.instance.country_id, "CH");
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize)]

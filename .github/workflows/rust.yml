@@ -14,6 +14,8 @@ jobs:
         toolchain: nightly
         override: true
         components: rustfmt, clippy
+    - name: Download GeoIP database
+      run: curl -s https://download.db-ip.com/free/dbip-country-lite-2020-04.mmdb.gz | zcat > var/geoip-country.mmdb
     - name: Execute all unit and integration tests and build examples
       uses: actions-rs/cargo@v1
       env:
