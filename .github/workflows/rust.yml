@@ -1,4 +1,4 @@
-name: Rust check, test & lint
+name: Rust test & lint
 on:
   push:
   pull_request:
@@ -14,10 +14,6 @@ jobs:
         toolchain: nightly
         override: true
         components: rustfmt, clippy
-    - name: Check package and all of its dependencies for errors
-      uses: actions-rs/cargo@v1
-      with:
-        command: check
     - name: Execute all unit and integration tests and build examples
       uses: actions-rs/cargo@v1
       with:
