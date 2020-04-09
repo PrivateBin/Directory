@@ -339,6 +339,13 @@ fn test_non_privatebin() {
 }
 
 #[test]
+fn test_robots_txt() {
+    let url = String::from("http://zerobin-test.dssr.ch");
+    let privatebin = PrivateBin::new(url);
+    assert!(privatebin.is_err());
+}
+
+#[test]
 fn test_zerobin() {
     let url = String::from("http://zerobin-legacy.dssr.ch/");
     let privatebin = PrivateBin::new(url.clone()).unwrap();
