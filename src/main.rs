@@ -65,7 +65,7 @@ fn index(conn: DirectoryDbConn, cache: State<InstancesCache>) -> Template {
         String::from("Country")
     ];
     let mut tables = vec![];
-    let mut table_body = vec![];
+    let mut body = vec![];
     let (mut major, mut minor) = (0, 0);
     for instance in &*cache.instances.read().unwrap() {
         // parse the major and minor bits of the version
@@ -87,17 +87,17 @@ fn index(conn: DirectoryDbConn, cache: State<InstancesCache>) -> Template {
                 HtmlTable {
                     title: format!("Version {}.{}", major, minor).to_string(),
                     header: header.clone(),
-                    body: table_body.clone()
+                    body: body.clone()
                 }
             );
             // start a new one
             major = instance_major;
             minor = instance_minor;
-            table_body.clear();
+            body.clear();
         }
 
         // format current instance for table display
-        table_body.push([
+        body.push([
             format!("opacity{}", instance.uptime / 25),
             instance.url.clone(),
             instance.version.clone(),
@@ -111,8 +111,8 @@ fn index(conn: DirectoryDbConn, cache: State<InstancesCache>) -> Template {
     tables.push(
         HtmlTable {
             title: format!("Version {}.{}", major, minor).to_string(),
-            header: header,
-            body: table_body
+            header,
+            body
         }
     );
 
@@ -253,33 +253,33 @@ fn cron(key: String, conn: DirectoryDbConn, cache: State<InstancesCache>) -> Str
                     match db_result {
                         Ok(_) => {
                             instances_updated = true;
-                            write!(
+                            writeln!(
                                 &mut result,
-                                "Instance {} checked and updated:\n",
+                                "Instance {} checked and updated:",
                                 instance.url.clone()
                             ).unwrap();
                             for (label, old, new) in instance_options.iter() {
                                 if old != new {
-                                    write!(
+                                    writeln!(
                                         &mut result,
-                                        "    {} was {}, updated to {}\n",
+                                        "    {} was {}, updated to {}",
                                         label, old, new
                                     ).unwrap();
                                 }
                             }
                         },
                         Err(e) => {
-                            write!(
+                            writeln!(
                                 &mut result,
-                                "Instance {} failed to be updated with error: {:?}\n",
+                                "Instance {} failed to be updated with error: {:?}",
                                 instance.url.clone(), e
                             ).unwrap();
                         }
                     }
                 } else {
-                    write!(
+                    writeln!(
                         &mut result,
-                        "Instance {} checked, no update required\n",
+                        "Instance {} checked, no update required",
                         instance.url.clone()
                     ).unwrap();
                 }
@@ -288,9 +288,9 @@ fn cron(key: String, conn: DirectoryDbConn, cache: State<InstancesCache>) -> Str
                 instance_checks.push(
                     CheckNew::new(false, instance.id.clone())
                 );
-                write!(
+                writeln!(
                     &mut result,
-                    "Instance {} failed to be checked with error: {}\n",
+                    "Instance {} failed to be checked with error: {}",
                     instance.url.clone(), e
                 ).unwrap();
             }
@@ -321,25 +321,25 @@ fn cron(key: String, conn: DirectoryDbConn, cache: State<InstancesCache>) -> Str
                 .execute(&*conn);
             match check_delete_result {
                 Ok(_) => {
-                    write!(
+                    writeln!(
                         &mut result,
-                        "cleaned up checks stored before {}\n",
+                        "cleaned up checks stored before {}",
                         cutoff
                     ).unwrap();
                 },
                 Err(e) => {
-                    write!(
+                    writeln!(
                         &mut result,
-                        "failed to cleanup checks stored before {}, with error: {}\n",
+                        "failed to cleanup checks stored before {}, with error: {}",
                         cutoff, e
                     ).unwrap();
                 }
             }
         },
         Err(e) => {
-            write!(
+            writeln!(
                 &mut result,
-                "failed to store uptime checks with error: {}\n",
+                "failed to store uptime checks with error: {}",
                 e
             ).unwrap();
         }

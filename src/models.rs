@@ -35,8 +35,8 @@ pub struct CheckNew {
 impl CheckNew {
     pub fn new(up: bool, instance_id: i32) -> CheckNew {
         CheckNew {
-            up: up,
-            instance_id: instance_id,
+            up,
+            instance_id,
         }
     }
 }
@@ -89,14 +89,14 @@ pub struct InstanceNew {
 }
 
 impl InstanceNew {
-    pub fn new(url: String, version: String, https: bool, https_redirect: bool, country_code: String, attachments: bool) -> InstanceNew {
+    pub fn new(url: String, version: String, https: bool, https_redirect: bool, country_id: String, attachments: bool) -> InstanceNew {
         InstanceNew {
-            url: url,
-            version: version,
-            https: https,
-            https_redirect: https_redirect,
-            country_id: country_code,
-            attachments: attachments,
+            url,
+            version,
+            https,
+            https_redirect,
+            country_id,
+            attachments,
         }
     }
 }
@@ -364,7 +364,7 @@ impl Page {
     pub fn new(topic: String) -> Page {
         Page {
             title: String::from(TITLE),
-            topic: topic,
+            topic,
         }
     }
 }
@@ -383,7 +383,7 @@ impl StatusPage {
         let success_string = success.unwrap_or(String::new());
         StatusPage {
             title: String::from(TITLE),
-            topic: topic,
+            topic,
             error: error_string,
             success: success_string,
         }
@@ -401,8 +401,8 @@ impl TablePage {
     pub fn new(topic: String, tables: Vec<HtmlTable>) -> TablePage {
         TablePage {
             title: String::from(TITLE),
-            topic: topic,
-            tables: tables
+            topic,
+            tables
         }
     }
 }

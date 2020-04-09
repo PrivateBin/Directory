@@ -65,10 +65,14 @@ check: ## Launch tests to verify that the service works as expected, requires a 
 .cargo/registry:
 	mkdir -p .cargo/registry
 
+lint: ## Run clippy on the code to come up with improvements.
+	cargo clippy
+
 clean: var/directory.sqlite ## Stops and removes the running container.
 	git checkout $(DATABASE)
-	docker stop $(NAME)
-	docker rm $(NAME)
+	docker ps -q --filter "name=$(NAME)" | grep -q . && \
+	docker stop $(NAME) && \
+	docker rm $(NAME) || true
 
 help: ## Displays these usage instructions.
 	@echo "Usage: make <target(s)>"
