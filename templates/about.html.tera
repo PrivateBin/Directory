@@ -14,7 +14,7 @@ User-agent: PrivateBinDirectoryBot
 Disallow: /
 			</pre>
 			<h4>Webserver configuration</h4>
-			<p>If you don't want rely on this service following your sites <code>robots.txt</code>, you can configure your webserver to block any access if the client matches this services user agent, which starts with the string <code>PrivateBinDirectoryBot</code>. Here below are example configuration snippets to do just that:</p>
+			<p>If you don't want to rely on this service following your sites <code>robots.txt</code>, you can configure your webserver to block any access that matches this services user agent, which starts with the string <code>PrivateBinDirectoryBot</code>. Here below are examples of configuration snippets to do just that:</p>
 			<h5>Apache</h5>
 			<pre>
 RewriteEngine On
@@ -24,7 +24,7 @@ RewriteRule . - [R=403,L]
 			<h5>Nginx</h5>
 			<pre>
 if ($http_user_agent ~ PrivateBinDirectoryBot ) {
-   return 403;
+	return 403;
 }
 			</pre>
 {% endblock content %}
