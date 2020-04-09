@@ -110,7 +110,7 @@ fn index(conn: DirectoryDbConn, cache: State<InstancesCache>) -> Template {
     }
     tables.push(
         HtmlTable {
-            title: format!("Version {}.{}", major, minor).to_string(),
+            title: format!("Version {}.{}", major, minor),
             header,
             body
         }
@@ -169,7 +169,7 @@ fn save(conn: DirectoryDbConn, form: Form<AddForm>, cache: State<InstancesCache>
                     page = StatusPage::new(
                         String::from(ADD_TITLE),
                         None,
-                        Some(format!("Successfully added URL: {}", privatebin.instance.url.clone()))
+                        Some(format!("Successfully added URL: {}", privatebin.instance.url))
                     );
                     // flush cache
                     cache.timeout.store(0, Ordering::Relaxed);
@@ -205,7 +205,7 @@ fn cron(key: String, conn: DirectoryDbConn, cache: State<InstancesCache>) -> Str
             Ok(privatebin) => {
                 // record instance being up
                 instance_checks.push(
-                    CheckNew::new(true, instance.id.clone())
+                    CheckNew::new(true, instance.id)
                 );
 
                 // compare result with cache
@@ -286,7 +286,7 @@ fn cron(key: String, conn: DirectoryDbConn, cache: State<InstancesCache>) -> Str
             },
             Err(e) => {
                 instance_checks.push(
-                    CheckNew::new(false, instance.id.clone())
+                    CheckNew::new(false, instance.id)
                 );
                 writeln!(
                     &mut result,

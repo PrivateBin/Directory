@@ -15,7 +15,6 @@ use super::schema::instances;
 use super::schema::checks;
 
 pub const TITLE: &str = "Instance Directory";
-const LATEST_PRIVATEBIN_VERSION: &str = "1.3.4";
 
 #[derive(Queryable)]
 pub struct Check {
@@ -58,9 +57,9 @@ pub struct Instance {
 impl Instance {
     pub fn format(flag: bool) -> String {
         if flag {
-            return String::from("\u{2714}")
+            String::from("\u{2714}")
         } else {
-            return String::from("\u{2718}")
+            String::from("\u{2718}")
         }
     }
 
@@ -73,7 +72,7 @@ impl Instance {
             std::char::from_u32(0x1F1E6 - 65 + country_chars.next().unwrap() as u32).unwrap(),
             std::char::from_u32(0x1F1E6 - 65 + country_chars.next().unwrap() as u32).unwrap()
         ];
-        return country_code_points.iter().cloned().collect::<String>()
+        country_code_points.iter().cloned().collect::<String>()
     }
 }
 
@@ -118,14 +117,14 @@ impl PrivateBin {
 
     fn validate(url: String) -> Result<PrivateBin, String> {
         if !url.starts_with("http://") && !url.starts_with("https://") {
-            return Err(format!("Not a valid URL: {}", url).to_string())
+            return Err(format!("Not a valid URL: {}", url))
         }
 
         let mut check_url = url;
         // remove trailing slash, but only for web root, not for paths:
         // - https://example.com/ -> https://example.com
         // - but https://example.com/path/ remains unchanged
-        if check_url.matches("/").count() == 3 {
+        if check_url.matches('/').count() == 3 {
             check_url = check_url.trim_end_matches('/').to_string();
         }
 
@@ -141,7 +140,7 @@ impl PrivateBin {
         let country_code = Self::check_country(&check_url)?;
         let (version, attachments) = Self::check_version(&check_url, &client)?;
 
-        if version.len() > 0 {
+        if !version.is_empty() {
             return Ok(
                 PrivateBin {
                     instance: InstanceNew::new(
@@ -155,7 +154,7 @@ impl PrivateBin {
                 }
             )
         }
-        return Err(format!("The URL {} doesn't seem to be a PrivateBin instance.", check_url).to_string())
+        Err(format!("The URL {} doesn't seem to be a PrivateBin instance.", check_url))
     }
 
     // check country via geo IP database lookup
@@ -164,11 +163,10 @@ impl PrivateBin {
         let hostname_regex = Regex::new(
             r"^https?://((([[:alnum:]]|[[:alnum:]][[:alnum:]-]*[[:alnum:]])\.)*([[:alnum:]]|[[:alnum:]][[:alnum:]-]*[[:alnum:]])+)/?.*$"
         ).unwrap();
-        let hostname_matches = hostname_regex.captures(url);
-        if hostname_matches.is_some() {
-            let ips = lookup_host(&hostname_matches.unwrap()[1]);
+        if let Some(hostname_matches) = hostname_regex.captures(url) {
+            let ips = lookup_host(&hostname_matches[1]);
             if ips.is_err() {
-                return Err(format!("Host or domain of URL {} is not supported.", url).to_string())
+                return Err(format!("Host or domain of URL {} is not supported.", url))
             }
 
             let geoip_mmdb = std::env::var("GEOIP_MMDB").expect("environment variable GEOIP_MMDB needs to be set");
@@ -178,56 +176,57 @@ impl PrivateBin {
                     format!(
                         "Error opening geo IP database {} (defined in environment variable GEOIP_MMDB).",
                         geoip_mmdb
-                    ).to_string()
+                    )
                 )
             }
             let country: Country = reader.unwrap().lookup(ips.unwrap()[0]).unwrap();
             country_code = country.country.unwrap().iso_code.unwrap();
         }
-        return Ok(country_code);
+        Ok(country_code)
     }
 
     // check for HTTP to HTTPS redirect
     fn check_http(url: &str, client: &Client) -> Result<(bool, bool, String), String> {
         let mut https = false;
         let mut https_redirect = false;
-        let mut http_url = url.clone().to_string();
+        let mut http_url = url.to_string();
         let mut resulting_url = url.to_string();
 
         if url.starts_with("https://") {
             https = true;
             http_url.replace_range(..5, "http");
         }
-        let result = client.head(&http_url)
+        match client.head(&http_url)
             .header(Connection::keep_alive())
             .header(Self::get_user_agent())
-            .send();
-        if result.is_err() {
-            // only emit an error if this server is reported as HTTP,
-            // HTTPS-only webservers are allowed, though uncommon
-            if url.starts_with("http://") {
-                return Err(format!("Web server on URL {} is not responding.", http_url).to_string())
-            }
-        } else {
-            let res = result.unwrap();
-            if res.status.class() == StatusClass::Redirection {
-                // check header
-                let location = res.headers.get::<Location>();
-                if location.is_some() {
-                    let location_str = location.unwrap().to_string();
-                    if location_str.starts_with("https://") {
-                        https_redirect = true;
-                    }
-                    if !https && https_redirect {
-                        // if the given URL was HTTP, but we got redirected to https,
-                        // check & store the HTTPS URL instead
-                        resulting_url = location_str;
-                        // and trim trailing slashes again, only for web root
-                        if url.matches("/").count() == 3 {
-                            resulting_url = resulting_url.trim_end_matches('/').to_string();
+            .send()
+        {
+            Ok(res) => {
+                if res.status.class() == StatusClass::Redirection {
+                    // check header
+                    if let Some(location) = res.headers.get::<Location>() {
+                        let location_str = location.to_string();
+                        if location_str.starts_with("https://") {
+                            https_redirect = true;
                         }
-                        https = true;
+                        if !https && https_redirect {
+                            // if the given URL was HTTP, but we got redirected to https,
+                            // check & store the HTTPS URL instead
+                            resulting_url = location_str;
+                            // and trim trailing slashes again, only for web root
+                            if url.matches('/').count() == 3 {
+                                resulting_url = resulting_url.trim_end_matches('/').to_string();
+                            }
+                            https = true;
+                        }
                     }
+                }
+            },
+            Err(_) => {
+                // only emit an error if this server is reported as HTTP,
+                // HTTPS-only webservers are allowed, though uncommon
+                if url.starts_with("http://") {
+                    return Err(format!("Web server on URL {} is not responding.", http_url))
                 }
             }
         }
@@ -236,18 +235,16 @@ impl PrivateBin {
 
     // check robots.txt and bail if server doesn't want us to index the instance
     fn check_robots(url: &str, client: &Client) -> Result<bool, String> {
-        let robots_url;
-        if url.ends_with("/") {
-            robots_url = format!("{}robots.txt", url);
+        let robots_url = if url.ends_with('/') {
+            format!("{}robots.txt", url)
         } else {
-            robots_url = format!("{}/robots.txt", url);
-        }
+            format!("{}/robots.txt", url)
+        };
         let result = client.get(&robots_url)
             .header(Connection::keep_alive())
             .header(Self::get_user_agent())
             .send();
-        if result.is_ok() {
-            let res = result.unwrap();
+        if let Ok(res) = result {
             if res.status == StatusCode::Ok {
                 let mut rule_for_us = false;
                 let buffer = BufReader::new(res);
@@ -259,7 +256,12 @@ impl PrivateBin {
                     }
                     if rule_for_us {
                         if line_str.starts_with("Disallow: /") {
-                            return Err(format!("Web server on URL {} doesn't want to get added to the directory.", url).to_string())
+                            return Err(
+                                format!(
+                                    "Web server on URL {} doesn't want to get added to the directory.",
+                                    url
+                                )
+                            )
                         }
                         break;
                     }
@@ -276,11 +278,11 @@ impl PrivateBin {
             .header(Self::get_user_agent())
             .send();
         if result.is_err() {
-            return Err(format!("Web server on URL {} is not responding.", url).to_string())
+            return Err(format!("Web server on URL {} is not responding.", url))
         }
         let res = result.unwrap();
         if res.status != StatusCode::Ok {
-            return Err(format!("Web server responded with status code {}.", res.status).to_string())
+            return Err(format!("Web server responded with status code {}.", res.status))
         }
 
         let mut version = String::new();
@@ -294,19 +296,18 @@ impl PrivateBin {
             let line_str = line.unwrap();
             if line_str.contains(" id=\"attachment\" ") {
                 attachments = true;
-                if version.len() > 0 {
+                if !version.is_empty() {
                     // we got both version and attachment, stop parsing
                     break;
                 }
             }
-            if version.len() > 0 {
+            if !version.is_empty() {
                 // we got the version already, keep looking for the attachment
                 continue;
             }
             for version_regex in version_regexen.iter() {
-                let matches = version_regex.captures(&line_str);
-                if matches.is_some() {
-                    version = matches.unwrap()[1].to_string();
+                if let Some(matches) = version_regex.captures(&line_str) {
+                    version = matches[1].to_string();
                     // we got the version, skip the other regex, if there is one
                     continue;
                 }
@@ -320,7 +321,7 @@ impl PrivateBin {
             format!(
                 "PrivateBinDirectoryBot/{} (+https://privatebin.info/directory/about)",
                 env!("CARGO_PKG_VERSION")
-            ).to_owned()
+            )
         )
     }
 }
@@ -330,7 +331,7 @@ fn test_privatebin() {
     let url = String::from("https://privatebin.net");
     let privatebin = PrivateBin::new(url.clone()).unwrap();
     assert_eq!(privatebin.instance.url, url);
-    assert_eq!(privatebin.instance.version, LATEST_PRIVATEBIN_VERSION);
+    assert_eq!(privatebin.instance.version, "1.3.4");
     assert_eq!(privatebin.instance.https, true);
     assert_eq!(privatebin.instance.https_redirect, true);
     assert_eq!(privatebin.instance.attachments, false);
@@ -379,8 +380,8 @@ pub struct StatusPage {
 
 impl StatusPage {
     pub fn new(topic: String, error: Option<String>, success: Option<String>) -> StatusPage {
-        let error_string   = error.unwrap_or(String::new());
-        let success_string = success.unwrap_or(String::new());
+        let error_string   = error.unwrap_or_default();
+        let success_string = success.unwrap_or_default();
         StatusPage {
             title: String::from(TITLE),
             topic,
