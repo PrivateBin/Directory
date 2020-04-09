@@ -1,4 +1,4 @@
-name: Rust test & lint
+name: Rust check, test & lint
 on:
   push:
   pull_request:
@@ -6,9 +6,23 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - run: cargo test --verbose
-    - run: rustup component add clippy
-    - uses: actions-rs/clippy-check@v1
+    - name: Checkout code
+      uses: actions/checkout@v2
+    - name: Install latest Rust nightly (required by Rocket)
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: nightly
+        override: true
+        components: rustfmt, clippy
+    - name: Check package and all of its dependencies for errors
+      uses: actions-rs/cargo@v1
+      with:
+        command: check
+    - name: Execute all unit and integration tests and build examples
+      uses: actions-rs/cargo@v1
+      with:
+        command: test
+    - name: Check for common mistakes and code improvements
+      uses: actions-rs/clippy-check@v1
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
