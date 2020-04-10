@@ -1,5 +1,9 @@
 # Change log
 
+## unreleased
+
+- split cron into uptime check and full check #10
+
 ## 0.2.3
 
 - added deletion of failing instances #9

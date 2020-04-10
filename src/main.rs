@@ -199,6 +199,80 @@ fn cron(key: String, conn: DirectoryDbConn, cache: State<InstancesCache>) -> Str
     }
 
     let mut result = String::new();
+    let mut instance_checks = vec![];
+    for instance in &*cache.instances.read().unwrap() {
+        // record instance being up
+        instance_checks.push(
+            CheckNew::new(instance.check_up(), instance.id)
+        );
+        writeln!(
+            &mut result,
+            "Instance {} checked",
+            instance.url.clone()
+        ).unwrap();
+    }
+
+    // store checks
+    let check_insert_result = diesel::insert_into(checks)
+        .values(&instance_checks)
+        .execute(&*conn);
+    match check_insert_result {
+        Ok(_) => {
+            result.push_str("stored uptime checks\n");
+
+            // delete checks older then:
+            // now - ((CHECKS_TO_STORE - 1) * CRON_INTERVAL)
+            let cutoff = SystemTime::now()
+                .duration_since(SystemTime::UNIX_EPOCH)
+                .unwrap()
+                .as_secs() - (
+                    (CHECKS_TO_STORE - 1) * CRON_INTERVAL
+                );
+            let check_delete_result = diesel::delete(checks)
+                .filter(
+                    updated.lt(
+                        diesel::dsl::sql(
+                            &format!("datetime({}, 'unixepoch')", cutoff)
+                        )
+                    )
+                )
+                .execute(&*conn);
+            match check_delete_result {
+                Ok(_) => {
+                    writeln!(
+                        &mut result,
+                        "cleaned up checks stored before {}",
+                        cutoff
+                    ).unwrap();
+                },
+                Err(e) => {
+                    writeln!(
+                        &mut result,
+                        "failed to cleanup checks stored before {}, with error: {}",
+                        cutoff, e
+                    ).unwrap();
+                }
+            }
+        },
+        Err(e) => {
+            writeln!(
+                &mut result,
+                "failed to store uptime checks with error: {}",
+                e
+            ).unwrap();
+        }
+    }
+
+    result
+}
+
+#[get("/update/<key>/full")]
+fn cron_full(key: String, conn: DirectoryDbConn, cache: State<InstancesCache>) -> String {
+    if key != std::env::var("CRON_KEY").expect("environment variable CRON_KEY needs to be set") {
+        return String::from("Wrong key, no update was triggered.\n");
+    }
+
+    let mut result = String::new();
     let mut instances_updated = false;
     let mut instance_checks = vec![];
     for instance in &*cache.instances.read().unwrap() {
@@ -299,78 +373,27 @@ fn cron(key: String, conn: DirectoryDbConn, cache: State<InstancesCache>) -> Str
         }
     }
 
-    // store checks
-    let check_insert_result = diesel::insert_into(checks)
-        .values(&instance_checks)
-        .execute(&*conn);
-    match check_insert_result {
-        Ok(_) => {
-            result.push_str("stored uptime checks\n");
-
-            // delete checks older then:
-            // now - ((CHECKS_TO_STORE - 1) * CRON_INTERVAL)
-            let cutoff = SystemTime::now()
-                .duration_since(SystemTime::UNIX_EPOCH)
-                .unwrap()
-                .as_secs() - (
-                    (CHECKS_TO_STORE - 1) * CRON_INTERVAL
-                );
-            let check_delete_result = diesel::delete(checks)
-                .filter(
-                    updated.lt(
-                        diesel::dsl::sql(
-                            &format!("datetime({}, 'unixepoch')", cutoff)
-                        )
-                    )
-                )
-                .execute(&*conn);
-            match check_delete_result {
-                Ok(_) => {
-                    writeln!(
-                        &mut result,
-                        "cleaned up checks stored before {}",
-                        cutoff
-                    ).unwrap();
-                },
-                Err(e) => {
-                    writeln!(
-                        &mut result,
-                        "failed to cleanup checks stored before {}, with error: {}",
-                        cutoff, e
-                    ).unwrap();
-                }
-            }
-
-            // delete checks and instances that failed too many times
-            match sql_query(
-                    &format!(
-                        "DELETE FROM instances \
-                        WHERE id in ( \
-                            SELECT instance_id \
-                            FROM checks \
-                            WHERE up = 0 \
-                            GROUP BY instance_id \
-                            HAVING COUNT(up) >= {} \
-                        );",
-                        MAX_FAILURES
-                    )
-                )
-                .execute(&*conn)
-            {
-                Ok(_) => result.push_str("removed instances that failed too many times\n"),
-                Err(e) => {
-                    writeln!(
-                        &mut result,
-                        "error removing instances failing too many times: {}",
-                        e
-                    ).unwrap();
-                }
-            }
-        },
+    // delete checks and instances that failed too many times
+    match sql_query(
+            &format!(
+                "DELETE FROM instances \
+                WHERE id in ( \
+                    SELECT instance_id \
+                    FROM checks \
+                    WHERE up = 0 \
+                    GROUP BY instance_id \
+                    HAVING COUNT(up) >= {} \
+                );",
+                MAX_FAILURES
+            )
+        )
+        .execute(&*conn)
+    {
+        Ok(_) => result.push_str("removed instances that failed too many times\n"),
         Err(e) => {
             writeln!(
                 &mut result,
-                "failed to store uptime checks with error: {}",
+                "error removing instances failing too many times: {}",
                 e
             ).unwrap();
         }
@@ -407,7 +430,7 @@ fn run_db_migrations(rocket: Rocket) -> Result<Rocket, Rocket> {
 
 fn rocket() -> Rocket {
     rocket::ignite()
-        .mount("/", routes![index, about, add, cron, save, favicon])
+        .mount("/", routes![index, about, add, cron, cron_full, save, favicon])
         .mount("/img", StaticFiles::from("/img"))
         .mount("/css", StaticFiles::from("/css"))
         .attach(DirectoryDbConn::fairing())

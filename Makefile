@@ -66,7 +66,7 @@ check: ## Launch tests to verify that the service works as expected, requires a 
 	mkdir -p .cargo/registry
 
 lint: ## Run clippy on the code to come up with improvements.
-	cargo clippy
+	cargo clippy --release
 
 clean: var/directory.sqlite ## Stops and removes the running container.
 	git checkout $(DATABASE)

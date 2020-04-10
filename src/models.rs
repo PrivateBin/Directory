@@ -1,9 +1,7 @@
 extern crate hyper_sync_rustls;
 use dns_lookup::lookup_host;
 use hyper::Client;
-use hyper::client::RedirectPolicy;
 use hyper::header::{Connection, Location, UserAgent};
-use hyper::net::HttpsConnector;
 use hyper::status::{StatusClass, StatusCode};
 use maxminddb::geoip2::Country;
 use regex::Regex;
@@ -55,6 +53,16 @@ pub struct Instance {
 }
 
 impl Instance {
+    pub fn check_up(self: &Self) -> bool {
+        match Self::get_client().head(&self.url)
+            .header(Self::get_user_agent())
+            .send()
+        {
+            Ok(res) => res.status == StatusCode::Ok,
+            Err(_) => false
+        }
+    }
+
     pub fn format(flag: bool) -> String {
         if flag {
             String::from("\u{2714}")
@@ -73,6 +81,26 @@ impl Instance {
             std::char::from_u32(0x1F1E6 - 65 + country_chars.next().unwrap() as u32).unwrap()
         ];
         country_code_points.iter().cloned().collect::<String>()
+    }
+
+    pub fn get_client() -> Client {
+        let mut client = Client::with_connector(
+            hyper::net::HttpsConnector::new(
+                hyper_sync_rustls::TlsClient::new()
+            )
+        );
+        client.set_redirect_policy(hyper::client::RedirectPolicy::FollowNone);
+        client
+    }
+
+
+    pub fn get_user_agent() -> UserAgent {
+        UserAgent(
+            format!(
+                "PrivateBinDirectoryBot/{} (+https://privatebin.info/directory/about)",
+                env!("CARGO_PKG_VERSION")
+            )
+        )
     }
 }
 
@@ -128,13 +156,7 @@ impl PrivateBin {
             check_url = check_url.trim_end_matches('/').to_string();
         }
 
-        let mut client = Client::with_connector(
-            HttpsConnector::new(
-                hyper_sync_rustls::TlsClient::new()
-            )
-        );
-        client.set_redirect_policy(RedirectPolicy::FollowNone);
-
+        let client = Instance::get_client();
         let (https, https_redirect, check_url) = Self::check_http(&check_url, &client)?;
         Self::check_robots(&check_url, &client)?;
         let country_code = Self::check_country(&check_url)?;
@@ -198,7 +220,7 @@ impl PrivateBin {
         }
         match client.head(&http_url)
             .header(Connection::keep_alive())
-            .header(Self::get_user_agent())
+            .header(Instance::get_user_agent())
             .send()
         {
             Ok(res) => {
@@ -242,7 +264,7 @@ impl PrivateBin {
         };
         let result = client.get(&robots_url)
             .header(Connection::keep_alive())
-            .header(Self::get_user_agent())
+            .header(Instance::get_user_agent())
             .send();
         if let Ok(res) = result {
             if res.status == StatusCode::Ok {
@@ -275,7 +297,7 @@ impl PrivateBin {
     fn check_version(url: &str, client: &Client) -> Result<(String, bool), String> {
         let result = client.get(url)
             .header(Connection::close())
-            .header(Self::get_user_agent())
+            .header(Instance::get_user_agent())
             .send();
         if result.is_err() {
             return Err(format!("Web server on URL {} is not responding.", url))
@@ -307,15 +329,6 @@ impl PrivateBin {
             }
         }
         Ok((version, attachments))
-    }
-
-    fn get_user_agent() -> UserAgent {
-        UserAgent(
-            format!(
-                "PrivateBinDirectoryBot/{} (+https://privatebin.info/directory/about)",
-                env!("CARGO_PKG_VERSION")
-            )
-        )
     }
 }
 

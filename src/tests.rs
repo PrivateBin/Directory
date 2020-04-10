@@ -147,7 +147,7 @@ fn add_and_delete() {
         .expect("inserting test checks for instance ID 1");
 
     let key = std::env::var("CRON_KEY").expect("environment variable CRON_KEY needs to be set");
-    let mut response = client.get(format!("/update/{}", key.replace("/", "%2F"))).dispatch();
+    let mut response = client.get(format!("/update/{}/full", key.replace("/", "%2F"))).dispatch();
     assert_eq!(response.status(), Status::Ok);
     assert!(response.body_string().map_or(false, |s| s.contains(&"removed instances that failed too many times")));
     let deleted_check: Vec<i32> = checks.select(instance_id)
