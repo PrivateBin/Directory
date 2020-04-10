@@ -1,6 +1,6 @@
 # Change log
 
-## unreleased
+## 0.2.4
 
 - split cron into uptime check and full check #10
 
