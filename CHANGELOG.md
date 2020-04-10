@@ -1,6 +1,6 @@
 # Change log
 
-## unreleased
+## 0.2.3
 
 - added deletion of failing instances #9
 - added change log
