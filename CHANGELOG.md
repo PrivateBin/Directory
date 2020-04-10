@@ -2,6 +2,7 @@
 
 ## unreleased
 
+- added deletion of failing instances #9
 - added change log
 - added GitHub workflow to run tests and clippy on push
 - applied clippy code quality suggestions

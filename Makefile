@@ -1,4 +1,4 @@
-.PHONY: all release test build pack image run check clean help
+.PHONY: all release test build pack image run check lint clean help
 
 NAME = directory
 IMAGE = privatebin/$(NAME)

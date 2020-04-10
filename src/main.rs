@@ -6,6 +6,7 @@
 #[macro_use] extern crate rocket;
 #[macro_use] extern crate rocket_contrib;
 use diesel::prelude::*;
+use diesel::dsl::sql_query;
 use rocket::fairing::AdHoc;
 use rocket::response::Redirect;
 use rocket::request::Form;
@@ -27,10 +28,10 @@ use models::*;
 
 const CRON_INTERVAL: u64 = 900; // 15 minutes
 const CHECKS_TO_STORE: u64 = 100; // amount of checks to keep
+const MAX_FAILURES: u64 = 90; // remove instances that failed this many times
 
 #[get("/")]
 fn index(conn: DirectoryDbConn, cache: State<InstancesCache>) -> Template {
-    use diesel::dsl::sql_query;
 
     let now = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs();
     if now >= cache.timeout.load(Ordering::Relaxed) {
@@ -305,6 +306,9 @@ fn cron(key: String, conn: DirectoryDbConn, cache: State<InstancesCache>) -> Str
     match check_insert_result {
         Ok(_) => {
             result.push_str("stored uptime checks\n");
+
+            // delete checks older then:
+            // now - ((CHECKS_TO_STORE - 1) * CRON_INTERVAL)
             let cutoff = SystemTime::now()
                 .duration_since(SystemTime::UNIX_EPOCH)
                 .unwrap()
@@ -333,6 +337,32 @@ fn cron(key: String, conn: DirectoryDbConn, cache: State<InstancesCache>) -> Str
                         &mut result,
                         "failed to cleanup checks stored before {}, with error: {}",
                         cutoff, e
+                    ).unwrap();
+                }
+            }
+
+            // delete checks and instances that failed too many times
+            match sql_query(
+                    &format!(
+                        "DELETE FROM instances \
+                        WHERE id in ( \
+                            SELECT instance_id \
+                            FROM checks \
+                            WHERE up = 0 \
+                            GROUP BY instance_id \
+                            HAVING COUNT(up) >= {} \
+                        );",
+                        MAX_FAILURES
+                    )
+                )
+                .execute(&*conn)
+            {
+                Ok(_) => result.push_str("removed instances that failed too many times\n"),
+                Err(e) => {
+                    writeln!(
+                        &mut result,
+                        "error removing instances failing too many times: {}",
+                        e
                     ).unwrap();
                 }
             }
