@@ -19,9 +19,21 @@ table! {
     }
 }
 
+table! {
+    scans (id) {
+        id -> Integer,
+        scanner -> Text,
+        rating -> Text,
+        percent -> Integer,
+        instance_id -> Integer,
+    }
+}
+
 joinable!(checks -> instances (instance_id));
+joinable!(scans -> instances (instance_id));
 
 allow_tables_to_appear_in_same_query!(
     checks,
     instances,
+    scans,
 );

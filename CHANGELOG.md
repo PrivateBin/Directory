@@ -1,5 +1,9 @@
 # Change log
 
+## 0.2.5
+
+- added Mozilla Observatory ratings #1
+
 ## 0.2.4
 
 - split cron into uptime check and full check #10

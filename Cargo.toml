@@ -1,17 +1,17 @@
 [package]
 name = "directory"
-version = "0.2.4"
+version = "0.2.5"
 authors = ["El RIDO <elrido@gmx.net>"]
 edition = "2018"
 
 [dependencies]
 diesel_migrations = "1.4.0"
 dns-lookup = "1.0.1"
-dotenv = "0.15.0"
 hyper = "0.10.16"
 maxminddb = "0.13.0"
 regex = "1.3.6"
 rocket = "0.4.4"
+serde_json = "1.0.51"
 
 [dependencies.diesel]
 version = "1.4.4"
@@ -32,7 +32,7 @@ default-features = false
 features = ["diesel_sqlite_pool", "serve", "tera_templates"]
 
 [dependencies.serde]
-version = "1.0.105"
+version = "1.0.106"
 features = ["derive"]
 
 [profile.release]

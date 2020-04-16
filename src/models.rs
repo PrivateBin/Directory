@@ -11,8 +11,10 @@ use std::sync::atomic::AtomicU64;
 use std::sync::RwLock;
 use super::schema::instances;
 use super::schema::checks;
+use super::schema::scans;
 
 pub const TITLE: &str = "Instance Directory";
+const OBSERVATORY_API: &str = "https://http-observatory.security.mozilla.org/api/v1/analyze?host=";
 
 #[derive(Queryable)]
 pub struct Check {
@@ -50,6 +52,8 @@ pub struct Instance {
     pub attachments: bool,
     #[sql_type = "diesel::sql_types::Integer"]
     pub uptime: i32,
+    #[sql_type = "diesel::sql_types::Text"]
+    pub rating_mozilla_observatory: String,
 }
 
 impl Instance {
@@ -135,6 +139,7 @@ pub struct InstancesCache {
 
 pub struct PrivateBin {
     pub instance: InstanceNew,
+    pub scans: Vec<ScanNew>
 }
 
 impl PrivateBin {
@@ -156,11 +161,17 @@ impl PrivateBin {
             check_url = check_url.trim_end_matches('/').to_string();
         }
 
+        let hostname_regex = Self::get_hostname_regex();
         let client = Instance::get_client();
         let (https, https_redirect, check_url) = Self::check_http(&check_url, &client)?;
         Self::check_robots(&check_url, &client)?;
-        let country_code = Self::check_country(&check_url)?;
+        let country_code = Self::check_country(&check_url, &hostname_regex)?;
         let (version, attachments) = Self::check_version(&check_url, &client)?;
+
+        let mut scans = vec![];
+        scans.push(
+            Self::check_rating_mozilla_observatory(&check_url, &client, &hostname_regex)
+        );
 
         if !version.is_empty() {
             return Ok(
@@ -173,6 +184,7 @@ impl PrivateBin {
                         country_code,
                         attachments,
                     ),
+                    scans
                 }
             )
         }
@@ -180,11 +192,8 @@ impl PrivateBin {
     }
 
     // check country via geo IP database lookup
-    fn check_country(url: &str) -> Result<String, String> {
+    fn check_country(url: &str, hostname_regex: &Regex) -> Result<String, String> {
         let mut country_code = "AQ".to_string();
-        let hostname_regex = Regex::new(
-            r"^https?://((([[:alnum:]]|[[:alnum:]][[:alnum:]-]*[[:alnum:]])\.)*([[:alnum:]]|[[:alnum:]][[:alnum:]-]*[[:alnum:]])+)/?.*$"
-        ).unwrap();
         if let Some(hostname_matches) = hostname_regex.captures(url) {
             let ips = lookup_host(&hostname_matches[1]);
             if ips.is_err() {
@@ -253,6 +262,36 @@ impl PrivateBin {
             }
         }
         Ok((https, https_redirect, resulting_url))
+    }
+
+    // check rating at mozilla observatory
+    pub fn check_rating_mozilla_observatory(url: &str, client: &Client, hostname_regex: &Regex) -> ScanNew {
+        if let Some(hostname_matches) = hostname_regex.captures(url) {
+            let observatory_url = format!("{}{}", OBSERVATORY_API, &hostname_matches[1]);
+            let result = client.get(&observatory_url)
+                .header(Instance::get_user_agent())
+                .send();
+            if let Ok(res) = result {
+                if res.status == StatusCode::Ok {
+                    let reader = BufReader::new(res);
+                    let api_response: serde_json::Value = serde_json::from_reader(reader).unwrap();
+                    if Some("FINISHED") == api_response["state"].as_str() {
+                        if let Some(grade) = api_response["grade"].as_str() {
+                            return ScanNew::new("mozilla_observatory", grade, 0)
+                        }
+                    }
+                    // initiate a rescan
+                    if api_response.get("error") != None {
+                        client.post(&observatory_url)
+                            .header(Instance::get_user_agent())
+                            .body("hidden=true")
+                            .send()
+                            .unwrap();
+                    }
+                }
+            }
+        }
+        ScanNew::new("mozilla_observatory", "-", 0)
     }
 
     // check robots.txt and bail if server doesn't want us to index the instance
@@ -330,6 +369,20 @@ impl PrivateBin {
         }
         Ok((version, attachments))
     }
+
+    // get latest rating at mozilla observatory
+    pub fn get_rating_mozilla_observatory(url: &str) -> ScanNew {
+        let client = Instance::get_client();
+        let hostname_regex = Self::get_hostname_regex();
+        Self::check_rating_mozilla_observatory(url, &client, &hostname_regex)
+    }
+
+    // get latest rating at mozilla observatory
+    fn get_hostname_regex() -> Regex {
+        Regex::new(
+            r"^https?://((([[:alnum:]]|[[:alnum:]][[:alnum:]-]*[[:alnum:]])\.)*([[:alnum:]]|[[:alnum:]][[:alnum:]-]*[[:alnum:]])+)/?.*$"
+        ).unwrap()
+    }
 }
 
 #[test]
@@ -368,6 +421,53 @@ fn test_zerobin() {
     assert_eq!(privatebin.instance.version, "0.20");
     assert_eq!(privatebin.instance.attachments, false);
     assert_eq!(privatebin.instance.country_id, "CH");
+}
+
+#[derive(Queryable)]
+pub struct Scan {
+    pub id: i32,
+    pub scanner: String,
+    pub rating: String,
+    pub percent: i32,
+    pub instance_id: i32,
+}
+
+#[derive(Insertable)]
+#[table_name = "scans"]
+pub struct ScanNew {
+    pub scanner: String,
+    pub rating: String,
+    pub percent: i32,
+    pub instance_id: i32,
+}
+
+impl ScanNew {
+    pub fn new(scanner: &str, rating: &str, instance_id: i32) -> ScanNew {
+        // see https://en.wikipedia.org/wiki/Academic_grading_in_the_United_States#Numerical_and_letter_grades
+        let percent: i32;
+        match rating {
+            "A+" => percent = 97,
+            "A"  => percent = 93,
+            "A-" => percent = 90,
+            "B+" => percent = 87,
+            "B"  => percent = 83,
+            "B-" => percent = 80,
+            "C+" => percent = 77,
+            "C"  => percent = 73,
+            "C-" => percent = 70,
+            "D+" => percent = 67,
+            "D"  => percent = 63,
+            "D-" => percent = 60,
+            "F"  => percent = 50,
+            _    => percent = 0
+        }
+        ScanNew {
+            scanner: scanner.to_string(),
+            rating: rating.to_string(),
+            percent,
+            instance_id,
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize)]
@@ -426,8 +526,8 @@ impl TablePage {
 #[derive(Debug, PartialEq, Eq, Serialize)]
 pub struct HtmlTable {
     pub title: String,
-    pub header: [String; 7],
-    pub body: Vec<[String; 8]>,
+    pub header: [String; 8],
+    pub body: Vec<[String; 9]>,
 }
 
 #[derive(Debug, FromForm)]
