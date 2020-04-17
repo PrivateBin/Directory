@@ -1,17 +1,17 @@
 extern crate hyper_sync_rustls;
+use super::schema::checks;
+use super::schema::instances;
+use super::schema::scans;
 use dns_lookup::lookup_host;
-use hyper::Client;
 use hyper::header::{Connection, Location, UserAgent};
 use hyper::status::{StatusClass, StatusCode};
+use hyper::Client;
 use maxminddb::geoip2::Country;
 use regex::Regex;
 use serde::Serialize;
-use std::io::{BufReader, BufRead};
+use std::io::{BufRead, BufReader};
 use std::sync::atomic::AtomicU64;
 use std::sync::RwLock;
-use super::schema::instances;
-use super::schema::checks;
-use super::schema::scans;
 
 pub const TITLE: &str = "Instance Directory";
 const OBSERVATORY_API: &str = "https://http-observatory.security.mozilla.org/api/v1/analyze?host=";
@@ -33,10 +33,7 @@ pub struct CheckNew {
 
 impl CheckNew {
     pub fn new(up: bool, instance_id: i32) -> CheckNew {
-        CheckNew {
-            up,
-            instance_id,
-        }
+        CheckNew { up, instance_id }
     }
 }
 
@@ -58,12 +55,13 @@ pub struct Instance {
 
 impl Instance {
     pub fn check_up(self: &Self) -> bool {
-        match Self::get_client().head(&self.url)
+        match Self::get_client()
+            .head(&self.url)
             .header(Self::get_user_agent())
             .send()
         {
             Ok(res) => res.status == StatusCode::Ok,
-            Err(_) => false
+            Err(_) => false,
         }
     }
 
@@ -82,29 +80,24 @@ impl Instance {
         let mut country_chars = country_id.chars();
         let country_code_points = [
             std::char::from_u32(0x1F1E6 - 65 + country_chars.next().unwrap() as u32).unwrap(),
-            std::char::from_u32(0x1F1E6 - 65 + country_chars.next().unwrap() as u32).unwrap()
+            std::char::from_u32(0x1F1E6 - 65 + country_chars.next().unwrap() as u32).unwrap(),
         ];
         country_code_points.iter().cloned().collect::<String>()
     }
 
     pub fn get_client() -> Client {
-        let mut client = Client::with_connector(
-            hyper::net::HttpsConnector::new(
-                hyper_sync_rustls::TlsClient::new()
-            )
-        );
+        let mut client = Client::with_connector(hyper::net::HttpsConnector::new(
+            hyper_sync_rustls::TlsClient::new(),
+        ));
         client.set_redirect_policy(hyper::client::RedirectPolicy::FollowNone);
         client
     }
 
-
     pub fn get_user_agent() -> UserAgent {
-        UserAgent(
-            format!(
-                "PrivateBinDirectoryBot/{} (+https://privatebin.info/directory/about)",
-                env!("CARGO_PKG_VERSION")
-            )
-        )
+        UserAgent(format!(
+            "PrivateBinDirectoryBot/{} (+https://privatebin.info/directory/about)",
+            env!("CARGO_PKG_VERSION")
+        ))
     }
 }
 
@@ -120,7 +113,14 @@ pub struct InstanceNew {
 }
 
 impl InstanceNew {
-    pub fn new(url: String, version: String, https: bool, https_redirect: bool, country_id: String, attachments: bool) -> InstanceNew {
+    pub fn new(
+        url: String,
+        version: String,
+        https: bool,
+        https_redirect: bool,
+        country_id: String,
+        attachments: bool,
+    ) -> InstanceNew {
         InstanceNew {
             url,
             version,
@@ -134,12 +134,12 @@ impl InstanceNew {
 
 pub struct InstancesCache {
     pub timeout: AtomicU64,
-    pub instances: RwLock<Vec<Instance>>
+    pub instances: RwLock<Vec<Instance>>,
 }
 
 pub struct PrivateBin {
     pub instance: InstanceNew,
-    pub scans: Vec<ScanNew>
+    pub scans: Vec<ScanNew>,
 }
 
 impl PrivateBin {
@@ -150,7 +150,7 @@ impl PrivateBin {
 
     fn validate(url: String) -> Result<PrivateBin, String> {
         if !url.starts_with("http://") && !url.starts_with("https://") {
-            return Err(format!("Not a valid URL: {}", url))
+            return Err(format!("Not a valid URL: {}", url));
         }
 
         let mut check_url = url;
@@ -169,26 +169,29 @@ impl PrivateBin {
         let (version, attachments) = Self::check_version(&check_url, &client)?;
 
         let mut scans = vec![];
-        scans.push(
-            Self::check_rating_mozilla_observatory(&check_url, &client, &hostname_regex)
-        );
+        scans.push(Self::check_rating_mozilla_observatory(
+            &check_url,
+            &client,
+            &hostname_regex,
+        ));
 
         if !version.is_empty() {
-            return Ok(
-                PrivateBin {
-                    instance: InstanceNew::new(
-                        check_url,
-                        version,
-                        https,
-                        https_redirect,
-                        country_code,
-                        attachments,
-                    ),
-                    scans
-                }
-            )
+            return Ok(PrivateBin {
+                instance: InstanceNew::new(
+                    check_url,
+                    version,
+                    https,
+                    https_redirect,
+                    country_code,
+                    attachments,
+                ),
+                scans,
+            });
         }
-        Err(format!("The URL {} doesn't seem to be a PrivateBin instance.", check_url))
+        Err(format!(
+            "The URL {} doesn't seem to be a PrivateBin instance.",
+            check_url
+        ))
     }
 
     // check country via geo IP database lookup
@@ -197,10 +200,11 @@ impl PrivateBin {
         if let Some(hostname_matches) = hostname_regex.captures(url) {
             let ips = lookup_host(&hostname_matches[1]);
             if ips.is_err() {
-                return Err(format!("Host or domain of URL {} is not supported.", url))
+                return Err(format!("Host or domain of URL {} is not supported.", url));
             }
 
-            let geoip_mmdb = std::env::var("GEOIP_MMDB").expect("environment variable GEOIP_MMDB needs to be set");
+            let geoip_mmdb = std::env::var("GEOIP_MMDB")
+                .expect("environment variable GEOIP_MMDB needs to be set");
             let reader = maxminddb::Reader::open_readfile(&geoip_mmdb);
             if reader.is_err() {
                 return Err(
@@ -208,7 +212,7 @@ impl PrivateBin {
                         "Error opening geo IP database {} (defined in environment variable GEOIP_MMDB).",
                         geoip_mmdb
                     )
-                )
+                );
             }
             let country: Country = reader.unwrap().lookup(ips.unwrap()[0]).unwrap();
             country_code = country.country.unwrap().iso_code.unwrap();
@@ -227,7 +231,8 @@ impl PrivateBin {
             https = true;
             http_url.replace_range(..5, "http");
         }
-        match client.head(&http_url)
+        match client
+            .head(&http_url)
             .header(Connection::keep_alive())
             .header(Instance::get_user_agent())
             .send()
@@ -252,12 +257,12 @@ impl PrivateBin {
                         }
                     }
                 }
-            },
+            }
             Err(_) => {
                 // only emit an error if this server is reported as HTTP,
                 // HTTPS-only webservers are allowed, though uncommon
                 if url.starts_with("http://") {
-                    return Err(format!("Web server on URL {} is not responding.", http_url))
+                    return Err(format!("Web server on URL {} is not responding.", http_url));
                 }
             }
         }
@@ -265,10 +270,15 @@ impl PrivateBin {
     }
 
     // check rating at mozilla observatory
-    pub fn check_rating_mozilla_observatory(url: &str, client: &Client, hostname_regex: &Regex) -> ScanNew {
+    pub fn check_rating_mozilla_observatory(
+        url: &str,
+        client: &Client,
+        hostname_regex: &Regex,
+    ) -> ScanNew {
         if let Some(hostname_matches) = hostname_regex.captures(url) {
             let observatory_url = format!("{}{}", OBSERVATORY_API, &hostname_matches[1]);
-            let result = client.get(&observatory_url)
+            let result = client
+                .get(&observatory_url)
                 .header(Instance::get_user_agent())
                 .send();
             if let Ok(res) = result {
@@ -277,12 +287,13 @@ impl PrivateBin {
                     let api_response: serde_json::Value = serde_json::from_reader(reader).unwrap();
                     if Some("FINISHED") == api_response["state"].as_str() {
                         if let Some(grade) = api_response["grade"].as_str() {
-                            return ScanNew::new("mozilla_observatory", grade, 0)
+                            return ScanNew::new("mozilla_observatory", grade, 0);
                         }
                     }
                     // initiate a rescan
                     if api_response.get("error") != None {
-                        client.post(&observatory_url)
+                        client
+                            .post(&observatory_url)
                             .header(Instance::get_user_agent())
                             .body("hidden=true")
                             .send()
@@ -301,7 +312,8 @@ impl PrivateBin {
         } else {
             format!("{}/robots.txt", url)
         };
-        let result = client.get(&robots_url)
+        let result = client
+            .get(&robots_url)
             .header(Connection::keep_alive())
             .header(Instance::get_user_agent())
             .send();
@@ -317,12 +329,10 @@ impl PrivateBin {
                     }
                     if rule_for_us {
                         if line_str.starts_with("Disallow: /") {
-                            return Err(
-                                format!(
-                                    "Web server on URL {} doesn't want to get added to the directory.",
-                                    url
-                                )
-                            )
+                            return Err(format!(
+                                "Web server on URL {} doesn't want to get added to the directory.",
+                                url
+                            ));
                         }
                         break;
                     }
@@ -334,21 +344,26 @@ impl PrivateBin {
 
     // check version of privatebin / zerobin JS library & attachment support
     fn check_version(url: &str, client: &Client) -> Result<(String, bool), String> {
-        let result = client.get(url)
+        let result = client
+            .get(url)
             .header(Connection::close())
             .header(Instance::get_user_agent())
             .send();
         if result.is_err() {
-            return Err(format!("Web server on URL {} is not responding.", url))
+            return Err(format!("Web server on URL {} is not responding.", url));
         }
         let res = result.unwrap();
         if res.status != StatusCode::Ok {
-            return Err(format!("Web server responded with status code {}.", res.status))
+            return Err(format!(
+                "Web server responded with status code {}.",
+                res.status
+            ));
         }
 
         let mut version = String::new();
         let mut attachments = false;
-        let version_regex = Regex::new(r"js/(privatebin|zerobin).js\?(Alpha%20)?(\d+\.\d+\.*\d*)").unwrap();
+        let version_regex =
+            Regex::new(r"js/(privatebin|zerobin).js\?(Alpha%20)?(\d+\.\d+\.*\d*)").unwrap();
         let buffer = BufReader::new(res);
         for line in buffer.lines() {
             let line_str = line.unwrap();
@@ -415,7 +430,10 @@ fn test_robots_txt() {
 fn test_zerobin() {
     let url = String::from("http://zerobin-legacy.dssr.ch/");
     let privatebin = PrivateBin::new(url.clone()).unwrap();
-    assert_eq!(privatebin.instance.url, url.trim_end_matches('/').to_string());
+    assert_eq!(
+        privatebin.instance.url,
+        url.trim_end_matches('/').to_string()
+    );
     assert_eq!(privatebin.instance.https, false);
     assert_eq!(privatebin.instance.https_redirect, false);
     assert_eq!(privatebin.instance.version, "0.20");
@@ -447,19 +465,19 @@ impl ScanNew {
         let percent: i32;
         match rating {
             "A+" => percent = 97,
-            "A"  => percent = 93,
+            "A" => percent = 93,
             "A-" => percent = 90,
             "B+" => percent = 87,
-            "B"  => percent = 83,
+            "B" => percent = 83,
             "B-" => percent = 80,
             "C+" => percent = 77,
-            "C"  => percent = 73,
+            "C" => percent = 73,
             "C-" => percent = 70,
             "D+" => percent = 67,
-            "D"  => percent = 63,
+            "D" => percent = 63,
             "D-" => percent = 60,
-            "F"  => percent = 50,
-            _    => percent = 0
+            "F" => percent = 50,
+            _ => percent = 0,
         }
         ScanNew {
             scanner: scanner.to_string(),
@@ -495,7 +513,7 @@ pub struct StatusPage {
 
 impl StatusPage {
     pub fn new(topic: String, error: Option<String>, success: Option<String>) -> StatusPage {
-        let error_string   = error.unwrap_or_default();
+        let error_string = error.unwrap_or_default();
         let success_string = success.unwrap_or_default();
         StatusPage {
             title: String::from(TITLE),
@@ -518,7 +536,7 @@ impl TablePage {
         TablePage {
             title: String::from(TITLE),
             topic,
-            tables
+            tables,
         }
     }
 }
@@ -532,5 +550,5 @@ pub struct HtmlTable {
 
 #[derive(Debug, FromForm)]
 pub struct AddForm {
-    pub url: String
+    pub url: String,
 }

@@ -65,8 +65,9 @@ check: ## Launch tests to verify that the service works as expected, requires a 
 .cargo/registry:
 	mkdir -p .cargo/registry
 
-lint: ## Run clippy on the code to come up with improvements.
-	cargo clippy --release
+lint: ## Run fmt & clippy on the code to come up with improvements.
+	cargo fmt
+	cargo clippy
 
 coverage: ## Run tarpaulin on the code to report on the tests code coverage.
 	git checkout $(DATABASE)

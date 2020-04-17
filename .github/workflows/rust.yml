@@ -41,6 +41,11 @@ jobs:
         ROCKET_DATABASES: '{directory={url="var/directory.sqlite"}}'
       with:
         command: test
+    - name: Execute all unit and integration tests and build examples
+      uses: actions-rs/cargo@v1
+      with:
+        command: fmt
+        args: -- --check
     - name: Check for common mistakes and code improvements
       uses: actions-rs/clippy-check@v1
       with:
