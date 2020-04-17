@@ -4,7 +4,7 @@
 {% block content %}
 {{ draw::error(message=error) }}
 {{ draw::success(message=success) }}
-			<p>This is a directory application intended to collect a list of federated instances of a PrivateBin, written in <a href="https://www.rust-lang.org/">Rust</a>.</p>
+			<p>This is a directory application intended to collect a list of federated instances of a PrivateBin, written in <a href="https://www.rust-lang.org/">Rust 🦀</a>.</p>
 			<h3>Removing an instance</h3>
 			<p>Instances will be removed, if they are no longer reachable from this service for more then 24 hours, checked every 15 minutes. If you run a PrivateBin instance and would like not to have it published on this site, you can disable it in one of multiple ways.</p>
 			<h4>robots.txt</h4>
