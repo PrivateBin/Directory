@@ -1,4 +1,11 @@
 /*
+ * tweaking bootstrap title
+ */
+h2 {
+	margin-top: .5rem;
+}
+
+/*
  * color-fonts display check marks and crosses using their built-in colors,
  * the trick below ensures that the selected colors get used instead
  */
@@ -10,4 +17,19 @@
 .check_failed {
 	color: transparent;
 	text-shadow:0 0 0 red;
+}
+
+/*
+ * some rows are displayed semi-transparent
+ */
+.opacity0, .opacity1 {
+	opacity: 0.3;
+}
+
+.opacity2 {
+	opacity: 0.5;
+}
+
+.opacity3 {
+	opacity: 0.7;
 }
