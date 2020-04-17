@@ -1,5 +1,11 @@
 # Change log
 
+## 0.2.6
+
+- CSS fixes
+- extending the "About" page
+- applied cargo fmt styling
+
 ## 0.2.5
 
 - added Mozilla Observatory ratings #1
