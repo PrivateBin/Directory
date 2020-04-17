@@ -4,8 +4,15 @@
 {% block content %}
 {{ draw::error(message=error) }}
 {{ draw::success(message=success) }}
-			<p>This is a directory application intended to collect a list of federated instances of a PrivateBin, written in <a href="https://www.rust-lang.org/">Rust 🦀</a>.</p>
-			<h3>Removing an instance</h3>
+			<dd>This is a directory application intended to collect a list of federated instances of a PrivateBin, written in <a href="https://www.rust-lang.org/">Rust 🦀</a>.</dd>
+			<nav>
+				<ol class="pagination">
+					<li class="page-item"><a href="#faq-remove-instance" class="page-link">Removing an instance</a></li>
+					<li class="page-item"><a href="#faq-how" class="page-link">How the instances are tested</a></li>
+					<li class="page-item"><a href="#faq-when" class="page-link">When the instances get updated</a></li>
+				</ol>
+			</nav>
+			<h3 id="faq-remove-instance">Removing an instance</h3>
 			<p>Instances will be removed, if they are no longer reachable from this service for more then 24 hours, checked every 15 minutes. If you run a PrivateBin instance and would like not to have it published on this site, you can disable it in one of multiple ways.</p>
 			<h4>robots.txt</h4>
 			<p>By default the <code>robots.txt</code> file of a PrivateBin instance disallows all search engine spiders. You can add an explicit rule to tell this service not to list your site:</p>
@@ -27,4 +34,24 @@ if ($http_user_agent ~ PrivateBinDirectoryBot ) {
 	return 403;
 }
 			</pre>
+			<h3 id="faq-how">How the instances are tested</h3>
+			<p>The columns of the lists are based on the following checks:</p>
+			<dl>
+				<dt>Version</dt>
+				<dd>PrivateBin and ZeroBin instances advertise their version as part of their main JavaScript file name.</dd>
+				<dt>HTTPS</dt>
+				<dd>A simple check if the instance URL is responding, when accessed over HTTPS.</dd>
+				<dt>HTTPS enforced</dt>
+				<dd>The instance URL is accessed over HTTP and a 30x redirection status is recieved with an HTTP <code>Location</code> header, that points to a matching HTTPS URL.</dd>
+				<dt>Observatory Rating</dt>
+				<dd>The <a href="https://github.com/mozilla/http-observatory/blob/master/httpobs/docs/scoring.md#http-observatory-scoring-methodology">score</a> of an instance as per the <a href="https://observatory.mozilla.org/">Mozilla Observatory 🐲</a>.</dd>
+				<dt>File upload</dt>
+				<dd>If the instance has the <a href="https://github.com/PrivateBin/PrivateBin/wiki/Configuration#fileupload"><code>fileupload</code></a> option enabled, you can upload attachments along side your text.</dd>
+				<dt>Uptime</dt>
+				<dd>The instances are checked for availability every 15 minutes, using an HTTP(S) HEAD request to reduce transmitted data. Only the last 100 results (25h) are kept and the percentage is calculated based on this. Basically this percentage is an indication if an instance expirienced any prolonged downtime during the last day.</dd>
+				<dt>Country</dt>
+				<dd>The IP assigned to the domain of the instance URL is checked against a GeoIP database. The precision of these databases is limited, but can serve as an indication in which country the instance is hosted. This may serve to select an instance that is close by or avoid instances located in undesirable jurisdictions.</dd>
+			</dl>
+			<h3 id="faq-when">When the instances get updated</h3>
+			<dd>The uptime checks via HTTP(S) HEAD request are performed every 15 minutes. Once a day all the other properties get re-evaluated and the list updated.</dd>
 {% endblock content %}
