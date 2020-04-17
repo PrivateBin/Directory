@@ -41,7 +41,7 @@ jobs:
         ROCKET_DATABASES: '{directory={url="var/directory.sqlite"}}'
       with:
         command: test
-    - name: Execute all unit and integration tests and build examples
+    - name: Check formatting of code and suggest improvement
       uses: actions-rs/cargo@v1
       with:
         command: fmt
