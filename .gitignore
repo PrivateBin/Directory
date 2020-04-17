@@ -2,3 +2,4 @@
 /target/
 /TODO.md
 /var/geoip-country.mmdb
+/tarpaulin-report.html

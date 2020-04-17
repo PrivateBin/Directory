@@ -1,4 +1,4 @@
-.PHONY: all release test build pack image run check lint clean help
+.PHONY: all release test build pack image run check lint coverage clean help
 
 NAME = directory
 IMAGE = privatebin/$(NAME)
@@ -67,6 +67,13 @@ check: ## Launch tests to verify that the service works as expected, requires a 
 
 lint: ## Run clippy on the code to come up with improvements.
 	cargo clippy --release
+
+coverage: ## Run tarpaulin on the code to report on the tests code coverage.
+	git checkout $(DATABASE)
+	CRON_KEY=$(ROCKET_CRON_KEY) \
+	GEOIP_MMDB="$(GEOIP_MMDB)" \
+	ROCKET_DATABASES=$(ROCKET_DATABASES) \
+	cargo tarpaulin --release -o Html
 
 clean: var/directory.sqlite ## Stops and removes the running container.
 	git checkout $(DATABASE)
