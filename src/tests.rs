@@ -112,6 +112,17 @@ fn add_and_update() {
         .expect("selecting oldest check, now deleted");
     let empty: Vec<i32> = vec![]; // need to do this, so Rust can infer the type of the empty vector
     assert_eq!(empty, oldest_check);
+
+    // prevent same instance getting inserted again with different GET parameters
+    let mut add_response = client
+        .post("/add")
+        .body("url=https://privatebin.net/?foo")
+        .header(ContentType::Form)
+        .dispatch();
+    assert_eq!(add_response.status(), Status::Ok);
+    assert!(add_response
+        .body_string()
+        .map_or(false, |s| s.contains(&"Error adding URL ")));
 }
 
 #[test]
