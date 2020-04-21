@@ -1,5 +1,9 @@
 # Change log
 
+## 0.2.7
+
+- strip URL of query as well as trailing slash, fixes #12
+
 ## 0.2.6
 
 - CSS fixes
