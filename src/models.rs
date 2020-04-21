@@ -153,14 +153,7 @@ impl PrivateBin {
             return Err(format!("Not a valid URL: {}", url));
         }
 
-        let mut check_url = url;
-        // remove trailing slash, but only for web root, not for paths:
-        // - https://example.com/ -> https://example.com
-        // - but https://example.com/path/ remains unchanged
-        if check_url.matches('/').count() == 3 {
-            check_url = check_url.trim_end_matches('/').to_string();
-        }
-
+        let check_url = Self::strip_url(url);
         let hostname_regex = Self::get_hostname_regex();
         let client = Instance::get_client();
         let (https, https_redirect, check_url) = Self::check_http(&check_url, &client)?;
@@ -248,11 +241,7 @@ impl PrivateBin {
                         if !https && https_redirect {
                             // if the given URL was HTTP, but we got redirected to https,
                             // check & store the HTTPS URL instead
-                            resulting_url = location_str;
-                            // and trim trailing slashes again, only for web root
-                            if url.matches('/').count() == 3 {
-                                resulting_url = resulting_url.trim_end_matches('/').to_string();
-                            }
+                            resulting_url = Self::strip_url(location_str);
                             https = true;
                         }
                     }
@@ -397,6 +386,21 @@ impl PrivateBin {
         Regex::new(
             r"^https?://((([[:alnum:]]|[[:alnum:]][[:alnum:]-]*[[:alnum:]])\.)*([[:alnum:]]|[[:alnum:]][[:alnum:]-]*[[:alnum:]])+)/?.*$"
         ).unwrap()
+    }
+
+    fn strip_url(url: String) -> String {
+        let mut check_url = url;
+        // remove query from URL
+        if let Some(query_start) = check_url.find('?') {
+            check_url = check_url[..query_start].to_string();
+        }
+        // remove trailing slash, but only for web root, not for paths:
+        // - https://example.com/ -> https://example.com
+        // - but https://example.com/path/ remains unchanged
+        if check_url.matches('/').count() == 3 {
+            check_url = check_url.trim_end_matches('/').to_string();
+        }
+        check_url
     }
 }
 

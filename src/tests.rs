@@ -113,7 +113,7 @@ fn add_and_update() {
     let empty: Vec<i32> = vec![]; // need to do this, so Rust can infer the type of the empty vector
     assert_eq!(empty, oldest_check);
 
-    // prevent same instance getting inserted again with different GET parameters
+    // prevent the same instance getting inserted again with a different query
     let mut add_response = client
         .post("/add")
         .body("url=https://privatebin.net/?foo")
