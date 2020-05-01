@@ -18,7 +18,7 @@ FROM scratch
 LABEL maintainer="support@privatebin.org"
 
 ENV GEOIP_MMDB /var/geoip-country.mmdb
-ENV ROCKET_DATABASES {directory={url="/var/directory.sqlite"}}
+ENV DATABASE /var/directory.sqlite
 EXPOSE 8000
 USER 1000:1000
 WORKDIR /bin

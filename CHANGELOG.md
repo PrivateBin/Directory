@@ -1,5 +1,9 @@
 # Change log
 
+## 0.3.0
+
+- support binding to IPv4 & IPv6 at the same time, using multi-threading
+
 ## 0.2.7
 
 - strip URL of query as well as trailing slash, fixes #12

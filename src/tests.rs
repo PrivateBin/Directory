@@ -8,7 +8,7 @@ use std::time::SystemTime;
 
 #[test]
 fn index() {
-    let client = Client::new(rocket()).expect("valid rocket instance");
+    let client = Client::new(rocket("::")).expect("valid rocket instance");
     let mut response = client.get("/").dispatch();
     assert_eq!(response.status(), Status::Ok);
     assert!(response
@@ -18,7 +18,7 @@ fn index() {
 
 #[test]
 fn about() {
-    let client = Client::new(rocket()).expect("valid rocket instance");
+    let client = Client::new(rocket("::")).expect("valid rocket instance");
     let mut response = client.get("/about").dispatch();
     assert_eq!(response.status(), Status::Ok);
     assert!(response
@@ -28,7 +28,7 @@ fn about() {
 
 #[test]
 fn add_get() {
-    let client = Client::new(rocket()).expect("valid rocket instance");
+    let client = Client::new(rocket("::")).expect("valid rocket instance");
     let mut response = client.get("/add").dispatch();
     assert_eq!(response.status(), Status::Ok);
     assert!(response
@@ -38,7 +38,7 @@ fn add_get() {
 
 #[test]
 fn add_post_error() {
-    let client = Client::new(rocket()).expect("valid rocket instance");
+    let client = Client::new(rocket("::")).expect("valid rocket instance");
     let mut response = client
         .post("/add")
         .body("url=example.com")
@@ -55,7 +55,7 @@ fn add_post_error() {
 fn add_and_update() {
     use super::schema::checks::dsl::*;
 
-    let rocket = rocket();
+    let rocket = rocket("::");
     let conn = super::DirectoryDbConn::get_one(&rocket).expect("database connection");
     let client = Client::new(rocket).expect("valid rocket instance");
     let now = SystemTime::now()
@@ -131,7 +131,7 @@ fn add_and_delete() {
     use super::schema::checks::dsl::*;
     use super::schema::instances;
 
-    let rocket = rocket();
+    let rocket = rocket("::");
     let conn = super::DirectoryDbConn::get_one(&rocket).expect("database connection");
     let client = Client::new(rocket).expect("valid rocket instance");
     let now = SystemTime::now()

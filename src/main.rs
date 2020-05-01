@@ -11,6 +11,7 @@ extern crate rocket;
 extern crate rocket_contrib;
 use diesel::dsl::sql_query;
 use diesel::prelude::*;
+use rocket::config::{Config, Environment, Value};
 use rocket::fairing::AdHoc;
 use rocket::request::Form;
 use rocket::response::Redirect;
@@ -465,8 +466,23 @@ fn run_db_migrations(rocket: Rocket) -> Result<Rocket, Rocket> {
     }
 }
 
-fn rocket() -> Rocket {
-    rocket::ignite()
+fn rocket(address: &str) -> Rocket {
+    use std::collections::HashMap;
+
+    let mut db_config = HashMap::new();
+    let mut databases = HashMap::new();
+    db_config.insert(
+        "url",
+        Value::from(
+            std::env::var("DATABASE").expect("environment variable DATABASE needs to be set"),
+        ),
+    );
+    databases.insert("directory", Value::from(db_config));
+    let config = Config::build(Environment::Production)
+        .address(address)
+        .extra("databases", databases)
+        .expect("valid rocket configuration");
+    rocket::custom(config)
         .mount(
             "/",
             routes![index, about, add, cron, cron_full, save, favicon],
@@ -482,7 +498,14 @@ fn rocket() -> Rocket {
 }
 
 fn main() {
-    rocket()
+    use std::thread;
+
+    let address_ipv4 = "0.0.0.0";
+    let address_ipv6 = "::";
+    thread::spawn(move || {
+        rocket(address_ipv6).launch();
+    });
+    rocket(address_ipv4)
         .attach(AdHoc::on_attach("Database Migrations", run_db_migrations))
         .launch();
 }

@@ -4,10 +4,9 @@ NAME = directory
 IMAGE = privatebin/$(NAME)
 PORT = 8000
 BUILD_IMAGE = ekidd/rust-musl-builder:nightly-2020-03-12-sqlite
-GEOIP_MMDB = var/geoip-country.mmdb
+CRON_KEY = $(shell openssl rand -hex 32)
 DATABASE = var/directory.sqlite
-ROCKET_DATABASES = "{directory={url=\"$(DATABASE)\"}}"
-ROCKET_CRON_KEY = $(shell openssl rand -hex 32)
+GEOIP_MMDB = var/geoip-country.mmdb
 
 all: test build image run check clean ## Equivalent to "make test build image run check clean" (default).
 
@@ -16,9 +15,9 @@ release: test build pack license image run check clean ## Equivalent to "make te
 test: .cargo/registry var/directory.sqlite ## Build and run the unit tests.
 	git checkout $(DATABASE)
 	docker run --rm -t --init \
-		-e CRON_KEY=$(ROCKET_CRON_KEY) \
+		-e CRON_KEY=$(CRON_KEY) \
 		-e GEOIP_MMDB="$(GEOIP_MMDB)" \
-		-e ROCKET_DATABASES=$(ROCKET_DATABASES) \
+		-e DATABASE=$(DATABASE) \
 		-v "$(CURDIR)":/home/rust/src \
 		-v "$(CURDIR)"/.cargo/registry:/home/rust/.cargo/registry \
 		$(BUILD_IMAGE) \
@@ -45,12 +44,12 @@ license: ## Generates the LICENSE.md file
 image: ## Build the container image.
 	docker build --build-arg PORT=$(PORT) \
 		--build-arg GEOIP_MMDB="/$(GEOIP_MMDB)" \
-		--build-arg ROCKET_DATABASES='{directory={url="/'$(DATABASE)'"}}' \
+		--build-arg DATABASE="/$(DATABASE)" \
 		-t $(IMAGE) .
 
 run: ## Run a container from the image.
 	docker run -d --init --name $(NAME) -p=$(PORT):$(PORT) \
-		-e CRON_KEY=$(ROCKET_CRON_KEY) \
+		-e CRON_KEY=$(CRON_KEY) \
 		--read-only -v "$(CURDIR)/var":/var --restart=always $(IMAGE)
 
 check: ## Launch tests to verify that the service works as expected, requires a running container.
@@ -71,9 +70,9 @@ lint: ## Run fmt & clippy on the code to come up with improvements.
 
 coverage: ## Run tarpaulin on the code to report on the tests code coverage.
 	git checkout $(DATABASE)
-	CRON_KEY=$(ROCKET_CRON_KEY) \
+	CRON_KEY=$(CRON_KEY) \
 	GEOIP_MMDB="$(GEOIP_MMDB)" \
-	ROCKET_DATABASES=$(ROCKET_DATABASES) \
+	DATABASE=$(DATABASE) \
 	cargo tarpaulin --release -o Html
 
 clean: var/directory.sqlite ## Stops and removes the running container.
