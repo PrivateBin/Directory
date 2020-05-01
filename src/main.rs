@@ -466,7 +466,7 @@ fn run_db_migrations(rocket: Rocket) -> Result<Rocket, Rocket> {
     }
 }
 
-fn rocket(address: &str) -> Rocket {
+fn configuration(address: &str, workers: u16, port: u16) -> Config {
     use std::collections::HashMap;
 
     let mut db_config = HashMap::new();
@@ -478,23 +478,40 @@ fn rocket(address: &str) -> Rocket {
         ),
     );
     databases.insert("directory", Value::from(db_config));
-    let config = Config::build(Environment::Production)
+
+    Config::build(Environment::Production)
         .address(address)
+        .port(port)
+        .workers(workers)
         .extra("databases", databases)
-        .expect("valid rocket configuration");
-    rocket::custom(config)
-        .mount(
-            "/",
-            routes![index, about, add, cron, cron_full, save, favicon],
-        )
-        .mount("/img", StaticFiles::from("/img"))
-        .mount("/css", StaticFiles::from("/css"))
+        .expect("valid rocket configuration")
+}
+
+fn shuttle() -> Rocket {
+    // cron with only one worker and different port
+    rocket::custom(configuration("::", 1, 8001))
         .attach(DirectoryDbConn::fairing())
         .attach(Template::fairing())
         .manage(InstancesCache {
             timeout: AtomicU64::new(0),
             instances: RwLock::new(vec![]),
         })
+        .mount("/", routes![cron, cron_full])
+}
+
+fn rocket(address: &str) -> Rocket {
+    extern crate num_cpus;
+
+    rocket::custom(configuration(address, num_cpus::get() as u16, 8000))
+        .attach(DirectoryDbConn::fairing())
+        .attach(Template::fairing())
+        .manage(InstancesCache {
+            timeout: AtomicU64::new(0),
+            instances: RwLock::new(vec![]),
+        })
+        .mount("/", routes![index, about, add, save, favicon])
+        .mount("/img", StaticFiles::from("/img"))
+        .mount("/css", StaticFiles::from("/css"))
 }
 
 fn main() {
@@ -502,6 +519,9 @@ fn main() {
 
     let address_ipv4 = "0.0.0.0";
     let address_ipv6 = "::";
+    thread::spawn(move || {
+        shuttle().launch();
+    });
     thread::spawn(move || {
         rocket(address_ipv6).launch();
     });

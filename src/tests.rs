@@ -1,4 +1,4 @@
-use super::rocket;
+use super::{rocket, shuttle};
 use diesel::prelude::*;
 use rocket::http::ContentType;
 use rocket::http::Status;
@@ -97,8 +97,9 @@ fn add_and_update() {
         .expect("selecting oldest check");
     assert_eq!(vec![1], oldest_check);
 
+    let cron_client = Client::new(shuttle()).expect("valid rocket instance");
     let key = std::env::var("CRON_KEY").expect("environment variable CRON_KEY needs to be set");
-    let mut response = client
+    let mut response = cron_client
         .get(format!("/update/{}", key.replace("/", "%2F")))
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -163,8 +164,9 @@ fn add_and_delete() {
     conn.execute(&query)
         .expect("inserting test checks for instance ID 1");
 
+    let cron_client = Client::new(shuttle()).expect("valid rocket instance");
     let key = std::env::var("CRON_KEY").expect("environment variable CRON_KEY needs to be set");
-    let mut response = client
+    let mut response = cron_client
         .get(format!("/update/{}/full", key.replace("/", "%2F")))
         .dispatch();
     assert_eq!(response.status(), Status::Ok);

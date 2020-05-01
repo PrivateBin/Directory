@@ -3,6 +3,7 @@
 ## 0.3.0
 
 - support binding to IPv4 & IPv6 at the same time, using multi-threading
+- separate cron service off to port 8001
 
 ## 0.2.7
 

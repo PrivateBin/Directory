@@ -19,7 +19,7 @@ LABEL maintainer="support@privatebin.org"
 
 ENV GEOIP_MMDB /var/geoip-country.mmdb
 ENV DATABASE /var/directory.sqlite
-EXPOSE 8000
+EXPOSE 8000 8001
 USER 1000:1000
 WORKDIR /bin
 VOLUME /var

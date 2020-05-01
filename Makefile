@@ -48,7 +48,8 @@ image: ## Build the container image.
 		-t $(IMAGE) .
 
 run: ## Run a container from the image.
-	docker run -d --init --name $(NAME) -p=$(PORT):$(PORT) \
+	docker run -d --init --name $(NAME) \
+		-p=$(PORT):$(PORT) -p=8001:8001 \
 		-e CRON_KEY=$(CRON_KEY) \
 		--read-only -v "$(CURDIR)/var":/var --restart=always $(IMAGE)
 
@@ -58,7 +59,7 @@ check: ## Launch tests to verify that the service works as expected, requires a 
 	curl -s http://localhost:$(PORT)/ | grep "Welcome!"
 	curl -s http://localhost:$(PORT)/about | grep "About"
 	curl -s http://localhost:$(PORT)/add | grep "Add instance"
-	curl -s http://localhost:$(PORT)/update/foo | grep "Wrong key"
+	curl -s http://localhost:8001/update/foo | grep "Wrong key"
 	@echo "Checks: \033[92mOK\033[0m"
 
 .cargo/registry:
@@ -67,6 +68,7 @@ check: ## Launch tests to verify that the service works as expected, requires a 
 lint: ## Run fmt & clippy on the code to come up with improvements.
 	cargo fmt
 	cargo clippy
+	git checkout $(DATABASE)
 
 coverage: ## Run tarpaulin on the code to report on the tests code coverage.
 	git checkout $(DATABASE)
