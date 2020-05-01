@@ -203,7 +203,7 @@ fn cron(key: String, conn: DirectoryDbConn) -> String {
                 instance_checks.push(CheckNew::new(instance.check_up(), instance.id));
                 writeln!(&mut result, "Instance {} checked", instance.url.clone()).unwrap();
             }
-        
+
             // store checks
             match diesel::insert_into(checks)
                 .values(&instance_checks)
@@ -211,7 +211,7 @@ fn cron(key: String, conn: DirectoryDbConn) -> String {
             {
                 Ok(_) => {
                     result.push_str("stored uptime checks\n");
-        
+
                     // delete checks older then:
                     // now - ((CHECKS_TO_STORE - 1) * CRON_INTERVAL)
                     let cutoff = SystemTime::now()
@@ -227,7 +227,8 @@ fn cron(key: String, conn: DirectoryDbConn) -> String {
                         .execute(&*conn)
                     {
                         Ok(_) => {
-                            writeln!(&mut result, "cleaned up checks stored before {}", cutoff).unwrap();
+                            writeln!(&mut result, "cleaned up checks stored before {}", cutoff)
+                                .unwrap();
                         }
                         Err(e) => {
                             writeln!(
@@ -248,7 +249,7 @@ fn cron(key: String, conn: DirectoryDbConn) -> String {
                     .unwrap();
                 }
             }
-        },
+        }
         Err(e) => {
             writeln!(
                 &mut result,
@@ -277,7 +278,7 @@ fn cron_full(key: String, conn: DirectoryDbConn) -> String {
                     Ok(privatebin) => {
                         // record instance being up
                         instance_checks.push(CheckNew::new(true, instance.id));
-        
+
                         // compare result with cache
                         let instance_options = [
                             (
@@ -365,14 +366,16 @@ fn cron_full(key: String, conn: DirectoryDbConn) -> String {
                         .unwrap();
                     }
                 }
-        
+
                 // retrieve latest scan
-                let mut scan = models::PrivateBin::get_rating_mozilla_observatory(&instance.url.clone());
+                let mut scan =
+                    models::PrivateBin::get_rating_mozilla_observatory(&instance.url.clone());
                 // if missing, wait for the scan to conclude and poll again
                 if scan.rating == "-" {
                     use std::{thread, time};
                     thread::sleep(time::Duration::from_secs(3));
-                    scan = models::PrivateBin::get_rating_mozilla_observatory(&instance.url.clone());
+                    scan =
+                        models::PrivateBin::get_rating_mozilla_observatory(&instance.url.clone());
                 }
                 if scan.rating != "-" && scan.rating != instance.rating_mozilla_observatory {
                     match diesel::update(
@@ -404,7 +407,7 @@ fn cron_full(key: String, conn: DirectoryDbConn) -> String {
                     }
                 }
             }
-        
+
             // delete checks and instances that failed too many times
             match sql_query(&format!(
                 "DELETE FROM instances \
@@ -429,7 +432,7 @@ fn cron_full(key: String, conn: DirectoryDbConn) -> String {
                     .unwrap();
                 }
             }
-        },
+        }
         Err(e) => {
             writeln!(
                 &mut result,
@@ -464,7 +467,7 @@ fn run_db_migrations(rocket: Rocket) -> Result<Rocket, Rocket> {
 
 fn get_instances() -> diesel::query_builder::SqlQuery {
     sql_query(
-            "SELECT instances.id, url, version, https, https_redirect, attachments, \
+        "SELECT instances.id, url, version, https, https_redirect, attachments, \
             country_id, (100 * SUM(checks.up) / COUNT(checks.up)) AS uptime, \
             mozilla_observatory.rating AS rating_mozilla_observatory \
             FROM instances \
@@ -477,7 +480,7 @@ fn get_instances() -> diesel::query_builder::SqlQuery {
             ORDER BY version DESC, https DESC, https_redirect DESC, \
             mozilla_observatory.percent DESC, attachments DESC, uptime DESC, url ASC \
             LIMIT 100",
-        )
+    )
 }
 
 fn configuration(workers: u16, port: u16) -> Config {
