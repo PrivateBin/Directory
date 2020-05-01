@@ -18,10 +18,7 @@ The image supports the use of the following environment variables:
   use this app to hammer the listed instances. Any string works, for example
   one generated using `openssl rand -hex 32`
 - `GEOIP_MMDB`: path to the GeoIP database, in MaxMind format
-- `ROCKET_DATABASES`: [database dict](https://api.rocket.rs/v0.4/rocket_contrib/databases/index.html#environment-variables)
-  for Diesel SQLite library integration into Rocket
-- `ROCKET_SECRET_KEY`: Needed in production environments, used to protect
-  private cookies, generate this using `openssl rand -base64 32`
+- `DATABASE`: path to SQLite database file
 
 ## Volumes
 
@@ -30,7 +27,8 @@ The image supports the use of the following environment variables:
 
 ## Network ports
 
-- `8000/tcp`: HTTP
+- `8000/tcp`: HTTP of web service
+- `8001/tcp`: HTTP of cron service
 
 ## Usage
 
