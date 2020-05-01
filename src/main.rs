@@ -44,23 +44,7 @@ fn index(conn: DirectoryDbConn, cache: State<InstancesCache>) -> Template {
         .unwrap()
         .as_secs();
     if now >= cache.timeout.load(Ordering::Relaxed) {
-        let instances_result = sql_query(
-            "SELECT instances.id, url, version, https, https_redirect, attachments, \
-            country_id, (100 * SUM(checks.up) / COUNT(checks.up)) AS uptime, \
-            mozilla_observatory.rating AS rating_mozilla_observatory \
-            FROM instances \
-            JOIN checks ON instances.id = checks.instance_id \
-            JOIN ( \
-                SELECT rating, percent, instance_id \
-                FROM scans WHERE scanner = \"mozilla_observatory\" \
-            ) AS mozilla_observatory ON instances.id = mozilla_observatory.instance_id \
-            GROUP BY instances.id \
-            ORDER BY version DESC, https DESC, https_redirect DESC, \
-            mozilla_observatory.percent DESC, attachments DESC, uptime DESC, url ASC \
-            LIMIT 100",
-        )
-        .load::<Instance>(&*conn);
-        match instances_result {
+        match get_instances().load::<Instance>(&*conn) {
             // flush cache
             Ok(instances_live) => {
                 cache.timeout.store(now + CRON_INTERVAL, Ordering::Relaxed);
@@ -206,140 +190,207 @@ fn save(conn: DirectoryDbConn, form: Form<AddForm>, cache: State<InstancesCache>
 }
 
 #[get("/update/<key>")]
-fn cron(key: String, conn: DirectoryDbConn, cache: State<InstancesCache>) -> String {
+fn cron(key: String, conn: DirectoryDbConn) -> String {
     if key != std::env::var("CRON_KEY").expect("environment variable CRON_KEY needs to be set") {
         return String::from("Wrong key, no update was triggered.\n");
     }
-
     let mut result = String::new();
-    let mut instance_checks = vec![];
-    for instance in &*cache.instances.read().unwrap() {
-        // record instance being up or down
-        instance_checks.push(CheckNew::new(instance.check_up(), instance.id));
-        writeln!(&mut result, "Instance {} checked", instance.url.clone()).unwrap();
-    }
-
-    // store checks
-    match diesel::insert_into(checks)
-        .values(&instance_checks)
-        .execute(&*conn)
-    {
-        Ok(_) => {
-            result.push_str("stored uptime checks\n");
-
-            // delete checks older then:
-            // now - ((CHECKS_TO_STORE - 1) * CRON_INTERVAL)
-            let cutoff = SystemTime::now()
-                .duration_since(SystemTime::UNIX_EPOCH)
-                .unwrap()
-                .as_secs()
-                - ((CHECKS_TO_STORE - 1) * CRON_INTERVAL);
-            match diesel::delete(checks)
-                .filter(updated.lt(diesel::dsl::sql(&format!(
-                    "datetime({}, 'unixepoch')",
-                    cutoff
-                ))))
+    match get_instances().load::<Instance>(&*conn) {
+        Ok(instance_list) => {
+            let mut instance_checks = vec![];
+            for instance in instance_list {
+                // record instance being up or down
+                instance_checks.push(CheckNew::new(instance.check_up(), instance.id));
+                writeln!(&mut result, "Instance {} checked", instance.url.clone()).unwrap();
+            }
+        
+            // store checks
+            match diesel::insert_into(checks)
+                .values(&instance_checks)
                 .execute(&*conn)
             {
                 Ok(_) => {
-                    writeln!(&mut result, "cleaned up checks stored before {}", cutoff).unwrap();
+                    result.push_str("stored uptime checks\n");
+        
+                    // delete checks older then:
+                    // now - ((CHECKS_TO_STORE - 1) * CRON_INTERVAL)
+                    let cutoff = SystemTime::now()
+                        .duration_since(SystemTime::UNIX_EPOCH)
+                        .unwrap()
+                        .as_secs()
+                        - ((CHECKS_TO_STORE - 1) * CRON_INTERVAL);
+                    match diesel::delete(checks)
+                        .filter(updated.lt(diesel::dsl::sql(&format!(
+                            "datetime({}, 'unixepoch')",
+                            cutoff
+                        ))))
+                        .execute(&*conn)
+                    {
+                        Ok(_) => {
+                            writeln!(&mut result, "cleaned up checks stored before {}", cutoff).unwrap();
+                        }
+                        Err(e) => {
+                            writeln!(
+                                &mut result,
+                                "failed to cleanup checks stored before {}, with error: {}",
+                                cutoff, e
+                            )
+                            .unwrap();
+                        }
+                    }
                 }
                 Err(e) => {
                     writeln!(
                         &mut result,
-                        "failed to cleanup checks stored before {}, with error: {}",
-                        cutoff, e
+                        "failed to store uptime checks with error: {}",
+                        e
                     )
                     .unwrap();
                 }
             }
-        }
+        },
         Err(e) => {
             writeln!(
                 &mut result,
-                "failed to store uptime checks with error: {}",
+                "failed retrieving instances from database with error: {}",
                 e
             )
             .unwrap();
         }
     }
-
     result
 }
 
 #[get("/update/<key>/full")]
-fn cron_full(key: String, conn: DirectoryDbConn, cache: State<InstancesCache>) -> String {
+fn cron_full(key: String, conn: DirectoryDbConn) -> String {
     if key != std::env::var("CRON_KEY").expect("environment variable CRON_KEY needs to be set") {
         return String::from("Wrong key, no update was triggered.\n");
     }
 
     let mut result = String::new();
-    let mut instances_updated = false;
-    let mut instance_checks = vec![];
-    for instance in &*cache.instances.read().unwrap() {
-        let privatebin = PrivateBin::new(instance.url.clone());
-        match privatebin {
-            Ok(privatebin) => {
-                // record instance being up
-                instance_checks.push(CheckNew::new(true, instance.id));
-
-                // compare result with cache
-                let instance_options = [
-                    (
-                        "version",
-                        instance.version.clone(),
-                        privatebin.instance.version.clone(),
-                    ),
-                    (
-                        "https",
-                        format!("{:?}", instance.https.clone()),
-                        format!("{:?}", privatebin.instance.https.clone()),
-                    ),
-                    (
-                        "https_redirect",
-                        format!("{:?}", instance.https_redirect.clone()),
-                        format!("{:?}", privatebin.instance.https_redirect.clone()),
-                    ),
-                    (
-                        "attachments",
-                        format!("{:?}", instance.attachments.clone()),
-                        format!("{:?}", privatebin.instance.attachments.clone()),
-                    ),
-                    (
-                        "country_id",
-                        instance.country_id.clone(),
-                        privatebin.instance.country_id.clone(),
-                    ),
-                ];
-                if instance_options.iter().any(|x| x.1 != x.2) {
-                    match diesel::update(instances.filter(id.eq(instance.id)))
-                        .set((
-                            version.eq(privatebin.instance.version),
-                            https.eq(privatebin.instance.https),
-                            https_redirect.eq(privatebin.instance.https_redirect),
-                            attachments.eq(privatebin.instance.attachments),
-                            country_id.eq(privatebin.instance.country_id),
-                        ))
-                        .execute(&*conn)
-                    {
-                        Ok(_) => {
-                            instances_updated = true;
-                            writeln!(
-                                &mut result,
-                                "Instance {} checked and updated:",
-                                instance.url.clone()
-                            )
-                            .unwrap();
-                            for (label, old, new) in instance_options.iter() {
-                                if old != new {
+    match get_instances().load::<Instance>(&*conn) {
+        Ok(instance_list) => {
+            let mut instance_checks = vec![];
+            for instance in instance_list {
+                let privatebin = PrivateBin::new(instance.url.clone());
+                match privatebin {
+                    Ok(privatebin) => {
+                        // record instance being up
+                        instance_checks.push(CheckNew::new(true, instance.id));
+        
+                        // compare result with cache
+                        let instance_options = [
+                            (
+                                "version",
+                                instance.version.clone(),
+                                privatebin.instance.version.clone(),
+                            ),
+                            (
+                                "https",
+                                format!("{:?}", instance.https.clone()),
+                                format!("{:?}", privatebin.instance.https.clone()),
+                            ),
+                            (
+                                "https_redirect",
+                                format!("{:?}", instance.https_redirect.clone()),
+                                format!("{:?}", privatebin.instance.https_redirect.clone()),
+                            ),
+                            (
+                                "attachments",
+                                format!("{:?}", instance.attachments.clone()),
+                                format!("{:?}", privatebin.instance.attachments.clone()),
+                            ),
+                            (
+                                "country_id",
+                                instance.country_id.clone(),
+                                privatebin.instance.country_id.clone(),
+                            ),
+                        ];
+                        if instance_options.iter().any(|x| x.1 != x.2) {
+                            match diesel::update(instances.filter(id.eq(instance.id)))
+                                .set((
+                                    version.eq(privatebin.instance.version),
+                                    https.eq(privatebin.instance.https),
+                                    https_redirect.eq(privatebin.instance.https_redirect),
+                                    attachments.eq(privatebin.instance.attachments),
+                                    country_id.eq(privatebin.instance.country_id),
+                                ))
+                                .execute(&*conn)
+                            {
+                                Ok(_) => {
                                     writeln!(
                                         &mut result,
-                                        "    {} was {}, updated to {}",
-                                        label, old, new
+                                        "Instance {} checked and updated:",
+                                        instance.url.clone()
+                                    )
+                                    .unwrap();
+                                    for (label, old, new) in instance_options.iter() {
+                                        if old != new {
+                                            writeln!(
+                                                &mut result,
+                                                "    {} was {}, updated to {}",
+                                                label, old, new
+                                            )
+                                            .unwrap();
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    writeln!(
+                                        &mut result,
+                                        "Instance {} failed to be updated with error: {:?}",
+                                        instance.url.clone(),
+                                        e
                                     )
                                     .unwrap();
                                 }
                             }
+                        } else {
+                            writeln!(
+                                &mut result,
+                                "Instance {} checked, no update required",
+                                instance.url.clone()
+                            )
+                            .unwrap();
+                        }
+                    }
+                    Err(e) => {
+                        instance_checks.push(CheckNew::new(false, instance.id));
+                        writeln!(
+                            &mut result,
+                            "Instance {} failed to be checked with error: {}",
+                            instance.url.clone(),
+                            e
+                        )
+                        .unwrap();
+                    }
+                }
+        
+                // retrieve latest scan
+                let mut scan = models::PrivateBin::get_rating_mozilla_observatory(&instance.url.clone());
+                // if missing, wait for the scan to conclude and poll again
+                if scan.rating == "-" {
+                    use std::{thread, time};
+                    thread::sleep(time::Duration::from_secs(3));
+                    scan = models::PrivateBin::get_rating_mozilla_observatory(&instance.url.clone());
+                }
+                if scan.rating != "-" && scan.rating != instance.rating_mozilla_observatory {
+                    match diesel::update(
+                        scans
+                            .filter(schema::scans::dsl::instance_id.eq(instance.id))
+                            .filter(scanner.eq(scan.scanner)),
+                    )
+                    .set((rating.eq(scan.rating.clone()), percent.eq(scan.percent)))
+                    .execute(&*conn)
+                    {
+                        Ok(_) => {
+                            writeln!(
+                                &mut result,
+                                "Instance {} rating updated to: {}",
+                                instance.url.clone(),
+                                scan.rating
+                            )
+                            .unwrap();
                         }
                         Err(e) => {
                             writeln!(
@@ -351,98 +402,43 @@ fn cron_full(key: String, conn: DirectoryDbConn, cache: State<InstancesCache>) -
                             .unwrap();
                         }
                     }
-                } else {
-                    writeln!(
-                        &mut result,
-                        "Instance {} checked, no update required",
-                        instance.url.clone()
-                    )
-                    .unwrap();
                 }
             }
-            Err(e) => {
-                instance_checks.push(CheckNew::new(false, instance.id));
-                writeln!(
-                    &mut result,
-                    "Instance {} failed to be checked with error: {}",
-                    instance.url.clone(),
-                    e
-                )
-                .unwrap();
-            }
-        }
-
-        // retrieve latest scan
-        let mut scan = models::PrivateBin::get_rating_mozilla_observatory(&instance.url.clone());
-        // if missing, wait for the scan to conclude and poll again
-        if scan.rating == "-" {
-            use std::{thread, time};
-            thread::sleep(time::Duration::from_secs(3));
-            scan = models::PrivateBin::get_rating_mozilla_observatory(&instance.url.clone());
-        }
-        if scan.rating != "-" && scan.rating != instance.rating_mozilla_observatory {
-            match diesel::update(
-                scans
-                    .filter(schema::scans::dsl::instance_id.eq(instance.id))
-                    .filter(scanner.eq(scan.scanner)),
-            )
-            .set((rating.eq(scan.rating.clone()), percent.eq(scan.percent)))
+        
+            // delete checks and instances that failed too many times
+            match sql_query(&format!(
+                "DELETE FROM instances \
+                WHERE id in ( \
+                    SELECT instance_id \
+                    FROM checks \
+                    WHERE up = 0 \
+                    GROUP BY instance_id \
+                    HAVING COUNT(up) >= {} \
+                );",
+                MAX_FAILURES
+            ))
             .execute(&*conn)
             {
-                Ok(_) => {
-                    instances_updated = true;
-                    writeln!(
-                        &mut result,
-                        "Instance {} rating updated to: {}",
-                        instance.url.clone(),
-                        scan.rating
-                    )
-                    .unwrap();
-                }
+                Ok(_) => result.push_str("removed instances that failed too many times\n"),
                 Err(e) => {
                     writeln!(
                         &mut result,
-                        "Instance {} failed to be updated with error: {:?}",
-                        instance.url.clone(),
+                        "error removing instances failing too many times: {}",
                         e
                     )
                     .unwrap();
                 }
             }
-        }
-    }
-
-    // delete checks and instances that failed too many times
-    match sql_query(&format!(
-        "DELETE FROM instances \
-        WHERE id in ( \
-            SELECT instance_id \
-            FROM checks \
-            WHERE up = 0 \
-            GROUP BY instance_id \
-            HAVING COUNT(up) >= {} \
-        );",
-        MAX_FAILURES
-    ))
-    .execute(&*conn)
-    {
-        Ok(_) => result.push_str("removed instances that failed too many times\n"),
+        },
         Err(e) => {
             writeln!(
                 &mut result,
-                "error removing instances failing too many times: {}",
+                "failed retrieving instances from database with error: {}",
                 e
             )
             .unwrap();
         }
     }
-
-    // if any entry had to be updated, invalidate the cache
-    if instances_updated {
-        cache.timeout.store(0, Ordering::Relaxed);
-        result.push_str("cache flushed\n");
-    }
-
     result
 }
 
@@ -466,7 +462,25 @@ fn run_db_migrations(rocket: Rocket) -> Result<Rocket, Rocket> {
     }
 }
 
-fn configuration(address: &str, workers: u16, port: u16) -> Config {
+fn get_instances() -> diesel::query_builder::SqlQuery {
+    sql_query(
+            "SELECT instances.id, url, version, https, https_redirect, attachments, \
+            country_id, (100 * SUM(checks.up) / COUNT(checks.up)) AS uptime, \
+            mozilla_observatory.rating AS rating_mozilla_observatory \
+            FROM instances \
+            JOIN checks ON instances.id = checks.instance_id \
+            JOIN ( \
+                SELECT rating, percent, instance_id \
+                FROM scans WHERE scanner = \"mozilla_observatory\" \
+            ) AS mozilla_observatory ON instances.id = mozilla_observatory.instance_id \
+            GROUP BY instances.id \
+            ORDER BY version DESC, https DESC, https_redirect DESC, \
+            mozilla_observatory.percent DESC, attachments DESC, uptime DESC, url ASC \
+            LIMIT 100",
+        )
+}
+
+fn configuration(workers: u16, port: u16) -> Config {
     use std::collections::HashMap;
 
     let mut db_config = HashMap::new();
@@ -480,7 +494,7 @@ fn configuration(address: &str, workers: u16, port: u16) -> Config {
     databases.insert("directory", Value::from(db_config));
 
     Config::build(Environment::Production)
-        .address(address)
+        .address("::")
         .port(port)
         .workers(workers)
         .extra("databases", databases)
@@ -488,21 +502,16 @@ fn configuration(address: &str, workers: u16, port: u16) -> Config {
 }
 
 fn shuttle() -> Rocket {
-    // cron with only one worker and different port
-    rocket::custom(configuration("::", 1, 8001))
+    // cron with only one worker, no cache and different port
+    rocket::custom(configuration(1, 8001))
         .attach(DirectoryDbConn::fairing())
-        .attach(Template::fairing())
-        .manage(InstancesCache {
-            timeout: AtomicU64::new(0),
-            instances: RwLock::new(vec![]),
-        })
         .mount("/", routes![cron, cron_full])
 }
 
-fn rocket(address: &str) -> Rocket {
+fn rocket() -> Rocket {
     extern crate num_cpus;
 
-    rocket::custom(configuration(address, num_cpus::get() as u16, 8000))
+    rocket::custom(configuration((num_cpus::get() * 2) as u16, 8000))
         .attach(DirectoryDbConn::fairing())
         .attach(Template::fairing())
         .manage(InstancesCache {
@@ -517,15 +526,10 @@ fn rocket(address: &str) -> Rocket {
 fn main() {
     use std::thread;
 
-    let address_ipv4 = "0.0.0.0";
-    let address_ipv6 = "::";
     thread::spawn(move || {
         shuttle().launch();
     });
-    thread::spawn(move || {
-        rocket(address_ipv6).launch();
-    });
-    rocket(address_ipv4)
+    rocket()
         .attach(AdHoc::on_attach("Database Migrations", run_db_migrations))
         .launch();
 }

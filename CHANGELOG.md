@@ -1,5 +1,9 @@
 # Change log
 
+## 0.3.1
+
+- dual-bind is unneccessary, binding to all IPv6 interfaces to supports IPv4
+
 ## 0.3.0
 
 - support binding to IPv4 & IPv6 at the same time, using multi-threading
