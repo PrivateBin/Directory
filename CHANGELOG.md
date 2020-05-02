@@ -1,5 +1,9 @@
 # Change log
 
+## 0.3.2
+
+- multiplexing cron checks into threads
+
 ## 0.3.1
 
 - dual-bind is unneccessary, binding to all IPv6 interfaces to supports IPv4

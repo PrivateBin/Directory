@@ -22,6 +22,7 @@ use rocket_contrib::templates::Template;
 use std::fmt::Write;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::RwLock;
+use std::thread;
 use std::time::SystemTime;
 
 pub mod schema;
@@ -198,11 +199,23 @@ fn cron(key: String, conn: DirectoryDbConn) -> String {
     match get_instances().load::<Instance>(&*conn) {
         Ok(instance_list) => {
             let mut instance_checks = vec![];
-            for instance in instance_list {
-                // record instance being up or down
-                instance_checks.push(CheckNew::new(instance.check_up(), instance.id));
-                writeln!(&mut result, "Instance {} checked", instance.url.clone()).unwrap();
-            }
+            let handles = instance_list
+                .into_iter()
+                .map(|instance| {
+                    thread::spawn(move || {
+                        // measure instance being up or down
+                        (
+                            instance.url.clone(),
+                            CheckNew::new(instance.check_up(), instance.id),
+                        )
+                    })
+                })
+                .collect::<Vec<_>>();
+            handles.into_iter().for_each(|h| {
+                let (instance_url, instance_check) = h.join().unwrap();
+                instance_checks.push(instance_check);
+                writeln!(&mut result, "Instance {} checked", instance_url).unwrap();
+            });
 
             // store checks
             match diesel::insert_into(checks)
@@ -272,111 +285,154 @@ fn cron_full(key: String, conn: DirectoryDbConn) -> String {
     match get_instances().load::<Instance>(&*conn) {
         Ok(instance_list) => {
             let mut instance_checks = vec![];
-            for instance in instance_list {
-                let privatebin = PrivateBin::new(instance.url.clone());
-                match privatebin {
-                    Ok(privatebin) => {
-                        // record instance being up
-                        instance_checks.push(CheckNew::new(true, instance.id));
-
-                        // compare result with cache
-                        let instance_options = [
-                            (
-                                "version",
-                                instance.version.clone(),
-                                privatebin.instance.version.clone(),
-                            ),
+            let handles = instance_list
+                .into_iter()
+                .map(|instance| {
+                    thread::spawn(move || {
+                        let mut result = String::new();
+                        let mut instance_up = false;
+                        let mut instance_changed = false;
+                        let mut instance_options = [
+                            ("version", instance.version.clone(), String::new()),
                             (
                                 "https",
                                 format!("{:?}", instance.https.clone()),
-                                format!("{:?}", privatebin.instance.https.clone()),
+                                String::new(),
                             ),
                             (
                                 "https_redirect",
                                 format!("{:?}", instance.https_redirect.clone()),
-                                format!("{:?}", privatebin.instance.https_redirect.clone()),
+                                String::new(),
                             ),
                             (
                                 "attachments",
                                 format!("{:?}", instance.attachments.clone()),
-                                format!("{:?}", privatebin.instance.attachments.clone()),
+                                String::new(),
                             ),
-                            (
-                                "country_id",
-                                instance.country_id.clone(),
-                                privatebin.instance.country_id.clone(),
-                            ),
+                            ("country_id", instance.country_id.clone(), String::new()),
                         ];
-                        if instance_options.iter().any(|x| x.1 != x.2) {
-                            match diesel::update(instances.filter(id.eq(instance.id)))
-                                .set((
-                                    version.eq(privatebin.instance.version),
-                                    https.eq(privatebin.instance.https),
-                                    https_redirect.eq(privatebin.instance.https_redirect),
-                                    attachments.eq(privatebin.instance.attachments),
-                                    country_id.eq(privatebin.instance.country_id),
-                                ))
-                                .execute(&*conn)
-                            {
-                                Ok(_) => {
+                        let new_instance: InstanceNew;
+                        match PrivateBin::new(instance.url.clone()) {
+                            Ok(privatebin) => {
+                                instance_up = true;
+                                // compare result with cache
+                                instance_options[0].2 = privatebin.instance.version.clone();
+                                instance_options[1].2 =
+                                    format!("{:?}", privatebin.instance.https.clone());
+                                instance_options[2].2 =
+                                    format!("{:?}", privatebin.instance.https_redirect.clone());
+                                instance_options[3].2 =
+                                    format!("{:?}", privatebin.instance.attachments.clone());
+                                instance_options[4].2 = privatebin.instance.country_id.clone();
+                                instance_changed = instance_options.iter().any(|x| x.1 != x.2);
+                                new_instance = privatebin.instance;
+                                if !instance_changed {
                                     writeln!(
                                         &mut result,
-                                        "Instance {} checked and updated:",
-                                        instance.url.clone()
-                                    )
-                                    .unwrap();
-                                    for (label, old, new) in instance_options.iter() {
-                                        if old != new {
-                                            writeln!(
-                                                &mut result,
-                                                "    {} was {}, updated to {}",
-                                                label, old, new
-                                            )
-                                            .unwrap();
-                                        }
-                                    }
-                                }
-                                Err(e) => {
-                                    writeln!(
-                                        &mut result,
-                                        "Instance {} failed to be updated with error: {:?}",
-                                        instance.url.clone(),
-                                        e
+                                        "Instance {} checked, no update required",
+                                        instance.url
                                     )
                                     .unwrap();
                                 }
                             }
-                        } else {
+                            Err(e) => {
+                                new_instance = InstanceNew::new(
+                                    instance.url.clone(),
+                                    instance.version.clone(),
+                                    instance.https,
+                                    instance.https_redirect,
+                                    instance.country_id.clone(),
+                                    instance.attachments,
+                                );
+                                writeln!(
+                                    &mut result,
+                                    "Instance {} failed to be checked with error: {}",
+                                    instance.url, e
+                                )
+                                .unwrap();
+                            }
+                        }
+
+                        // retrieve latest scan
+                        let mut scan =
+                            models::PrivateBin::get_rating_mozilla_observatory(&instance.url);
+                        // if missing, wait for the scan to conclude and poll again
+                        if scan.rating == "-" {
+                            use std::{thread, time};
+                            thread::sleep(time::Duration::from_secs(5));
+                            scan =
+                                models::PrivateBin::get_rating_mozilla_observatory(&instance.url);
+                        }
+                        (
+                            result,
+                            instance_up,
+                            instance_changed,
+                            scan,
+                            instance,
+                            new_instance,
+                            instance_options,
+                        )
+                    })
+                })
+                .collect::<Vec<_>>();
+            handles.into_iter().for_each(|h| {
+                let (
+                    thread_result,
+                    instance_up,
+                    instance_changed,
+                    scan,
+                    instance,
+                    new_instance,
+                    instance_options,
+                ) = h.join().unwrap();
+                result.push_str(&thread_result);
+
+                if instance_changed {
+                    match diesel::update(instances.filter(id.eq(instance.id)))
+                        .set((
+                            version.eq(new_instance.version),
+                            https.eq(new_instance.https),
+                            https_redirect.eq(new_instance.https_redirect),
+                            attachments.eq(new_instance.attachments),
+                            country_id.eq(new_instance.country_id),
+                        ))
+                        .execute(&*conn)
+                    {
+                        Ok(_) => {
                             writeln!(
                                 &mut result,
-                                "Instance {} checked, no update required",
-                                instance.url.clone()
+                                "Instance {} checked and updated:",
+                                instance.url
+                            )
+                            .unwrap();
+                            for (label, old, new) in instance_options.iter() {
+                                if old != new {
+                                    writeln!(
+                                        &mut result,
+                                        "    {} was {}, updated to {}",
+                                        label, old, new
+                                    )
+                                    .unwrap();
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            writeln!(
+                                &mut result,
+                                "Instance {} failed to be updated with error: {:?}",
+                                instance.url, e
                             )
                             .unwrap();
                         }
                     }
-                    Err(e) => {
-                        instance_checks.push(CheckNew::new(false, instance.id));
-                        writeln!(
-                            &mut result,
-                            "Instance {} failed to be checked with error: {}",
-                            instance.url.clone(),
-                            e
-                        )
-                        .unwrap();
-                    }
                 }
 
-                // retrieve latest scan
-                let mut scan =
-                    models::PrivateBin::get_rating_mozilla_observatory(&instance.url.clone());
-                // if missing, wait for the scan to conclude and poll again
-                if scan.rating == "-" {
-                    use std::{thread, time};
-                    thread::sleep(time::Duration::from_secs(3));
-                    scan =
-                        models::PrivateBin::get_rating_mozilla_observatory(&instance.url.clone());
+                if instance_up {
+                    instance_checks.push(CheckNew::new(true, instance.id));
+                } else {
+                    instance_checks.push(CheckNew::new(false, instance.id));
                 }
+
                 if scan.rating != "-" && scan.rating != instance.rating_mozilla_observatory {
                     match diesel::update(
                         scans
@@ -390,8 +446,7 @@ fn cron_full(key: String, conn: DirectoryDbConn) -> String {
                             writeln!(
                                 &mut result,
                                 "Instance {} rating updated to: {}",
-                                instance.url.clone(),
-                                scan.rating
+                                instance.url, scan.rating
                             )
                             .unwrap();
                         }
@@ -399,14 +454,13 @@ fn cron_full(key: String, conn: DirectoryDbConn) -> String {
                             writeln!(
                                 &mut result,
                                 "Instance {} failed to be updated with error: {:?}",
-                                instance.url.clone(),
-                                e
+                                instance.url, e
                             )
                             .unwrap();
                         }
                     }
                 }
-            }
+            });
 
             // delete checks and instances that failed too many times
             match sql_query(&format!(
@@ -527,8 +581,6 @@ fn rocket() -> Rocket {
 }
 
 fn main() {
-    use std::thread;
-
     thread::spawn(move || {
         shuttle().launch();
     });
