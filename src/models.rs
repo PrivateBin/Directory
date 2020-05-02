@@ -458,7 +458,7 @@ pub struct Scan {
     pub instance_id: i32,
 }
 
-#[derive(Insertable)]
+#[derive(Insertable, Clone)]
 #[table_name = "scans"]
 pub struct ScanNew {
     pub scanner: String,
