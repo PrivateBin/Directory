@@ -1,5 +1,9 @@
 # Change log
 
+## 0.3.3
+
+- some per instance checks can run in parallel threads as well
+
 ## 0.3.2
 
 - multiplexing cron checks into threads

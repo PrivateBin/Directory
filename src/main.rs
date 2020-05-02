@@ -312,6 +312,7 @@ fn cron_full(key: String, conn: DirectoryDbConn) -> String {
                             ("country_id", instance.country_id.clone(), String::new()),
                         ];
                         let new_instance: InstanceNew;
+                        let mut scan: ScanNew;
                         match PrivateBin::new(instance.url.clone()) {
                             Ok(privatebin) => {
                                 instance_up = true;
@@ -334,6 +335,12 @@ fn cron_full(key: String, conn: DirectoryDbConn) -> String {
                                     )
                                     .unwrap();
                                 }
+                                // retrieve latest scan
+                                scan = ScanNew::new(
+                                    &privatebin.scans[0].scanner,
+                                    &privatebin.scans[0].rating,
+                                    privatebin.scans[0].percent,
+                                );
                             }
                             Err(e) => {
                                 new_instance = InstanceNew::new(
@@ -350,12 +357,10 @@ fn cron_full(key: String, conn: DirectoryDbConn) -> String {
                                     instance.url, e
                                 )
                                 .unwrap();
+                                scan = ScanNew::new("mozilla_observatory", "-", 0);
                             }
                         }
 
-                        // retrieve latest scan
-                        let mut scan =
-                            models::PrivateBin::get_rating_mozilla_observatory(&instance.url);
                         // if missing, wait for the scan to conclude and poll again
                         if scan.rating == "-" {
                             use std::{thread, time};

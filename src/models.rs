@@ -149,24 +149,31 @@ impl PrivateBin {
     }
 
     fn validate(url: String) -> Result<PrivateBin, String> {
+        use std::thread;
+
         if !url.starts_with("http://") && !url.starts_with("https://") {
             return Err(format!("Not a valid URL: {}", url));
         }
 
         let check_url = Self::strip_url(url);
-        let hostname_regex = Self::get_hostname_regex();
         let client = Instance::get_client();
         let (https, https_redirect, check_url) = Self::check_http(&check_url, &client)?;
+        // don't proceed if the robots.txt tells us not to index the instance
         Self::check_robots(&check_url, &client)?;
-        let country_code = Self::check_country(&check_url, &hostname_regex)?;
-        let (version, attachments) = Self::check_version(&check_url, &client)?;
 
-        let mut scans = vec![];
-        scans.push(Self::check_rating_mozilla_observatory(
-            &check_url,
-            &client,
-            &hostname_regex,
-        ));
+        // remaining checks may run in parallel
+        let country_check_url = check_url.clone();
+        let version_check_url = check_url.clone();
+        let rating_check_url = check_url.clone();
+        let check_country = thread::spawn(move || Self::check_country(&country_check_url));
+        let check_version = thread::spawn(move || Self::check_version(&version_check_url, &client));
+        let check_rating =
+            thread::spawn(move || Self::check_rating_mozilla_observatory(&rating_check_url));
+
+        // collect results of parallel checks
+        let country_code = check_country.join().unwrap()?;
+        let (version, attachments) = check_version.join().unwrap()?;
+        let scans = vec![check_rating.join().unwrap()];
 
         if !version.is_empty() {
             return Ok(PrivateBin {
@@ -188,7 +195,8 @@ impl PrivateBin {
     }
 
     // check country via geo IP database lookup
-    fn check_country(url: &str, hostname_regex: &Regex) -> Result<String, String> {
+    fn check_country(url: &str) -> Result<String, String> {
+        let hostname_regex = Self::get_hostname_regex();
         let mut country_code = "AQ".to_string();
         if let Some(hostname_matches) = hostname_regex.captures(url) {
             let ips = lookup_host(&hostname_matches[1]);
@@ -259,12 +267,10 @@ impl PrivateBin {
     }
 
     // check rating at mozilla observatory
-    pub fn check_rating_mozilla_observatory(
-        url: &str,
-        client: &Client,
-        hostname_regex: &Regex,
-    ) -> ScanNew {
+    pub fn check_rating_mozilla_observatory(url: &str) -> ScanNew {
+        let hostname_regex = Self::get_hostname_regex();
         if let Some(hostname_matches) = hostname_regex.captures(url) {
+            let client = Instance::get_client();
             let observatory_url = format!("{}{}", OBSERVATORY_API, &hostname_matches[1]);
             let result = client
                 .get(&observatory_url)
@@ -376,9 +382,7 @@ impl PrivateBin {
 
     // get latest rating at mozilla observatory
     pub fn get_rating_mozilla_observatory(url: &str) -> ScanNew {
-        let client = Instance::get_client();
-        let hostname_regex = Self::get_hostname_regex();
-        Self::check_rating_mozilla_observatory(url, &client, &hostname_regex)
+        Self::check_rating_mozilla_observatory(url)
     }
 
     // get latest rating at mozilla observatory
