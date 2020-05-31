@@ -6,6 +6,7 @@ use dns_lookup::lookup_host;
 use hyper::header::{Connection, Location, UserAgent};
 use hyper::status::{StatusClass, StatusCode};
 use hyper::Client;
+use hyper::Url;
 use maxminddb::geoip2::Country;
 use regex::Regex;
 use serde::Serialize;
@@ -196,27 +197,28 @@ impl PrivateBin {
 
     // check country via geo IP database lookup
     fn check_country(url: &str) -> Result<String, String> {
-        let hostname_regex = Self::get_hostname_regex();
         let mut country_code = "AQ".to_string();
-        if let Some(hostname_matches) = hostname_regex.captures(url) {
-            let ips = lookup_host(&hostname_matches[1]);
-            if ips.is_err() {
-                return Err(format!("Host or domain of URL {} is not supported.", url));
-            }
+        if let Ok(parsed_url) = Url::parse(url) {
+            if let Some(host) = parsed_url.host_str() {
+                let ips = lookup_host(host);
+                if ips.is_err() {
+                    return Err(format!("Host or domain of URL {} is not supported.", url));
+                }
 
-            let geoip_mmdb = std::env::var("GEOIP_MMDB")
-                .expect("environment variable GEOIP_MMDB needs to be set");
-            let reader = maxminddb::Reader::open_readfile(&geoip_mmdb);
-            if reader.is_err() {
-                return Err(
-                    format!(
-                        "Error opening geo IP database {} (defined in environment variable GEOIP_MMDB).",
-                        geoip_mmdb
-                    )
-                );
+                let geoip_mmdb = std::env::var("GEOIP_MMDB")
+                    .expect("environment variable GEOIP_MMDB needs to be set");
+                let reader = maxminddb::Reader::open_readfile(&geoip_mmdb);
+                if reader.is_err() {
+                    return Err(
+                        format!(
+                            "Error opening geo IP database {} (defined in environment variable GEOIP_MMDB).",
+                            geoip_mmdb
+                        )
+                    );
+                }
+                let country: Country = reader.unwrap().lookup(ips.unwrap()[0]).unwrap();
+                country_code = country.country.unwrap().iso_code.unwrap();
             }
-            let country: Country = reader.unwrap().lookup(ips.unwrap()[0]).unwrap();
-            country_code = country.country.unwrap().iso_code.unwrap();
         }
         Ok(country_code)
     }
@@ -268,31 +270,32 @@ impl PrivateBin {
 
     // check rating at mozilla observatory
     pub fn check_rating_mozilla_observatory(url: &str) -> ScanNew {
-        let hostname_regex = Self::get_hostname_regex();
-        if let Some(hostname_matches) = hostname_regex.captures(url) {
-            let client = Instance::get_client();
-            let observatory_url = format!("{}{}", OBSERVATORY_API, &hostname_matches[1]);
-            let result = client
-                .get(&observatory_url)
-                .header(Instance::get_user_agent())
-                .send();
-            if let Ok(res) = result {
-                if res.status == StatusCode::Ok {
-                    let reader = BufReader::new(res);
-                    let api_response: serde_json::Value = serde_json::from_reader(reader).unwrap();
-                    if Some("FINISHED") == api_response["state"].as_str() {
-                        if let Some(grade) = api_response["grade"].as_str() {
-                            return ScanNew::new("mozilla_observatory", grade, 0);
+        if let Ok(parsed_url) = Url::parse(url) {
+            if let Some(host) = parsed_url.host_str() {
+                let client = Instance::get_client();
+                let observatory_url = format!("{}{}", OBSERVATORY_API, host);
+                let result = client
+                    .get(&observatory_url)
+                    .header(Instance::get_user_agent())
+                    .send();
+                if let Ok(res) = result {
+                    if res.status == StatusCode::Ok {
+                        let reader = BufReader::new(res);
+                        let api_response: serde_json::Value = serde_json::from_reader(reader).unwrap();
+                        if Some("FINISHED") == api_response["state"].as_str() {
+                            if let Some(grade) = api_response["grade"].as_str() {
+                                return ScanNew::new("mozilla_observatory", grade, 0);
+                            }
                         }
-                    }
-                    // initiate a rescan
-                    if api_response.get("error") != None {
-                        client
-                            .post(&observatory_url)
-                            .header(Instance::get_user_agent())
-                            .body("hidden=true")
-                            .send()
-                            .unwrap();
+                        // initiate a rescan
+                        if api_response.get("error") != None {
+                            client
+                                .post(&observatory_url)
+                                .header(Instance::get_user_agent())
+                                .body("hidden=true")
+                                .send()
+                                .unwrap();
+                        }
                     }
                 }
             }
@@ -383,13 +386,6 @@ impl PrivateBin {
     // get latest rating at mozilla observatory
     pub fn get_rating_mozilla_observatory(url: &str) -> ScanNew {
         Self::check_rating_mozilla_observatory(url)
-    }
-
-    // get latest rating at mozilla observatory
-    fn get_hostname_regex() -> Regex {
-        Regex::new(
-            r"^https?://((([[:alnum:]]|[[:alnum:]][[:alnum:]-]*[[:alnum:]])\.)*([[:alnum:]]|[[:alnum:]][[:alnum:]-]*[[:alnum:]])+)/?.*$"
-        ).unwrap()
     }
 
     fn strip_url(url: String) -> String {
