@@ -1,5 +1,9 @@
 # Change log
 
+## 0.3.5
+
+- fix handling internationalized URLs #14
+
 ## 0.3.4
 
 - move as much work into threads as possible, database writes have to remain single threaded with SQLite
