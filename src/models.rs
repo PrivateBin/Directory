@@ -281,7 +281,8 @@ impl PrivateBin {
                 if let Ok(res) = result {
                     if res.status == StatusCode::Ok {
                         let reader = BufReader::new(res);
-                        let api_response: serde_json::Value = serde_json::from_reader(reader).unwrap();
+                        let api_response: serde_json::Value =
+                            serde_json::from_reader(reader).unwrap();
                         if Some("FINISHED") == api_response["state"].as_str() {
                             if let Some(grade) = api_response["grade"].as_str() {
                                 return ScanNew::new("mozilla_observatory", grade, 0);
