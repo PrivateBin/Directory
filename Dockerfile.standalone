@@ -6,7 +6,7 @@ RUN sudo apt-get update && \
         zlib1g-dev \
     && \
     sudo rm -rf /var/lib/apt/lists/*
-RUN curl -Ls https://github.com/PrivateBin/Directory/archive/0.3.5.tar.gz | tar -xz --strip 1 && \
+RUN curl -Ls https://github.com/PrivateBin/Directory/archive/0.4.0.tar.gz | tar -xz --strip 1 && \
     cargo build --release && \
     mv target/x86_64-unknown-linux-musl/release/directory directory && \
     strip directory && \
@@ -18,8 +18,9 @@ FROM scratch
 LABEL maintainer="support@privatebin.org"
 
 ENV GEOIP_MMDB /var/geoip-country.mmdb
-ENV DATABASE /var/directory.sqlite
-EXPOSE 8000 8001
+ENV ROCKET_ADDRESS "::"
+ENV ROCKET_DATABASES {directory={url="/var/directory.sqlite"}}
+EXPOSE 8000
 USER 1000:1000
 WORKDIR /bin
 VOLUME /var

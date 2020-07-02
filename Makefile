@@ -4,8 +4,8 @@ NAME = directory
 IMAGE = privatebin/$(NAME)
 PORT = 8000
 BUILD_IMAGE = ekidd/rust-musl-builder:nightly-2020-03-12-sqlite
-CRON_KEY = $(shell openssl rand -hex 32)
 DATABASE = var/directory.sqlite
+ROCKET_DATABASES = "{directory={url=\"$(DATABASE)\"}}"
 GEOIP_MMDB = var/geoip-country.mmdb
 
 all: test build image run check clean ## Equivalent to "make test build image run check clean" (default).
@@ -15,9 +15,8 @@ release: test build pack license image run check clean ## Equivalent to "make te
 test: .cargo/registry var/directory.sqlite ## Build and run the unit tests.
 	git checkout $(DATABASE)
 	docker run --rm -t --init \
-		-e CRON_KEY=$(CRON_KEY) \
 		-e GEOIP_MMDB="$(GEOIP_MMDB)" \
-		-e DATABASE=$(DATABASE) \
+		-e ROCKET_DATABASES=$(ROCKET_DATABASES) \
 		-v "$(CURDIR)":/home/rust/src \
 		-v "$(CURDIR)"/.cargo/registry:/home/rust/.cargo/registry \
 		$(BUILD_IMAGE) \
@@ -44,13 +43,11 @@ license: ## Generates the LICENSE.md file
 image: ## Build the container image.
 	docker build --build-arg PORT=$(PORT) \
 		--build-arg GEOIP_MMDB="/$(GEOIP_MMDB)" \
-		--build-arg DATABASE="/$(DATABASE)" \
+		--build-arg ROCKET_DATABASES='{directory={url="/'$(DATABASE)'"}}' \
 		-t $(IMAGE) .
 
 run: ## Run a container from the image.
-	docker run -d --init --name $(NAME) \
-		-p=$(PORT):$(PORT) -p=8001:8001 \
-		-e CRON_KEY=$(CRON_KEY) \
+	docker run -d --init --name $(NAME) -p=$(PORT):$(PORT) \
 		--read-only -v "$(CURDIR)/var":/var --restart=always $(IMAGE)
 
 check: ## Launch tests to verify that the service works as expected, requires a running container.
@@ -59,7 +56,7 @@ check: ## Launch tests to verify that the service works as expected, requires a 
 	curl -s http://localhost:$(PORT)/ | grep "Welcome!"
 	curl -s http://localhost:$(PORT)/about | grep "About"
 	curl -s http://localhost:$(PORT)/add | grep "Add instance"
-	curl -s http://localhost:8001/update/foo | grep "Wrong key"
+	docker exec -t -e CRON=POLL directory directory | grep "cleaned up checks stored before"
 	@echo "Checks: \033[92mOK\033[0m"
 
 .cargo/registry:
@@ -72,9 +69,8 @@ lint: ## Run fmt & clippy on the code to come up with improvements.
 
 coverage: ## Run tarpaulin on the code to report on the tests code coverage.
 	git checkout $(DATABASE)
-	CRON_KEY=$(CRON_KEY) \
 	GEOIP_MMDB="$(GEOIP_MMDB)" \
-	DATABASE=$(DATABASE) \
+	ROCKET_DATABASES=$(ROCKET_DATABASES) \
 	cargo tarpaulin --release -o Html
 
 clean: var/directory.sqlite ## Stops and removes the running container.

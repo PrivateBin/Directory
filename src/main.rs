@@ -11,7 +11,6 @@ extern crate rocket;
 extern crate rocket_contrib;
 use diesel::dsl::sql_query;
 use diesel::prelude::*;
-use rocket::config::{Config, Environment, Value};
 use rocket::fairing::AdHoc;
 use rocket::request::Form;
 use rocket::response::Redirect;
@@ -190,12 +189,7 @@ fn save(conn: DirectoryDbConn, form: Form<AddForm>, cache: State<InstancesCache>
     Template::render("add", &page)
 }
 
-#[get("/update/<key>")]
-fn cron(key: String, conn: DirectoryDbConn) -> String {
-    if key != std::env::var("CRON_KEY").expect("environment variable CRON_KEY needs to be set") {
-        return String::from("Wrong key, no update was triggered.\n");
-    }
-    let mut result = String::new();
+fn cron(conn: DirectoryDbConn) {
     match get_instances().load::<Instance>(&*conn) {
         Ok(instance_list) => {
             let mut instance_checks = vec![];
@@ -214,7 +208,7 @@ fn cron(key: String, conn: DirectoryDbConn) -> String {
             handles.into_iter().for_each(|h| {
                 let (instance_url, instance_check) = h.join().unwrap();
                 instance_checks.push(instance_check);
-                writeln!(&mut result, "Instance {} checked", instance_url).unwrap();
+                println!("Instance {} checked", instance_url);
             });
 
             // store checks
@@ -223,7 +217,7 @@ fn cron(key: String, conn: DirectoryDbConn) -> String {
                 .execute(&*conn)
             {
                 Ok(_) => {
-                    result.push_str("stored uptime checks\n");
+                    println!("stored uptime checks");
 
                     // delete checks older then:
                     // now - ((CHECKS_TO_STORE - 1) * CRON_INTERVAL)
@@ -240,48 +234,34 @@ fn cron(key: String, conn: DirectoryDbConn) -> String {
                         .execute(&*conn)
                     {
                         Ok(_) => {
-                            writeln!(&mut result, "cleaned up checks stored before {}", cutoff)
-                                .unwrap();
+                            println!("cleaned up checks stored before {}", cutoff);
                         }
                         Err(e) => {
-                            writeln!(
-                                &mut result,
+                            println!(
                                 "failed to cleanup checks stored before {}, with error: {}",
                                 cutoff, e
-                            )
-                            .unwrap();
+                            );
                         }
                     }
                 }
                 Err(e) => {
-                    writeln!(
-                        &mut result,
+                    println!(
                         "failed to store uptime checks with error: {}",
                         e
-                    )
-                    .unwrap();
+                    );
                 }
             }
         }
         Err(e) => {
-            writeln!(
-                &mut result,
+            println!(
                 "failed retrieving instances from database with error: {}",
                 e
-            )
-            .unwrap();
+            );
         }
     }
-    result
 }
 
-#[get("/update/<key>/full")]
-fn cron_full(key: String, conn: DirectoryDbConn) -> String {
-    if key != std::env::var("CRON_KEY").expect("environment variable CRON_KEY needs to be set") {
-        return String::from("Wrong key, no update was triggered.\n");
-    }
-
-    let mut result = String::new();
+fn cron_full(conn: DirectoryDbConn) {
     match get_instances().load::<Instance>(&*conn) {
         Ok(instance_list) => {
             let handles = instance_list
@@ -423,7 +403,7 @@ fn cron_full(key: String, conn: DirectoryDbConn) -> String {
                     instance_update,
                     instance_update_success,
                 ) = h.join().unwrap();
-                result.push_str(&thread_result);
+                print!("{}", thread_result);
 
                 if let Some(update_query) = scan_update {
                     scan_update_queries.push((
@@ -444,30 +424,26 @@ fn cron_full(key: String, conn: DirectoryDbConn) -> String {
             for (query, query_success, instance_url) in instance_update_queries {
                 match query.execute(&*conn) {
                     Ok(_) => {
-                        result.push_str(&query_success);
+                        println!("{}", query_success);
                     }
                     Err(e) => {
-                        writeln!(
-                            &mut result,
+                        println!(
                             "Instance {} failed to be updated with error: {:?}",
                             instance_url, e
-                        )
-                        .unwrap();
+                        );
                     }
                 }
             }
             for (query, query_success, instance_url) in scan_update_queries {
                 match query.execute(&*conn) {
                     Ok(_) => {
-                        result.push_str(&query_success);
+                        println!("{}", query_success);
                     }
                     Err(e) => {
-                        writeln!(
-                            &mut result,
+                        println!(
                             "Instance {} failed to be updated with error: {:?}",
                             instance_url, e
-                        )
-                        .unwrap();
+                        );
                     }
                 }
             }
@@ -486,27 +462,22 @@ fn cron_full(key: String, conn: DirectoryDbConn) -> String {
             ))
             .execute(&*conn)
             {
-                Ok(_) => result.push_str("removed instances that failed too many times\n"),
+                Ok(_) => println!("removed instances that failed too many times"),
                 Err(e) => {
-                    writeln!(
-                        &mut result,
+                    println!(
                         "error removing instances failing too many times: {}",
                         e
-                    )
-                    .unwrap();
+                    );
                 }
             }
         }
         Err(e) => {
-            writeln!(
-                &mut result,
+            println!(
                 "failed retrieving instances from database with error: {}",
                 e
-            )
-            .unwrap();
+            );
         }
     }
-    result
 }
 
 #[get("/favicon.ico")]
@@ -547,54 +518,31 @@ fn get_instances() -> diesel::query_builder::SqlQuery {
     )
 }
 
-fn configuration(workers: u16, port: u16) -> Config {
-    use std::collections::HashMap;
-
-    let mut db_config = HashMap::new();
-    let mut databases = HashMap::new();
-    db_config.insert(
-        "url",
-        Value::from(
-            std::env::var("DATABASE").expect("environment variable DATABASE needs to be set"),
-        ),
-    );
-    databases.insert("directory", Value::from(db_config));
-
-    Config::build(Environment::Production)
-        .address("::")
-        .port(port)
-        .workers(workers)
-        .extra("databases", databases)
-        .expect("valid rocket configuration")
-}
-
-fn shuttle() -> Rocket {
-    // cron with only one worker, no cache and different port
-    rocket::custom(configuration(1, 8001))
-        .attach(DirectoryDbConn::fairing())
-        .mount("/", routes![cron, cron_full])
-}
-
 fn rocket() -> Rocket {
-    extern crate num_cpus;
-
-    rocket::custom(configuration((num_cpus::get() * 2) as u16, 8000))
+    rocket::ignite()
+        .mount("/", routes![index, about, add, save, favicon])
+        .mount("/img", StaticFiles::from("/img"))
+        .mount("/css", StaticFiles::from("/css"))
         .attach(DirectoryDbConn::fairing())
         .attach(Template::fairing())
         .manage(InstancesCache {
             timeout: AtomicU64::new(0),
             instances: RwLock::new(vec![]),
         })
-        .mount("/", routes![index, about, add, save, favicon])
-        .mount("/img", StaticFiles::from("/img"))
-        .mount("/css", StaticFiles::from("/css"))
 }
 
 fn main() {
-    thread::spawn(move || {
-        shuttle().launch();
-    });
-    rocket()
-        .attach(AdHoc::on_attach("Database Migrations", run_db_migrations))
-        .launch();
+    let rocket = rocket();
+    if let Ok(cron_env) = std::env::var("CRON") {
+        let conn = DirectoryDbConn::get_one(&rocket).expect("database connection");
+        if cron_env == "FULL" {
+            cron_full(conn);
+        } else {
+            cron(conn);
+        }
+    } else {
+        rocket
+            .attach(AdHoc::on_attach("Database Migrations", run_db_migrations))
+            .launch();
+    }
 }

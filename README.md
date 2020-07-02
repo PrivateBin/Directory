@@ -14,11 +14,15 @@ The application is built primarily using the following libraries:
 
 The image supports the use of the following environment variables:
 
-- `CRON_KEY`: Needed to trigger an /update run, prevents third parties to
+- `CRON`: (Optional) If set when running the app a cron cycle is performed.
+  Set it to `CRON=FULL` to run a full cron (once a day).
   use this app to hammer the listed instances. Any string works, for example
   one generated using `openssl rand -hex 32`
 - `GEOIP_MMDB`: path to the GeoIP database, in MaxMind format
-- `DATABASE`: path to SQLite database file
+- `ROCKET_DATABASES`: [database dict](https://api.rocket.rs/v0.4/rocket_contrib/databases/index.html#environment-variables)
+  for Diesel SQLite library integration into Rocket
+- `ROCKET_SECRET_KEY`: Needed in production environments, used to protect
+  private cookies, generate this using `openssl rand -base64 32`
 
 ## Volumes
 
@@ -28,7 +32,6 @@ The image supports the use of the following environment variables:
 ## Network ports
 
 - `8000/tcp`: HTTP of web service
-- `8001/tcp`: HTTP of cron service
 
 ## Usage
 

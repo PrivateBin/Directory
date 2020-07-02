@@ -1,5 +1,10 @@
 # Change log
 
+## 0.4.0
+
+- cron is now triggered by executing binary with environment variable CRON=POLL
+  or CRON=FULL set, not via http call on separate port - obsoletes cron key
+
 ## 0.3.5
 
 - fix handling internationalized URLs #14

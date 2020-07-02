@@ -1,4 +1,4 @@
-use super::{rocket, shuttle};
+use super::{cron, cron_full, rocket, DirectoryDbConn};
 use diesel::prelude::*;
 use rocket::http::ContentType;
 use rocket::http::Status;
@@ -56,7 +56,7 @@ fn add_and_update() {
     use super::schema::checks::dsl::*;
 
     let rocket = rocket();
-    let conn = super::DirectoryDbConn::get_one(&rocket).expect("database connection");
+    let conn = DirectoryDbConn::get_one(&rocket).expect("database connection");
     let client = Client::new(rocket).expect("valid rocket instance");
     let now = SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
@@ -97,15 +97,7 @@ fn add_and_update() {
         .expect("selecting oldest check");
     assert_eq!(vec![1], oldest_check);
 
-    let cron_client = Client::new(shuttle()).expect("valid rocket instance");
-    let key = std::env::var("CRON_KEY").expect("environment variable CRON_KEY needs to be set");
-    let mut response = cron_client
-        .get(format!("/update/{}", key.replace("/", "%2F")))
-        .dispatch();
-    assert_eq!(response.status(), Status::Ok);
-    assert!(response
-        .body_string()
-        .map_or(false, |s| s.contains(&"cleaned up checks stored before")));
+    cron(DirectoryDbConn::get_one(&super::rocket()).expect("database connection"));
     let oldest_check: Vec<i32> = checks
         .select(instance_id)
         .filter(updated.eq(diesel::dsl::sql(&format!("{}", oldest_update))))
@@ -133,7 +125,7 @@ fn add_and_delete() {
     use super::schema::instances;
 
     let rocket = rocket();
-    let conn = super::DirectoryDbConn::get_one(&rocket).expect("database connection");
+    let conn = DirectoryDbConn::get_one(&rocket).expect("database connection");
     let client = Client::new(rocket).expect("valid rocket instance");
     let now = SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
@@ -164,14 +156,7 @@ fn add_and_delete() {
     conn.execute(&query)
         .expect("inserting test checks for instance ID 1");
 
-    let cron_client = Client::new(shuttle()).expect("valid rocket instance");
-    let key = std::env::var("CRON_KEY").expect("environment variable CRON_KEY needs to be set");
-    let mut response = cron_client
-        .get(format!("/update/{}/full", key.replace("/", "%2F")))
-        .dispatch();
-    assert_eq!(response.status(), Status::Ok);
-    assert!(response.body_string().map_or(false, |s| s
-        .contains(&"removed instances that failed too many times")));
+    cron_full(DirectoryDbConn::get_one(&super::rocket()).expect("database connection"));
     let deleted_check: Vec<i32> = checks
         .select(instance_id)
         .filter(instance_id.eq(1))
