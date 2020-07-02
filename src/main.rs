@@ -245,10 +245,7 @@ fn cron(conn: DirectoryDbConn) {
                     }
                 }
                 Err(e) => {
-                    println!(
-                        "failed to store uptime checks with error: {}",
-                        e
-                    );
+                    println!("failed to store uptime checks with error: {}", e);
                 }
             }
         }
@@ -464,10 +461,7 @@ fn cron_full(conn: DirectoryDbConn) {
             {
                 Ok(_) => println!("removed instances that failed too many times"),
                 Err(e) => {
-                    println!(
-                        "error removing instances failing too many times: {}",
-                        e
-                    );
+                    println!("error removing instances failing too many times: {}", e);
                 }
             }
         }
