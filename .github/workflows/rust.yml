@@ -22,7 +22,7 @@ jobs:
         key: static-geoip
     - name: Download GeoIP database
       if: steps.cache-geoip.outputs.cache-hit != 'true'
-      run: curl -s https://download.db-ip.com/free/dbip-country-lite-2020-04.mmdb.gz | zcat > var/geoip-country.mmdb
+      run: curl -s https://download.db-ip.com/free/dbip-country-lite-$(date +%Y-%m).mmdb.gz | zcat > var/geoip-country.mmdb
     - name: Cache cargo registry
       uses: actions/cache@v1
       with:
