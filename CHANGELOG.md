@@ -1,5 +1,10 @@
 # Change log
 
+## 0.4.1
+
+- delete instances, if cron detects robots.txt change, asking for removal #15
+- bump libraries to fix pear bug occurring in newer nightly rust compilers
+
 ## 0.4.0
 
 - cron is now triggered by executing binary with environment variable CRON=POLL
