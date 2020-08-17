@@ -36,12 +36,11 @@ jobs:
     - name: Execute all unit and integration tests and build examples
       uses: actions-rs/cargo@v1
       env:
-        CRON_KEY: dont-use-this-one-in-production
         GEOIP_MMDB: var/geoip-country.mmdb
-        DATABASE: var/directory.sqlite
+        ROCKET_DATABASES: '{directory={url="var/directory.sqlite"}}'
       with:
         command: test
-    - name: Check formatting of code and suggest improvement
+    - name: Check formatting of code and suggest improvements
       uses: actions-rs/cargo@v1
       with:
         command: fmt
