@@ -402,6 +402,23 @@ fn cron_full(conn: DirectoryDbConn) {
                 ) = h.join().unwrap();
                 print!("{}", thread_result);
 
+                if thread_result.ends_with("doesn't want to get added to the directory.") {
+                    // robots.txt must have changed, delete it immediately
+                    match sql_query(&format!(
+                        "DELETE FROM instances \
+                        WHERE id LIKE {};",
+                        instance.id
+                    ))
+                    .execute(&*conn)
+                    {
+                        Ok(_) => println!("    removed the instance, as per updated robots.txt"),
+                        Err(e) => {
+                            println!("    error removing the instance: {}", e);
+                        }
+                    }
+                    return;
+                }
+
                 if let Some(update_query) = scan_update {
                     scan_update_queries.push((
                         update_query,
