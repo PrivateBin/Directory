@@ -207,8 +207,8 @@ impl PrivateBin {
 
                 let geoip_mmdb = std::env::var("GEOIP_MMDB")
                     .expect("environment variable GEOIP_MMDB needs to be set");
-                let reader = maxminddb::Reader::open_readfile(&geoip_mmdb);
-                if reader.is_err() {
+                let opener = maxminddb::Reader::open_readfile(&geoip_mmdb);
+                if opener.is_err() {
                     return Err(
                         format!(
                             "Error opening geo IP database {} (defined in environment variable GEOIP_MMDB).",
@@ -216,8 +216,9 @@ impl PrivateBin {
                         )
                     );
                 }
-                let country: Country = reader.unwrap().lookup(ips.unwrap()[0]).unwrap();
-                country_code = country.country.unwrap().iso_code.unwrap();
+                let reader = opener.unwrap();
+                let country: Country = reader.lookup(ips.unwrap()[0]).unwrap();
+                country_code = country.country.unwrap().iso_code.unwrap().to_string();
             }
         }
         Ok(country_code)
