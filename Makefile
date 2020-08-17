@@ -21,8 +21,10 @@ test: .cargo/registry var/directory.sqlite ## Build and run the unit tests.
 		-v "$(CURDIR)"/.cargo/registry:/home/rust/.cargo/registry \
 		$(BUILD_IMAGE) \
 		cargo test --release # -- --nocapture
+	git checkout $(DATABASE)
 
 build: .cargo/registry ## Build the binary for release.
+	git checkout $(DATABASE)
 	docker run --rm -t --init \
 		-v "$(CURDIR)":/home/rust/src \
 		-v "$(CURDIR)"/.cargo/registry:/home/rust/.cargo/registry \
@@ -72,6 +74,7 @@ coverage: ## Run tarpaulin on the code to report on the tests code coverage.
 	GEOIP_MMDB="$(GEOIP_MMDB)" \
 	ROCKET_DATABASES=$(ROCKET_DATABASES) \
 	cargo tarpaulin --release -o Html
+	git checkout $(DATABASE)
 
 clean: var/directory.sqlite ## Stops and removes the running container.
 	git checkout $(DATABASE)

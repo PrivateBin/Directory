@@ -193,7 +193,7 @@ fn cron(conn: DirectoryDbConn) {
     match get_instances().load::<Instance>(&*conn) {
         Ok(instance_list) => {
             let mut instance_checks = vec![];
-            let handles = instance_list
+            instance_list
                 .into_iter()
                 .map(|instance| {
                     thread::spawn(move || {
@@ -204,12 +204,11 @@ fn cron(conn: DirectoryDbConn) {
                         )
                     })
                 })
-                .collect::<Vec<_>>();
-            handles.into_iter().for_each(|h| {
-                let (instance_url, instance_check) = h.join().unwrap();
-                instance_checks.push(instance_check);
-                println!("Instance {} checked", instance_url);
-            });
+                .for_each(|h| {
+                    let (instance_url, instance_check) = h.join().unwrap();
+                    instance_checks.push(instance_check);
+                    println!("Instance {} checked", instance_url);
+                });
 
             // store checks
             match diesel::insert_into(checks)
@@ -261,7 +260,9 @@ fn cron(conn: DirectoryDbConn) {
 fn cron_full(conn: DirectoryDbConn) {
     match get_instances().load::<Instance>(&*conn) {
         Ok(instance_list) => {
-            let handles = instance_list
+            let mut instance_update_queries = vec![];
+            let mut scan_update_queries = vec![];
+            instance_list
                 .into_iter()
                 .map(|instance| {
                     thread::spawn(move || {
@@ -388,52 +389,51 @@ fn cron_full(conn: DirectoryDbConn) {
                         )
                     })
                 })
-                .collect::<Vec<_>>();
-            let mut instance_update_queries = vec![];
-            let mut scan_update_queries = vec![];
-            handles.into_iter().for_each(|h| {
-                let (
-                    thread_result,
-                    scan_update,
-                    scan_update_success,
-                    instance,
-                    instance_update,
-                    instance_update_success,
-                ) = h.join().unwrap();
-                print!("{}", thread_result);
-
-                if thread_result.ends_with("doesn't want to get added to the directory.") {
-                    // robots.txt must have changed, delete it immediately
-                    match sql_query(&format!(
-                        "DELETE FROM instances \
-                        WHERE id LIKE {};",
-                        instance.id
-                    ))
-                    .execute(&*conn)
-                    {
-                        Ok(_) => println!("    removed the instance, as per updated robots.txt"),
-                        Err(e) => {
-                            println!("    error removing the instance: {}", e);
-                        }
-                    }
-                    return;
-                }
-
-                if let Some(update_query) = scan_update {
-                    scan_update_queries.push((
-                        update_query,
+                .for_each(|h| {
+                    let (
+                        thread_result,
+                        scan_update,
                         scan_update_success,
-                        instance.url.clone(),
-                    ));
-                }
-                if let Some(update_query) = instance_update {
-                    instance_update_queries.push((
-                        update_query,
+                        instance,
+                        instance_update,
                         instance_update_success,
-                        instance.url,
-                    ));
-                }
-            });
+                    ) = h.join().unwrap();
+                    print!("{}", thread_result);
+
+                    if thread_result.ends_with("doesn't want to get added to the directory.") {
+                        // robots.txt must have changed, delete it immediately
+                        match sql_query(&format!(
+                            "DELETE FROM instances \
+                            WHERE id LIKE {};",
+                            instance.id
+                        ))
+                        .execute(&*conn)
+                        {
+                            Ok(_) => {
+                                println!("    removed the instance, as per updated robots.txt")
+                            }
+                            Err(e) => {
+                                println!("    error removing the instance: {}", e);
+                            }
+                        }
+                        return;
+                    }
+
+                    if let Some(update_query) = scan_update {
+                        scan_update_queries.push((
+                            update_query,
+                            scan_update_success,
+                            instance.url.clone(),
+                        ));
+                    }
+                    if let Some(update_query) = instance_update {
+                        instance_update_queries.push((
+                            update_query,
+                            instance_update_success,
+                            instance.url,
+                        ));
+                    }
+                });
 
             for (query, query_success, instance_url) in instance_update_queries {
                 match query.execute(&*conn) {

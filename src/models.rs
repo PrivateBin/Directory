@@ -55,7 +55,7 @@ pub struct Instance {
 }
 
 impl Instance {
-    pub fn check_up(self: &Self) -> bool {
+    pub fn check_up(&self) -> bool {
         match Self::get_client()
             .head(&self.url)
             .header(Self::get_user_agent())
