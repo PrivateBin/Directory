@@ -432,16 +432,21 @@ fn test_privatebin() {
 
 #[test]
 fn test_url_rewrites() {
-    for suffix in vec!["/", "/?foo", "/#foo", "//"].into_iter() {
-        for schema in vec!["https", "http"].into_iter() {
+    ["https", "http"]
+        .iter()
+        .flat_map(|schema| {
+            ["/", "/?foo", "/#foo", "//"]
+                .iter()
+                .map(move |suffix| (schema, suffix))
+        })
+        .for_each(|(schema, suffix)| {
             let url = format!("{}://privatebin.net{}", schema, suffix);
             let privatebin = PrivateBin::new(url).unwrap();
             assert_eq!(
                 privatebin.instance.url,
                 String::from("https://privatebin.net")
             );
-        }
-    }
+        });
 }
 
 #[test]
