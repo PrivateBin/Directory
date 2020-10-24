@@ -116,6 +116,28 @@ fn add_and_update() {
     assert!(add_response
         .body_string()
         .map_or(false, |s| s.contains(&"Error adding URL ")));
+
+    // prevent the same instance getting inserted again with a different protocol
+    let mut add_response = client
+        .post("/add")
+        .body("url=http://privatebin.net/")
+        .header(ContentType::Form)
+        .dispatch();
+    assert_eq!(add_response.status(), Status::Ok);
+    assert!(add_response
+        .body_string()
+        .map_or(false, |s| s.contains(&"Error adding URL ")));
+
+    // prevent the same instance getting inserted again with a different path
+    let mut add_response = client
+        .post("/add")
+        .body("url=https://privatebin.net//")
+        .header(ContentType::Form)
+        .dispatch();
+    assert_eq!(add_response.status(), Status::Ok);
+    assert!(add_response
+        .body_string()
+        .map_or(false, |s| s.contains(&"Error adding URL ")));
 }
 
 #[test]
