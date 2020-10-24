@@ -12,7 +12,7 @@ all: test build image run check clean ## Equivalent to "make test build image ru
 
 release: test build pack license image run check clean ## Equivalent to "make test build pack image run check clean".
 
-test: .cargo/registry var/directory.sqlite ## Build and run the unit tests.
+test: .cargo/registry $(DATABASE) ## Build and run the unit tests.
 	git checkout $(DATABASE)
 	docker run --rm -t --init \
 		-e GEOIP_MMDB="$(GEOIP_MMDB)" \
@@ -76,7 +76,7 @@ coverage: ## Run tarpaulin on the code to report on the tests code coverage.
 	cargo tarpaulin --release -o Html
 	git checkout $(DATABASE)
 
-clean: var/directory.sqlite ## Stops and removes the running container.
+clean: $(DATABASE) ## Stops and removes the running container.
 	git checkout $(DATABASE)
 	docker ps -q --filter "name=$(NAME)" | grep -q . && \
 	docker stop $(NAME) && \
