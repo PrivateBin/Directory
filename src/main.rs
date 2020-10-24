@@ -193,7 +193,7 @@ fn cron(conn: DirectoryDbConn) {
     match get_instances().load::<Instance>(&*conn) {
         Ok(instance_list) => {
             let mut instance_checks = vec![];
-            instance_list
+            let children: Vec<_> = instance_list
                 .into_iter()
                 .map(|instance| {
                     thread::spawn(move || {
@@ -204,11 +204,12 @@ fn cron(conn: DirectoryDbConn) {
                         )
                     })
                 })
-                .for_each(|h| {
-                    let (instance_url, instance_check) = h.join().unwrap();
-                    instance_checks.push(instance_check);
-                    println!("Instance {} checked", instance_url);
-                });
+                .collect(); // this starts the threads, then iterate over the results
+            children.into_iter().for_each(|h| {
+                let (instance_url, instance_check) = h.join().unwrap();
+                instance_checks.push(instance_check);
+                println!("Instance {} checked", instance_url);
+            });
 
             // store checks
             match diesel::insert_into(checks)
@@ -262,7 +263,7 @@ fn cron_full(conn: DirectoryDbConn) {
         Ok(instance_list) => {
             let mut instance_update_queries = vec![];
             let mut scan_update_queries = vec![];
-            instance_list
+            let children: Vec<_> = instance_list
                 .into_iter()
                 .map(|instance| {
                     thread::spawn(move || {
@@ -389,51 +390,50 @@ fn cron_full(conn: DirectoryDbConn) {
                         )
                     })
                 })
-                .for_each(|h| {
-                    let (
-                        thread_result,
-                        scan_update,
-                        scan_update_success,
-                        instance,
-                        instance_update,
-                        instance_update_success,
-                    ) = h.join().unwrap();
-                    print!("{}", thread_result);
+                .collect(); // this starts the threads, then iterate over the results
+            children.into_iter().for_each(|h| {
+                let (
+                    thread_result,
+                    scan_update,
+                    scan_update_success,
+                    instance,
+                    instance_update,
+                    instance_update_success,
+                ) = h.join().unwrap();
+                print!("{}", thread_result);
 
-                    if thread_result.ends_with("doesn't want to get added to the directory.") {
-                        // robots.txt must have changed, delete it immediately
-                        match sql_query(&format!(
-                            "DELETE FROM instances \
+                if thread_result.ends_with("doesn't want to get added to the directory.") {
+                    // robots.txt must have changed, delete it immediately
+                    match sql_query(&format!(
+                        "DELETE FROM instances \
                             WHERE id LIKE {};",
-                            instance.id
-                        ))
-                        .execute(&*conn)
-                        {
-                            Ok(_) => {
-                                println!("    removed the instance, as per updated robots.txt")
-                            }
-                            Err(e) => {
-                                println!("    error removing the instance: {}", e);
-                            }
+                        instance.id
+                    ))
+                    .execute(&*conn)
+                    {
+                        Ok(_) => println!("    removed the instance, as per updated robots.txt"),
+                        Err(e) => {
+                            println!("    error removing the instance: {}", e);
                         }
-                        return;
                     }
+                    return;
+                }
 
-                    if let Some(update_query) = scan_update {
-                        scan_update_queries.push((
-                            update_query,
-                            scan_update_success,
-                            instance.url.clone(),
-                        ));
-                    }
-                    if let Some(update_query) = instance_update {
-                        instance_update_queries.push((
-                            update_query,
-                            instance_update_success,
-                            instance.url,
-                        ));
-                    }
-                });
+                if let Some(update_query) = scan_update {
+                    scan_update_queries.push((
+                        update_query,
+                        scan_update_success,
+                        instance.url.clone(),
+                    ));
+                }
+                if let Some(update_query) = instance_update {
+                    instance_update_queries.push((
+                        update_query,
+                        instance_update_success,
+                        instance.url,
+                    ));
+                }
+            });
 
             for (query, query_success, instance_url) in instance_update_queries {
                 match query.execute(&*conn) {

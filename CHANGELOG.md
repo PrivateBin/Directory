@@ -1,5 +1,8 @@
 # Change log
 
+## 0.4.3
+- run threads in parallel as intended, by collecting the lazy iterators m(
+
 ## 0.4.2
 - handle a number of edge cases in the URL parsing that could lead to duplicate
   entries for the same instance (i.e. URLs ending in //, or with GET parameters
