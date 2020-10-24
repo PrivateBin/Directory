@@ -52,8 +52,9 @@ fn add_post_error() {
 
 #[test]
 // incorporate add POST success test, as update depends on it running first
-fn add_and_update() {
+fn add_update_and_delete() {
     use super::schema::checks::dsl::*;
+    use super::schema::instances;
 
     let rocket = rocket();
     let conn = DirectoryDbConn::get_one(&rocket).expect("database connection");
@@ -149,23 +150,8 @@ fn add_and_update() {
     assert!(add_response
         .body_string()
         .map_or(false, |s| s.contains(&"Error adding URL ")));
-}
 
-#[test]
-// incorporate add POST success test, as the delete requires it to exist first
-fn add_and_delete() {
-    use super::schema::checks::dsl::*;
-    use super::schema::instances;
-
-    let rocket = rocket();
-    let conn = DirectoryDbConn::get_one(&rocket).expect("database connection");
-    let client = Client::new(rocket).expect("valid rocket instance");
-    let now = SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap()
-        .as_secs();
-
-    // insert an instance (tests run in parallel, so add_post_success() may not be ready)
+    // insert another instance, subsequently to be deleted
     let mut add_response = client
         .post("/add")
         .body("url=http://zerobin-legacy.dssr.ch")
@@ -181,26 +167,26 @@ fn add_and_delete() {
     let mut instance_checks = vec![];
     for interval in 0..super::MAX_FAILURES {
         instance_checks.push(format!(
-            "datetime({}, 'unixepoch'), 0, 1",
+            "datetime({}, 'unixepoch'), 0, 2",
             now - (interval * super::CRON_INTERVAL)
         ));
     }
     write!(&mut query, "{})", instance_checks.join("), (")).unwrap();
     conn.execute(&query)
-        .expect("inserting test checks for instance ID 1");
+        .expect("inserting test checks for instance ID 2");
 
     cron_full(DirectoryDbConn::get_one(&super::rocket()).expect("database connection"));
     let deleted_check: Vec<i32> = checks
         .select(instance_id)
-        .filter(instance_id.eq(1))
+        .filter(instance_id.eq(2))
         .load(&*conn)
-        .expect("selecting check for instance 1, now deleted");
+        .expect("selecting check for instance 2, now deleted");
     let empty: Vec<i32> = vec![]; // need to do this, so Rust can infer the type of the empty vector
     assert_eq!(empty, deleted_check);
     let deleted_instance: Vec<i32> = instances::table
         .select(instances::id)
-        .filter(instances::id.eq(1))
+        .filter(instances::id.eq(2))
         .load(&*conn)
-        .expect("selecting instance 1, now deleted");
+        .expect("selecting instance 2, now deleted");
     assert_eq!(empty, deleted_instance);
 }
