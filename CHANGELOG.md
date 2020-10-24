@@ -1,5 +1,11 @@
 # Change log
 
+## 0.4.2
+- handle a number of edge cases in the URL parsing that could lead to duplicate
+  entries for the same instance (i.e. URLs ending in //, or with GET parameters
+  or hashes)
+- bump libraries
+
 ## 0.4.1
 
 - delete instances, if cron detects robots.txt change, asking for removal #15
@@ -16,7 +22,8 @@
 
 ## 0.3.4
 
-- move as much work into threads as possible, database writes have to remain single threaded with SQLite
+- move as much work into threads as possible, database writes have to remain
+  single threaded with SQLite
 
 ## 0.3.3
 
