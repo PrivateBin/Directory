@@ -396,9 +396,15 @@ impl PrivateBin {
         if let Some(query_start) = check_url.find('?') {
             check_url = check_url[..query_start].to_string();
         }
+        // remove hash from URL
+        if let Some(query_start) = check_url.find('#') {
+            check_url = check_url[..query_start].to_string();
+        }
         // remove trailing slash, but only for web root, not for paths:
         // - https://example.com/ -> https://example.com
+        // - https://example.com// -> https://example.com
         // - but https://example.com/path/ remains unchanged
+        check_url = format!("{}{}", &check_url[..7], Regex::new(r"/{2,}").unwrap().replace_all(&check_url[7..], "/"));
         if check_url.matches('/').count() == 3 {
             check_url = check_url.trim_end_matches('/').to_string();
         }
@@ -416,6 +422,17 @@ fn test_privatebin() {
     assert_eq!(privatebin.instance.https_redirect, true);
     assert_eq!(privatebin.instance.attachments, false);
     assert_eq!(privatebin.instance.country_id, "CH");
+}
+
+#[test]
+fn test_url_rewrites() {
+    for suffix in vec!["/", "/?foo", "/#foo", "//"].into_iter() {
+        for schema in vec!["https", "http"].into_iter() {
+            let url = format!("{}://privatebin.net{}", schema, suffix);
+            let privatebin = PrivateBin::new(url).unwrap();
+            assert_eq!(privatebin.instance.url, String::from("https://privatebin.net"));
+        }
+    }
 }
 
 #[test]
