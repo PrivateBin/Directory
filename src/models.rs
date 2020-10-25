@@ -93,6 +93,7 @@ impl Instance {
         ));
         client.set_redirect_policy(hyper::client::RedirectPolicy::FollowNone);
         client.set_read_timeout(Some(Duration::from_secs(5)));
+        client.set_write_timeout(Some(Duration::from_secs(5)));
         client
     }
 

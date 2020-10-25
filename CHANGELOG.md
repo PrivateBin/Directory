@@ -1,5 +1,8 @@
 # Change log
 
+## 0.4.5
+- set 5 second write timeout on all HTTP(S) connections
+
 ## 0.4.4
 - adding some timing diagnostics to the cron task output
 - set 5 second timeout on all HTTP(S) connections
