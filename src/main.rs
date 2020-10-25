@@ -22,7 +22,7 @@ use std::fmt::Write;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::RwLock;
 use std::thread;
-use std::time::SystemTime;
+use std::time::{Instant, SystemTime};
 
 pub mod schema;
 use schema::checks::dsl::{checks, updated};
@@ -198,26 +198,27 @@ fn cron(conn: DirectoryDbConn) {
                 .map(|instance| {
                     thread::spawn(move || {
                         // measure instance being up or down
-                        (
-                            instance.url.clone(),
-                            CheckNew::new(instance.check_up(), instance.id),
-                        )
+                        let timer = Instant::now();
+                        let check_result = CheckNew::new(instance.check_up(), instance.id);
+                        (instance.url, check_result, timer.elapsed())
                     })
                 })
                 .collect(); // this starts the threads, then iterate over the results
             children.into_iter().for_each(|h| {
-                let (instance_url, instance_check) = h.join().unwrap();
+                let (instance_url, instance_check, elapsed) = h.join().unwrap();
                 instance_checks.push(instance_check);
-                println!("Instance {} checked", instance_url);
+                println!("Instance {} checked ({:?})", instance_url, elapsed);
             });
 
             // store checks
+            let timer = Instant::now();
             match diesel::insert_into(checks)
                 .values(&instance_checks)
                 .execute(&*conn)
             {
                 Ok(_) => {
-                    println!("stored uptime checks");
+                    println!("stored uptime checks ({:?})", timer.elapsed());
+                    let timer = Instant::now();
 
                     // delete checks older then:
                     // now - ((CHECKS_TO_STORE - 1) * CRON_INTERVAL)
@@ -234,7 +235,11 @@ fn cron(conn: DirectoryDbConn) {
                         .execute(&*conn)
                     {
                         Ok(_) => {
-                            println!("cleaned up checks stored before {}", cutoff);
+                            println!(
+                                "cleaned up checks stored before {} ({:?})",
+                                cutoff,
+                                timer.elapsed()
+                            );
                         }
                         Err(e) => {
                             println!(
@@ -267,6 +272,7 @@ fn cron_full(conn: DirectoryDbConn) {
                 .into_iter()
                 .map(|instance| {
                     thread::spawn(move || {
+                        let timer = Instant::now();
                         let mut result = String::new();
                         let mut instance_options = [
                             ("version", instance.version.clone(), String::new()),
@@ -314,8 +320,9 @@ fn cron_full(conn: DirectoryDbConn) {
                                     );
                                     writeln!(
                                         &mut instance_update_success,
-                                        "Instance {} checked and updated:",
-                                        instance.url
+                                        "Instance {} checked and updated ({:?}):",
+                                        instance.url,
+                                        timer.elapsed()
                                     )
                                     .unwrap();
                                     for (label, old, new) in instance_options.iter() {
@@ -331,12 +338,14 @@ fn cron_full(conn: DirectoryDbConn) {
                                 } else {
                                     writeln!(
                                         &mut result,
-                                        "Instance {} checked, no update required",
-                                        instance.url
+                                        "Instance {} checked, no update required ({:?})",
+                                        instance.url,
+                                        timer.elapsed()
                                     )
                                     .unwrap();
                                 }
 
+                                let timer = Instant::now();
                                 // retrieve latest scan
                                 scan = privatebin.scans[0].clone();
                                 // if missing, wait for the scan to conclude and poll again
@@ -364,8 +373,19 @@ fn cron_full(conn: DirectoryDbConn) {
                                     );
                                     writeln!(
                                         &mut scan_update_success,
-                                        "Instance {} rating updated to: {}",
-                                        instance.url, scan.rating
+                                        "Instance {} rating updated to: {} ({:?})",
+                                        instance.url,
+                                        scan.rating,
+                                        timer.elapsed()
+                                    )
+                                    .unwrap();
+                                } else {
+                                    writeln!(
+                                        &mut scan_update_success,
+                                        "Instance {} rating remains unchanged at: {} ({:?})",
+                                        instance.url,
+                                        scan.rating,
+                                        timer.elapsed()
                                     )
                                     .unwrap();
                                 }
@@ -435,6 +455,7 @@ fn cron_full(conn: DirectoryDbConn) {
                 }
             });
 
+            let timer = Instant::now();
             for (query, query_success, instance_url) in instance_update_queries {
                 match query.execute(&*conn) {
                     Ok(_) => {
@@ -448,6 +469,12 @@ fn cron_full(conn: DirectoryDbConn) {
                     }
                 }
             }
+            println!(
+                "all instance update queries concluded ({:?})",
+                timer.elapsed()
+            );
+
+            let timer = Instant::now();
             for (query, query_success, instance_url) in scan_update_queries {
                 match query.execute(&*conn) {
                     Ok(_) => {
@@ -461,8 +488,10 @@ fn cron_full(conn: DirectoryDbConn) {
                     }
                 }
             }
+            println!("all scan update queries concluded ({:?})", timer.elapsed());
 
             // delete checks and instances that failed too many times
+            let timer = Instant::now();
             match sql_query(&format!(
                 "DELETE FROM instances \
                 WHERE id in ( \
@@ -476,7 +505,10 @@ fn cron_full(conn: DirectoryDbConn) {
             ))
             .execute(&*conn)
             {
-                Ok(_) => println!("removed instances that failed too many times"),
+                Ok(_) => println!(
+                    "removed instances that failed too many times ({:?})",
+                    timer.elapsed()
+                ),
                 Err(e) => {
                     println!("error removing instances failing too many times: {}", e);
                 }

@@ -13,6 +13,7 @@ use serde::Serialize;
 use std::io::{BufRead, BufReader};
 use std::sync::atomic::AtomicU64;
 use std::sync::RwLock;
+use std::time::Duration;
 
 pub const TITLE: &str = "Instance Directory";
 const OBSERVATORY_API: &str = "https://http-observatory.security.mozilla.org/api/v1/analyze?host=";
@@ -91,6 +92,7 @@ impl Instance {
             hyper_sync_rustls::TlsClient::new(),
         ));
         client.set_redirect_policy(hyper::client::RedirectPolicy::FollowNone);
+        client.set_read_timeout(Some(Duration::from_secs(5)));
         client
     }
 
