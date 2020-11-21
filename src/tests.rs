@@ -84,7 +84,7 @@ fn add_update_and_delete() {
             now - (interval * super::CRON_INTERVAL)
         ));
     }
-    write!(&mut query, "{})", instance_checks.join("), (")).unwrap();
+    let _ = write!(&mut query, "{})", instance_checks.join("), ("));
     conn.execute(&query)
         .expect("inserting test checks for instance ID 1");
     let oldest_update = now - (super::CHECKS_TO_STORE * super::CRON_INTERVAL);
@@ -127,7 +127,7 @@ fn add_update_and_delete() {
             now - (interval * super::CRON_INTERVAL)
         ));
     }
-    write!(&mut query, "{})", instance_checks.join("), (")).unwrap();
+    let _ = write!(&mut query, "{})", instance_checks.join("), ("));
     conn.execute(&query)
         .expect("inserting test checks for instance ID 2");
 

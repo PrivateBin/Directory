@@ -294,12 +294,11 @@ impl PrivateBin {
                         }
                         // initiate a rescan
                         if api_response.get("error") != None {
-                            client
+                            let _ = client
                                 .post(&observatory_url)
                                 .header(Instance::get_user_agent())
                                 .body("hidden=true")
-                                .send()
-                                .unwrap();
+                                .send();
                         }
                     }
                 }

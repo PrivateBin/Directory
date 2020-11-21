@@ -318,31 +318,28 @@ fn cron_full(conn: DirectoryDbConn) {
                                             country_id.eq(privatebin.instance.country_id),
                                         )),
                                     );
-                                    writeln!(
+                                    let _ = writeln!(
                                         &mut instance_update_success,
                                         "Instance {} checked and updated ({:?}):",
                                         instance.url,
                                         timer.elapsed()
-                                    )
-                                    .unwrap();
+                                    );
                                     for (label, old, new) in instance_options.iter() {
                                         if old != new {
-                                            writeln!(
+                                            let _ = writeln!(
                                                 &mut instance_update_success,
                                                 "    {} was {}, updated to {}",
                                                 label, old, new
-                                            )
-                                            .unwrap();
+                                            );
                                         }
                                     }
                                 } else {
-                                    writeln!(
+                                    let _ = writeln!(
                                         &mut result,
                                         "Instance {} checked, no update required ({:?})",
                                         instance.url,
                                         timer.elapsed()
-                                    )
-                                    .unwrap();
+                                    );
                                 }
 
                                 let timer = Instant::now();
@@ -371,32 +368,29 @@ fn cron_full(conn: DirectoryDbConn) {
                                             percent.eq(scan.percent),
                                         )),
                                     );
-                                    writeln!(
+                                    let _ = writeln!(
                                         &mut scan_update_success,
                                         "Instance {} rating updated to: {} ({:?})",
                                         instance.url,
                                         scan.rating,
                                         timer.elapsed()
-                                    )
-                                    .unwrap();
+                                    );
                                 } else {
-                                    writeln!(
+                                    let _ = writeln!(
                                         &mut scan_update_success,
                                         "Instance {} rating remains unchanged at: {} ({:?})",
                                         instance.url,
                                         scan.rating,
                                         timer.elapsed()
-                                    )
-                                    .unwrap();
+                                    );
                                 }
                             }
                             Err(e) => {
-                                writeln!(
+                                let _ = writeln!(
                                     &mut result,
                                     "Instance {} failed to be checked with error: {}",
                                     instance.url, e
-                                )
-                                .unwrap();
+                                );
                             }
                         }
 
