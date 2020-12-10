@@ -1,5 +1,8 @@
 # Change log
 
+## 0.4.6
+- avoiding unwraps, preventing threads to panic on observatory errors
+
 ## 0.4.5
 - set 5 second write timeout on all HTTP(S) connections
 
