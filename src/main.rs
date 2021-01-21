@@ -416,16 +416,18 @@ fn cron_full(conn: DirectoryDbConn) {
                 ) = h.join().unwrap();
                 print!("{}", thread_result);
 
-                if thread_result.ends_with("doesn't want to get added to the directory.") {
-                    // robots.txt must have changed, delete it immediately
+                // robots.txt must have changed or site no longer an instance, delete it immediately
+                if thread_result.ends_with("doesn't want to get added to the directory.")
+                    || thread_result.ends_with("doesn't seem to be a PrivateBin instance.")
+                {
                     match sql_query(&format!(
                         "DELETE FROM instances \
-                            WHERE id LIKE {};",
+                        WHERE id LIKE {};",
                         instance.id
                     ))
                     .execute(&*conn)
                     {
-                        Ok(_) => println!("    removed the instance, as per updated robots.txt"),
+                        Ok(_) => println!("    removed the instance, due to: {}", thread_result),
                         Err(e) => {
                             println!("    error removing the instance: {}", e);
                         }
