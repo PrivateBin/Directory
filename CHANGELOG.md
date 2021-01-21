@@ -1,5 +1,10 @@
 # Change log
 
+## 0.4.7
+- default to browsers dark mode setting, but persist the users choice #17
+- delete instances, if cron detects they are no longer PrivateBin instances
+- bump libraries
+
 ## 0.4.6
 - avoiding unwraps, preventing threads to panic on observatory errors
 
