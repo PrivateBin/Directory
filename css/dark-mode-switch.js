@@ -22,9 +22,9 @@
       );
     }
     function initTheme() {
-      var darkThemeSelected =
-        localStorage.getItem("darkSwitch") !== null &&
-        localStorage.getItem("darkSwitch") === "dark";
+      var darkThemeSelected = localStorage.getItem("darkSwitch") !== null
+        ? localStorage.getItem("darkSwitch") === "dark"
+        : window.matchMedia("(prefers-color-scheme: dark)").matches;
       darkSwitch.checked = darkThemeSelected;
       darkThemeSelected
         ? enableDark()
@@ -39,7 +39,7 @@
         localStorage.setItem("darkSwitch", "dark");
       } else {
         disableDark();
-        localStorage.removeItem("darkSwitch");
+        localStorage.setItem("darkSwitch", "light");
       }
     }
   }
