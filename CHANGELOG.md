@@ -1,5 +1,8 @@
 # Change log
 
+## 0.4.8
+- fix immediate delete in full cron
+
 ## 0.4.7
 - default to browsers dark mode setting, but persist the users choice #17
 - delete instances, if cron detects they are no longer PrivateBin instances

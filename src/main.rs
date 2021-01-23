@@ -417,8 +417,8 @@ fn cron_full(conn: DirectoryDbConn) {
                 print!("{}", thread_result);
 
                 // robots.txt must have changed or site no longer an instance, delete it immediately
-                if thread_result.ends_with("doesn't want to get added to the directory.")
-                    || thread_result.ends_with("doesn't seem to be a PrivateBin instance.")
+                if thread_result.ends_with("doesn't want to get added to the directory.\n")
+                    || thread_result.ends_with("doesn't seem to be a PrivateBin instance.\n")
                 {
                     match sql_query(&format!(
                         "DELETE FROM instances \

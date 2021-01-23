@@ -59,6 +59,7 @@ fn add_update_and_delete() {
     let rocket = rocket();
     let conn = DirectoryDbConn::get_one(&rocket).expect("database connection");
     let client = Client::new(rocket).expect("valid rocket instance");
+    let empty: Vec<i32> = vec![]; // needs an explicit type, as it can't be inferred from an immutable, empty vector
     let now = SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
         .unwrap()
@@ -104,7 +105,6 @@ fn add_update_and_delete() {
         .filter(updated.eq(diesel::dsl::sql(&format!("{}", oldest_update))))
         .load(&*conn)
         .expect("selecting oldest check, now deleted");
-    let empty: Vec<i32> = vec![]; // need to do this, so Rust can infer the type of the empty vector
     assert_eq!(empty, oldest_check);
 
     // insert another instance, subsequently to be deleted
@@ -137,12 +137,29 @@ fn add_update_and_delete() {
         .filter(instance_id.eq(2))
         .load(&*conn)
         .expect("selecting check for instance 2, now deleted");
-    let empty: Vec<i32> = vec![]; // need to do this, so Rust can infer the type of the empty vector
     assert_eq!(empty, deleted_check);
     let deleted_instance: Vec<i32> = instances::table
         .select(instances::id)
         .filter(instances::id.eq(2))
         .load(&*conn)
         .expect("selecting instance 2, now deleted");
+    assert_eq!(empty, deleted_instance);
+
+    // check immediate removal of sites that are no longer PrivateBin instances
+    let query = "UPDATE instances SET url = 'https://privatebin.info' WHERE id = 1".to_string();
+    conn.execute(&query)
+        .expect("manipulating instance ID 1 to point to a non-PrivateBin URL");
+    cron_full(DirectoryDbConn::get_one(&super::rocket()).expect("database connection"));
+    let deleted_check: Vec<i32> = checks
+        .select(instance_id)
+        .filter(instance_id.eq(1))
+        .load(&*conn)
+        .expect("selecting check for instance 1, now deleted");
+    assert_eq!(empty, deleted_check);
+    let deleted_instance: Vec<i32> = instances::table
+        .select(instances::id)
+        .filter(instances::id.eq(1))
+        .load(&*conn)
+        .expect("selecting instance 1, now deleted");
     assert_eq!(empty, deleted_instance);
 }

@@ -34,7 +34,7 @@ This document lists the licenses of the projects used in the instance directory.
 #### Used by
 
 
-- [directory](https://crates.io/crates/directory) 0.4.7
+- [directory](https://crates.io/crates/directory) 0.4.8
 
 
 ```
