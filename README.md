@@ -1,40 +1,5 @@
-# Directory
+# Directories of web service instances
 
-Rust based directory application to collect lists of federated instances of a
-software.
+This branch contains a static XHTML page with a list of links to directories of web service instances, sorted alphabetically.
 
-The application is built primarily using the following libraries:
-
-- https://rocket.rs - web framework, including a web server and multi-threaded request handler
-- https://hyper.rs - http client and server
-- https://tera.netlify.com - template engine
-- https://diesel.rs - database ORM and query builder
-
-## Configuration
-
-The image supports the use of the following environment variables:
-
-- `CRON`: (Optional) If set when running the app a cron cycle is performed.
-  Set it to `CRON=FULL` to run a full cron (once a day).
-  use this app to hammer the listed instances. Any string works, for example
-  one generated using `openssl rand -hex 32`
-- `GEOIP_MMDB`: path to the GeoIP database, in MaxMind format
-- `ROCKET_DATABASES`: [database dict](https://api.rocket.rs/v0.4/rocket_contrib/databases/index.html#environment-variables)
-  for Diesel SQLite library integration into Rocket
-- `ROCKET_SECRET_KEY`: Needed in production environments, used to protect
-  private cookies, generate this using `openssl rand -base64 32`
-
-## Volumes
-
-- `/var/directory.sqlite`: Database file, needs to be writeable
-- `/var/geoip-country.mmdb`: GeoIP database, country level is sufficient
-
-## Network ports
-
-- `8000/tcp`: HTTP of web service
-
-## Usage
-
-```shell
-make help
-```
+To add additional software instance directories to this list, create a merge request for this [branch](https://github.com/PrivateBin/Directory/tree/static-index). In order to qualify being added to the list, the web service directory needs to be [Free/Libre and Open Source Software (FLOSS)](https://www.gnu.org/philosophy/floss-and-foss.en.html) and it should get updated at least once a week, manually or automatically. The main development branch of this project contains an example of an automated directory list service and the maintainer would be interested to expand it to cover additional web services - [raise an issue per web service type to discuss this further](https://github.com/PrivateBin/Directory/issues/new/choose), if you are interested in participating.

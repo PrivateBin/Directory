@@ -1,8 +1,0 @@
-CREATE TABLE scans (
-    id INTEGER NOT NULL PRIMARY KEY,
-    scanner VARCHAR(255) NOT NULL,
-    rating VARCHAR(255) NOT NULL DEFAULT "-",
-    percent INTEGER NOT NULL DEFAULT 0,
-    instance_id INTEGER NOT NULL,
-    FOREIGN KEY(instance_id) REFERENCES instances(id) ON DELETE CASCADE
-);
