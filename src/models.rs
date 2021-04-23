@@ -425,7 +425,7 @@ fn test_privatebin() {
     let url = String::from("https://privatebin.net");
     let privatebin = PrivateBin::new(url.clone()).unwrap();
     assert_eq!(privatebin.instance.url, url);
-    assert_eq!(privatebin.instance.version, "1.3.4");
+    assert_eq!(privatebin.instance.version, "1.3.5");
     assert_eq!(privatebin.instance.https, true);
     assert_eq!(privatebin.instance.https_redirect, true);
     assert_eq!(privatebin.instance.attachments, false);

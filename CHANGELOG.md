@@ -1,5 +1,8 @@
 # Change log
 
+## 0.4.9
+- bump libraries, update rustc
+
 ## 0.4.8
 - fix immediate delete in full cron
 

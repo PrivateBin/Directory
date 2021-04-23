@@ -3,7 +3,7 @@
 NAME = directory
 IMAGE = privatebin/$(NAME)
 PORT = 8000
-BUILD_IMAGE = ekidd/rust-musl-builder:nightly-2020-03-12-sqlite
+BUILD_IMAGE = ekidd/rust-musl-builder:nightly-2021-02-13-sqlite
 DATABASE = var/directory.sqlite
 ROCKET_DATABASES = "{directory={url=\"$(DATABASE)\"}}"
 GEOIP_MMDB = var/geoip-country.mmdb
