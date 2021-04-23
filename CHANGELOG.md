@@ -1,6 +1,7 @@
 # Change log
 
 ## 0.4.9
+- added example for caddy configuration
 - bump libraries, update rustc
 
 ## 0.4.8
