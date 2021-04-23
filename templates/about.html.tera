@@ -36,9 +36,7 @@ if ($http_user_agent ~ PrivateBinDirectoryBot ) {
 			</pre>
 			<h5>Caddy</h5>
 			<pre>
-@privatebinbot {
-    header User-Agent PrivateBinDirectoryBot
-}
+@privatebinbot header User-Agent PrivateBinDirectoryBot*
 respond @privatebinbot 403
 			</pre>
 			<h3 id="faq-how">How the instances are tested</h3>
