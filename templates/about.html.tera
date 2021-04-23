@@ -34,6 +34,13 @@ if ($http_user_agent ~ PrivateBinDirectoryBot ) {
 	return 403;
 }
 			</pre>
+			<h5>Caddy</h5>
+			<pre>
+@privatebinbot {
+    header User-Agent PrivateBinDirectoryBot
+}
+respond @privatebinbot 403
+			</pre>
 			<h3 id="faq-how">How the instances are tested</h3>
 			<p>The columns of the lists are based on the following checks:</p>
 			<dl>
