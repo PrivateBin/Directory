@@ -125,7 +125,11 @@ const ADD_TITLE: &str = "Add instance";
 
 #[get("/about")]
 fn about() -> Template {
-    let page = StatusPage::new(format!("About the {}", TITLE), None, Some(env!("CARGO_PKG_VERSION").to_string()));
+    let page = StatusPage::new(
+        format!("About the {}", TITLE),
+        None,
+        Some(env!("CARGO_PKG_VERSION").to_string()),
+    );
     Template::render("about", &page)
 }
 
