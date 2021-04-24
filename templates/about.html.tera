@@ -28,16 +28,16 @@ RewriteEngine On
 RewriteCond %{HTTP_USER_AGENT} PrivateBinDirectoryBot [NC]
 RewriteRule . - [R=403,L]
 			</pre>
+			<h5>Caddy</h5>
+			<pre>
+@privatebinbot header User-Agent PrivateBinDirectoryBot*
+respond @privatebinbot 403
+			</pre>
 			<h5>Nginx</h5>
 			<pre>
 if ($http_user_agent ~ PrivateBinDirectoryBot ) {
 	return 403;
 }
-			</pre>
-			<h5>Caddy</h5>
-			<pre>
-@privatebinbot header User-Agent PrivateBinDirectoryBot*
-respond @privatebinbot 403
 			</pre>
 			<h3 id="faq-how">How the instances are tested</h3>
 			<p>The columns of the lists are based on the following checks:</p>
@@ -57,6 +57,6 @@ respond @privatebinbot 403
 				<dt>Country</dt>
 				<dd>The IP assigned to the domain of the instance URL is checked against a GeoIP database. The precision of these databases is limited, but can serve as an indication in which country the instance is hosted. This may serve to select an instance that is close by or avoid instances located in undesirable jurisdictions.</dd>
 			</dl>
-			<h3 id="faq-when">When the instances get updated</h3>
+			<h3 id="faq-when">When do the instances get updated</h3>
 			<dd>The uptime checks via HTTP(S) HEAD request are performed every 15 minutes. Once a day all the other properties get re-evaluated and the list updated.</dd>
 {% endblock content %}
