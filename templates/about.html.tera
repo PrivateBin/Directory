@@ -2,8 +2,6 @@
 {% import "macros" as draw %}
 
 {% block content %}
-{{ draw::error(message=error) }}
-{{ draw::success(message=success) }}
 			<dd>This is a directory application intended to collect a list of federated instances of a PrivateBin, written in <a href="https://www.rust-lang.org/">Rust 🦀</a>.</dd>
 			<nav>
 				<ol class="pagination">
@@ -21,7 +19,7 @@ User-agent: PrivateBinDirectoryBot
 Disallow: /
 			</pre>
 			<h4>Webserver configuration</h4>
-			<p>If you don't want to rely on this service following your sites <code>robots.txt</code>, you can configure your webserver to block any access that matches this services user agent, which starts with the string <code>PrivateBinDirectoryBot</code>. Here below are examples of configuration snippets to do just that:</p>
+			<p>If you don't want to rely on this service following your sites <code>robots.txt</code>, you can configure your webserver to block any access that matches this services user agent, which <strong>starts with</strong> the string <code>PrivateBinDirectoryBot</code>. Here below are examples of configuration snippets to do just that:</p>
 			<h5>Apache</h5>
 			<pre>
 RewriteEngine On
@@ -38,6 +36,17 @@ respond @privatebinbot 403
 if ($http_user_agent ~ PrivateBinDirectoryBot ) {
 	return 403;
 }
+			</pre>
+			<h5>How to validate your webserver configuration</h5>
+			<p>The complete user agent string currently looks like this:</p>
+			<pre>
+PrivateBinDirectoryBot/{{ success }} (+https://privatebin.info/directory/about)
+			</pre>
+			<p>You can validate your webserver configuration using the following <code>curl</code> command, expecting to get an HTTP 403 status code, if you block the bot:</p>
+			<pre>
+$ curl -I -H "User-Agent: PrivateBinDirectoryBot/{{ success }} (+https://privatebin.info/directory/about)" https://paste.example.com
+HTTP/2 403
+[...]
 			</pre>
 			<h3 id="faq-how">How the instances are tested</h3>
 			<p>The columns of the lists are based on the following checks:</p>

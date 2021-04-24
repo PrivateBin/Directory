@@ -1,5 +1,7 @@
 # Change log
 
+- documented how to validate blocking the bot
+
 ## 0.4.9
 - added example for caddy configuration
 - bump libraries, update rustc
