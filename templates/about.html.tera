@@ -37,14 +37,16 @@ if ($http_user_agent ~ PrivateBinDirectoryBot ) {
 	return 403;
 }
 			</pre>
-			<h5>Check your webserver configuration</h5>
+			<h5>How to validate your webserver configuration</h5>
 			<p>The complete user agent string currently looks like this:</p>
 			<pre>
 PrivateBinDirectoryBot/{{ success }} (+https://privatebin.info/directory/about)
 			</pre>
-			<p>You can test your configuration using the following <code>curl</code> command, expecting an HTTP 403 status code:</p>
+			<p>You can validate your webserver configuration using the following <code>curl</code> command, expecting to get an HTTP 403 status code, if you block the bot:</p>
 			<pre>
-curl -I -H "User-Agent: PrivateBinDirectoryBot/{{ success }} (+https://privatebin.info/directory/about)" https://paste.example.com
+$ curl -I -H "User-Agent: PrivateBinDirectoryBot/{{ success }} (+https://privatebin.info/directory/about)" https://paste.example.com
+HTTP/2 403
+[...]
 			</pre>
 			<h3 id="faq-how">How the instances are tested</h3>
 			<p>The columns of the lists are based on the following checks:</p>
