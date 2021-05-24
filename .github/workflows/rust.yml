@@ -11,7 +11,7 @@ jobs:
     - name: Install latest Rust nightly (required by Rocket)
       uses: actions-rs/toolchain@v1
       with:
-        toolchain: nightly
+        toolchain: nightly-2021-02-13
         override: true
         components: rustfmt, clippy
     - name: Cache GeoIP database

@@ -263,9 +263,11 @@ impl PrivateBin {
             }
             Err(_) => {
                 // only emit an error if this server is reported as HTTP,
-                // HTTPS-only webservers are allowed, though uncommon
+                // HTTPS-only webservers, though uncommon, do enforce HTTPS
                 if url.starts_with("http://") {
                     return Err(format!("Web server on URL {} is not responding.", http_url));
+                } else {
+                    https_redirect = true;
                 }
             }
         }
@@ -478,6 +480,15 @@ fn test_zerobin() {
     assert_eq!(privatebin.instance.version, "0.20");
     assert_eq!(privatebin.instance.attachments, false);
     assert_eq!(privatebin.instance.country_id, "CH");
+}
+
+#[test]
+fn test_no_http() {
+    let url = String::from("https://pasta.lysergic.dev");
+    let privatebin = PrivateBin::new(url.clone()).unwrap();
+    assert_eq!(privatebin.instance.url, url.to_string());
+    assert_eq!(privatebin.instance.https, true);
+    assert_eq!(privatebin.instance.https_redirect, true);
 }
 
 #[derive(Queryable)]

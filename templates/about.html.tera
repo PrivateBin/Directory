@@ -56,7 +56,7 @@ HTTP/2 403
 				<dt>HTTPS</dt>
 				<dd>A simple check if the instance URL is responding, when accessed over HTTPS.</dd>
 				<dt>HTTPS enforced</dt>
-				<dd>The instance URL is accessed over HTTP and a 30x redirection status is recieved with an HTTP <code>Location</code> header, that points to a matching HTTPS URL.</dd>
+				<dd>The instance URL is accessed over HTTP and a 30x redirection status is recieved with an HTTP <code>Location</code> header, that points to a matching HTTPS URL or there is no HTTP access offered on port 80.</dd>
 				<dt>Observatory Rating</dt>
 				<dd>The <a href="https://github.com/mozilla/http-observatory/blob/master/httpobs/docs/scoring.md#http-observatory-scoring-methodology">score</a> of an instance as per the <a href="https://observatory.mozilla.org/">Mozilla Observatory 🐲</a>.</dd>
 				<dt>File upload</dt>
