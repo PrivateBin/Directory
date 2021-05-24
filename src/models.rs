@@ -263,9 +263,11 @@ impl PrivateBin {
             }
             Err(_) => {
                 // only emit an error if this server is reported as HTTP,
-                // HTTPS-only webservers are allowed, though uncommon
+                // HTTPS-only webservers, though uncommon, do enforce HTTPS
                 if url.starts_with("http://") {
                     return Err(format!("Web server on URL {} is not responding.", http_url));
+                } else {
+                    https_redirect = true;
                 }
             }
         }
