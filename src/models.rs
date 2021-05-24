@@ -486,10 +486,7 @@ fn test_zerobin() {
 fn test_no_http() {
     let url = String::from("https://pasta.lysergic.dev");
     let privatebin = PrivateBin::new(url.clone()).unwrap();
-    assert_eq!(
-        privatebin.instance.url,
-        url.to_string()
-    );
+    assert_eq!(privatebin.instance.url, url.to_string());
     assert_eq!(privatebin.instance.https, true);
     assert_eq!(privatebin.instance.https_redirect, true);
 }
