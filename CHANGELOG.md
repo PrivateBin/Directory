@@ -1,5 +1,7 @@
 # Change log
 
+## 0.5.0
+- instances with disabled port 80 now get a checkmark for "HTTPS enforced"
 - documented how to validate blocking the bot
 
 ## 0.4.9
