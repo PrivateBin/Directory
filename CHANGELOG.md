@@ -1,5 +1,8 @@
 # Change log
 
+## unreleased
+- add country name for mouse over on country flags
+
 ## 0.5.0
 - instances with disabled port 80 now get a checkmark for "HTTPS enforced"
 - documented how to validate blocking the bot
@@ -113,7 +116,7 @@
 - embedded database migrations into application
 - added uptime checks in additional table #8
 - added cron hook for instance update #7
-- added about page #4 
+- added about page #4
 
 ## 0.1.3
 

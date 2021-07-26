@@ -13,20 +13,26 @@
 					<tr class="{{ row | first }}">
 		{%- for col in row %}
 			{%- if col is starting_with("opacity") %}{% continue %}{% endif %}
+			{%- if col is containing("|") %}
+				{%- set country = col | split %}
+						<td title="{{ country[0] }}" aria-label="{{ country[0] }}">
+							{{ country[1] }}
+			{%- else %}
 						<td>
-		{%- if col is starting_with("http") %}
+				{%- if col is starting_with("http") %}
 							<a href="{{ col }}">{{ col }}</a>
-		{%- else %}
-			{%- if col == "✔" %}
+				{%- else %}
+					{%- if col == "✔" %}
 							<span class="check_passed">
-			{%- elif col == "✘" %}
+					{%- elif col == "✘" %}
 							<span class="check_failed">
-			{%- endif %}
+					{%- endif %}
 							{% if col == "✔" or col == "✘" %}	{% endif %}{{ col }}
-			{%- if col == "✔" or col == "✘" %}
+					{%- if col == "✔" or col == "✘" %}
 							</span>
+					{%- endif %}
+				{%- endif %}
 			{%- endif %}
-		{%- endif %}
 						</td>
 		{%- endfor %}
 					</tr>

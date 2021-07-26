@@ -9,6 +9,7 @@ extern crate diesel_migrations;
 extern crate rocket;
 #[macro_use]
 extern crate rocket_contrib;
+
 use diesel::dsl::sql_query;
 use diesel::prelude::*;
 use rocket::fairing::AdHoc;
@@ -17,7 +18,9 @@ use rocket::response::Redirect;
 use rocket::{Rocket, State};
 //use rocket_contrib::databases::diesel; not working with current diesel
 use rocket_contrib::serve::StaticFiles;
+use rocket_contrib::templates::tera::{self, to_value, try_get_value, Value};
 use rocket_contrib::templates::Template;
+use std::collections::HashMap;
 use std::fmt::Write;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::RwLock;
@@ -561,13 +564,23 @@ fn get_instances() -> diesel::query_builder::SqlQuery {
     )
 }
 
+fn tera_split(string: Value, _: HashMap<String, Value>) -> tera::Result<Value> {
+    let v: Vec<String> = try_get_value!("split", "value", String, string)
+        .split("|")
+        .map(str::to_string)
+        .collect();
+    Ok(to_value(&v).unwrap())
+}
+
 fn rocket() -> Rocket {
     rocket::ignite()
         .mount("/", routes![index, about, add, save, favicon])
         .mount("/img", StaticFiles::from("/img"))
         .mount("/css", StaticFiles::from("/css"))
         .attach(DirectoryDbConn::fairing())
-        .attach(Template::fairing())
+        .attach(Template::custom(|engines| {
+            engines.tera.register_filter("split", tera_split);
+        }))
         .manage(InstancesCache {
             timeout: AtomicU64::new(0),
             instances: RwLock::new(vec![]),
