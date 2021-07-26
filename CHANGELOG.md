@@ -2,6 +2,7 @@
 
 ## unreleased
 - add country name for mouse over on country flags
+- bump libraries
 
 ## 0.5.0
 - instances with disabled port 80 now get a checkmark for "HTTPS enforced"
