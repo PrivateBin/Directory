@@ -562,13 +562,13 @@ fn get_instances() -> diesel::query_builder::SqlQuery {
             GROUP BY instances.id \
             ORDER BY version DESC, https DESC, https_redirect DESC, \
             mozilla_observatory.percent DESC, attachments DESC, uptime DESC, url ASC \
-            LIMIT 100",
+            LIMIT 1000",
     )
 }
 
 fn tera_split(string: Value, _: HashMap<String, Value>) -> tera::Result<Value> {
     let v: Vec<String> = try_get_value!("split", "value", String, string)
-        .split("|")
+        .split('|')
         .map(str::to_string)
         .collect();
     Ok(to_value(&v).unwrap())
