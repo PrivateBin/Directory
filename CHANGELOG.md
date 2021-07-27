@@ -2,6 +2,7 @@
 
 ## unreleased
 - add country name for mouse over on country flags
+- share HTTP(S) client instance across threads
 - bump libraries
 
 ## 0.5.0
@@ -28,7 +29,7 @@
 
 ## 0.4.4
 - adding some timing diagnostics to the cron task output
-- set 5 second timeout on all HTTP(S) connections
+- set 5 second read timeout on all HTTP(S) connections
 
 ## 0.4.3
 - run threads in parallel as intended, by collecting the lazy iterators m(

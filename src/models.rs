@@ -13,11 +13,24 @@ use regex::Regex;
 use serde::Serialize;
 use std::io::{BufRead, BufReader};
 use std::sync::atomic::AtomicU64;
+use std::sync::Arc;
 use std::sync::RwLock;
 use std::time::Duration;
 
 pub const TITLE: &str = "Instance Directory";
 const OBSERVATORY_API: &str = "https://http-observatory.security.mozilla.org/api/v1/analyze?host=";
+
+lazy_static! {
+    static ref HTTP_CLIENT: Arc<Client> = Arc::new({
+        let mut client = Client::with_connector(hyper::net::HttpsConnector::new(
+            hyper_sync_rustls::TlsClient::new(),
+        ));
+        client.set_redirect_policy(hyper::client::RedirectPolicy::FollowNone);
+        client.set_read_timeout(Some(Duration::from_secs(5)));
+        client.set_write_timeout(Some(Duration::from_secs(5)));
+        client
+    });
+}
 
 #[derive(Queryable)]
 pub struct Check {
@@ -58,7 +71,8 @@ pub struct Instance {
 
 impl Instance {
     pub fn check_up(&self) -> bool {
-        match Self::get_client()
+        match HTTP_CLIENT
+            .clone()
             .head(&self.url)
             .header(Self::get_user_agent())
             .send()
@@ -90,16 +104,6 @@ impl Instance {
             CountryCode::for_alpha2(&country_id).unwrap().name(),
             country_code_points.iter().cloned().collect::<String>()
         )
-    }
-
-    pub fn get_client() -> Client {
-        let mut client = Client::with_connector(hyper::net::HttpsConnector::new(
-            hyper_sync_rustls::TlsClient::new(),
-        ));
-        client.set_redirect_policy(hyper::client::RedirectPolicy::FollowNone);
-        client.set_read_timeout(Some(Duration::from_secs(5)));
-        client.set_write_timeout(Some(Duration::from_secs(5)));
-        client
     }
 
     pub fn get_user_agent() -> UserAgent {
@@ -165,17 +169,16 @@ impl PrivateBin {
         }
 
         let check_url = Self::strip_url(url);
-        let client = Instance::get_client();
-        let (https, https_redirect, check_url) = Self::check_http(&check_url, &client)?;
+        let (https, https_redirect, check_url) = Self::check_http(&check_url)?;
         // don't proceed if the robots.txt tells us not to index the instance
-        Self::check_robots(&check_url, &client)?;
+        Self::check_robots(&check_url)?;
 
         // remaining checks may run in parallel
         let country_check_url = check_url.clone();
         let version_check_url = check_url.clone();
         let rating_check_url = check_url.clone();
         let check_country = thread::spawn(move || Self::check_country(&country_check_url));
-        let check_version = thread::spawn(move || Self::check_version(&version_check_url, &client));
+        let check_version = thread::spawn(move || Self::check_version(&version_check_url));
         let check_rating =
             thread::spawn(move || Self::check_rating_mozilla_observatory(&rating_check_url));
 
@@ -233,7 +236,7 @@ impl PrivateBin {
     }
 
     // check for HTTP to HTTPS redirect
-    fn check_http(url: &str, client: &Client) -> Result<(bool, bool, String), String> {
+    fn check_http(url: &str) -> Result<(bool, bool, String), String> {
         let mut https = false;
         let mut https_redirect = false;
         let mut http_url = url.to_string();
@@ -243,6 +246,7 @@ impl PrivateBin {
             https = true;
             http_url.replace_range(..5, "http");
         }
+        let client = HTTP_CLIENT.clone();
         match client
             .head(&http_url)
             .header(Connection::keep_alive())
@@ -283,7 +287,7 @@ impl PrivateBin {
     pub fn check_rating_mozilla_observatory(url: &str) -> ScanNew {
         if let Ok(parsed_url) = Url::parse(url) {
             if let Some(host) = parsed_url.host_str() {
-                let client = Instance::get_client();
+                let client = HTTP_CLIENT.clone();
                 let observatory_url = format!("{}{}", OBSERVATORY_API, host);
                 let result = client
                     .get(&observatory_url)
@@ -315,12 +319,13 @@ impl PrivateBin {
     }
 
     // check robots.txt and bail if server doesn't want us to index the instance
-    fn check_robots(url: &str, client: &Client) -> Result<bool, String> {
+    fn check_robots(url: &str) -> Result<bool, String> {
         let robots_url = if url.ends_with('/') {
             format!("{}robots.txt", url)
         } else {
             format!("{}/robots.txt", url)
         };
+        let client = HTTP_CLIENT.clone();
         let result = client
             .get(&robots_url)
             .header(Connection::keep_alive())
@@ -352,7 +357,8 @@ impl PrivateBin {
     }
 
     // check version of privatebin / zerobin JS library & attachment support
-    fn check_version(url: &str, client: &Client) -> Result<(String, bool), String> {
+    fn check_version(url: &str) -> Result<(String, bool), String> {
+        let client = HTTP_CLIENT.clone();
         let result = client
             .get(url)
             .header(Connection::close())

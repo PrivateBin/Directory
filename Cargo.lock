@@ -383,6 +383,7 @@ dependencies = [
  "hyper",
  "hyper-sync-rustls",
  "isocountry",
+ "lazy_static",
  "libsqlite3-sys",
  "maxminddb",
  "regex",

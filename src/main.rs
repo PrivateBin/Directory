@@ -6,6 +6,8 @@ extern crate diesel;
 #[macro_use]
 extern crate diesel_migrations;
 #[macro_use]
+extern crate lazy_static;
+#[macro_use]
 extern crate rocket;
 #[macro_use]
 extern crate rocket_contrib;
@@ -39,6 +41,8 @@ mod tests;
 const CRON_INTERVAL: u64 = 900; // 15 minutes
 const CHECKS_TO_STORE: u64 = 100; // amount of checks to keep
 const MAX_FAILURES: u64 = 90; // remove instances that failed this many times
+
+const ADD_TITLE: &str = "Add instance";
 
 #[get("/")]
 fn index(conn: DirectoryDbConn, cache: State<InstancesCache>) -> Template {
@@ -123,8 +127,6 @@ fn index(conn: DirectoryDbConn, cache: State<InstancesCache>) -> Template {
     let page = TablePage::new(String::from("Welcome!"), tables);
     Template::render("list", &page)
 }
-
-const ADD_TITLE: &str = "Add instance";
 
 #[get("/about")]
 fn about() -> Template {
