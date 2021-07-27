@@ -49,9 +49,5 @@ jobs:
       uses: actions-rs/clippy-check@v1
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
-    - name: Run cargo bloat
-      uses: orf/cargo-bloat-action@v1
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
     - name: Remove SQLite database, to prevent it getting cached
       run: rm var/directory.sqlite
