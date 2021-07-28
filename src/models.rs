@@ -7,7 +7,6 @@ use hyper::header::{Connection, Location, UserAgent};
 use hyper::status::{StatusClass, StatusCode};
 use hyper::Client;
 use hyper::Url;
-use isocountry::CountryCode;
 use maxminddb::geoip2::Country;
 use regex::Regex;
 use serde::Serialize;
@@ -88,22 +87,6 @@ impl Instance {
         } else {
             String::from("\u{2718}")
         }
-    }
-
-    pub fn format_country(country_id: String) -> String {
-        // 1F1E6 is the unicode code point for the "REGIONAL INDICATOR SYMBOL
-        // LETTER A" and A is 65 in unicode and ASCII, so we can calculate the
-        // the unicode flags as follows:
-        let mut country_chars = country_id.chars();
-        let country_code_points = [
-            std::char::from_u32(0x1F1E6 - 65 + country_chars.next().unwrap() as u32).unwrap(),
-            std::char::from_u32(0x1F1E6 - 65 + country_chars.next().unwrap() as u32).unwrap(),
-        ];
-        format!(
-            "{}|{}",
-            CountryCode::for_alpha2(&country_id).unwrap().name(),
-            country_code_points.iter().cloned().collect::<String>()
-        )
     }
 
     pub fn get_user_agent() -> UserAgent {

@@ -1,5 +1,8 @@
 # Change log
 
+# unreleased
+- separating model and view logic of country flag
+
 ## 0.5.1
 - add country name for mouse over on country flags
 - increase number of displayed instances (we now have over 100 instances)

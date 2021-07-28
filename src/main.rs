@@ -14,6 +14,7 @@ extern crate rocket_contrib;
 
 use diesel::dsl::sql_query;
 use diesel::prelude::*;
+use isocountry::CountryCode;
 use rocket::fairing::AdHoc;
 use rocket::request::Form;
 use rocket::response::Redirect;
@@ -43,6 +44,9 @@ const CHECKS_TO_STORE: u64 = 100; // amount of checks to keep
 const MAX_FAILURES: u64 = 90; // remove instances that failed this many times
 
 const ADD_TITLE: &str = "Add instance";
+// 1F1E6 is the unicode code point for the "REGIONAL INDICATOR SYMBOL
+// LETTER A" and 41 is the one for A in unicode and ASCII
+const REGIONAL_INDICATOR_OFFSET: u32 = 0x1F1E6 - 0x41;
 
 #[get("/")]
 fn index(conn: DirectoryDbConn, cache: State<InstancesCache>) -> Template {
@@ -115,7 +119,7 @@ fn index(conn: DirectoryDbConn, cache: State<InstancesCache>) -> Template {
             instance.rating_mozilla_observatory.clone(),
             Instance::format(instance.attachments),
             format!("{}%", instance.uptime),
-            Instance::format_country(instance.country_id.clone()),
+            instance.country_id.clone(),
         ]);
     }
     tables.push(HtmlTable {
@@ -560,12 +564,21 @@ fn get_instances() -> diesel::query_builder::SqlQuery {
     )
 }
 
-fn tera_split(string: Value, _: HashMap<String, Value>) -> tera::Result<Value> {
-    let v: Vec<String> = try_get_value!("split", "value", String, string)
-        .split('|')
-        .map(str::to_string)
-        .collect();
-    Ok(to_value(&v).unwrap())
+fn filter_country(string: Value, _: HashMap<String, Value>) -> tera::Result<Value> {
+    let country_code = try_get_value!("country", "value", String, string);
+    let mut country_chars = country_code.chars();
+    let country_code_points = [
+        std::char::from_u32(REGIONAL_INDICATOR_OFFSET + country_chars.next().unwrap() as u32)
+            .unwrap(),
+        std::char::from_u32(REGIONAL_INDICATOR_OFFSET + country_chars.next().unwrap() as u32)
+            .unwrap(),
+    ];
+    Ok(to_value(format!(
+        "<td title=\"{0}\" aria-label=\"{0}\">{1}</td>",
+        CountryCode::for_alpha2(&country_code).unwrap().name(),
+        country_code_points.iter().cloned().collect::<String>()
+    ))
+    .unwrap())
 }
 
 fn rocket() -> Rocket {
@@ -575,7 +588,7 @@ fn rocket() -> Rocket {
         .mount("/css", StaticFiles::from("/css"))
         .attach(DirectoryDbConn::fairing())
         .attach(Template::custom(|engines| {
-            engines.tera.register_filter("split", tera_split);
+            engines.tera.register_filter("country", filter_country);
         }))
         .manage(InstancesCache {
             timeout: AtomicU64::new(0),

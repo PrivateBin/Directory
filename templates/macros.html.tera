@@ -13,10 +13,8 @@
 					<tr class="{{ row | first }}">
 		{%- for col in row %}
 			{%- if col is starting_with("opacity") %}{% continue %}{% endif %}
-			{%- if col is containing("|") %}
-				{%- set country = col | split %}
-						<td title="{{ country[0] }}" aria-label="{{ country[0] }}">
-							{{ country[1] }}
+			{%- if col is matching("^[A-Z]{2}$") %}
+						{{ col | country | safe }}
 			{%- else %}
 						<td>
 				{%- if col is starting_with("http") %}
@@ -32,8 +30,8 @@
 							</span>
 					{%- endif %}
 				{%- endif %}
-			{%- endif %}
 						</td>
+			{%- endif %}
 		{%- endfor %}
 					</tr>
 	{%- endfor %}
