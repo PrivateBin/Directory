@@ -1,6 +1,7 @@
 # Change log
 
 # unreleased
+- hard 15s timeout on client connections
 - separating model and view logic of country flag
 
 ## 0.5.1

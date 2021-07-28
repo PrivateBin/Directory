@@ -382,6 +382,7 @@ dependencies = [
  "dns-lookup",
  "hyper",
  "hyper-sync-rustls",
+ "hyper-timeout-connector",
  "isocountry",
  "lazy_static",
  "libsqlite3-sys",
@@ -401,7 +402,7 @@ checksum = "53ecafc952c4528d9b51a458d1a8904b81783feff9fde08ab6ed2545ff396872"
 dependencies = [
  "cfg-if 1.0.0",
  "libc",
- "socket2",
+ "socket2 0.4.0",
  "winapi 0.3.9",
 ]
 
@@ -602,6 +603,16 @@ dependencies = [
  "rustls",
  "webpki",
  "webpki-roots",
+]
+
+[[package]]
+name = "hyper-timeout-connector"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6f92e392fb2ca0233947612369780c652c8788d8650fa2fa1d9cf274cf2cfa33"
+dependencies = [
+ "hyper",
+ "socket2 0.2.4",
 ]
 
 [[package]]
@@ -1434,6 +1445,19 @@ name = "smallvec"
 version = "1.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fe0f37c9e8f3c5a4a66ad655a93c74daac4ad00c441533bf5c6e7990bb42604e"
+
+[[package]]
+name = "socket2"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "36b4896961171cd3317c7e9603d88f379f8c6e45342212235d356496680c68fd"
+dependencies = [
+ "cfg-if 0.1.10",
+ "kernel32-sys",
+ "libc",
+ "winapi 0.2.8",
+ "ws2_32-sys",
+]
 
 [[package]]
 name = "socket2"

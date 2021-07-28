@@ -4,9 +4,11 @@ use super::schema::instances;
 use super::schema::scans;
 use dns_lookup::lookup_host;
 use hyper::header::{Connection, Location, UserAgent};
+use hyper::net::HttpsConnector;
 use hyper::status::{StatusClass, StatusCode};
 use hyper::Client;
 use hyper::Url;
+use hyper_timeout_connector::HttpTimeoutConnector;
 use maxminddb::geoip2::Country;
 use regex::Regex;
 use serde::Serialize;
@@ -21,8 +23,11 @@ const OBSERVATORY_API: &str = "https://http-observatory.security.mozilla.org/api
 
 lazy_static! {
     static ref HTTP_CLIENT: Arc<Client> = Arc::new({
-        let mut client = Client::with_connector(hyper::net::HttpsConnector::new(
+        let mut connector = HttpTimeoutConnector::new();
+        connector.set_connect_timeout(Some(Duration::from_secs(15)));
+        let mut client = Client::with_connector(HttpsConnector::with_connector(
             hyper_sync_rustls::TlsClient::new(),
+            connector,
         ));
         client.set_redirect_policy(hyper::client::RedirectPolicy::FollowNone);
         client.set_read_timeout(Some(Duration::from_secs(5)));
