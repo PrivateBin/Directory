@@ -57,7 +57,7 @@ impl CheckNew {
     }
 }
 
-#[derive(QueryableByName, Queryable)]
+#[derive(Clone, QueryableByName, Queryable, Serialize)]
 #[table_name = "instances"]
 pub struct Instance {
     pub id: i32,

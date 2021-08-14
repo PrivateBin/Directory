@@ -33,7 +33,7 @@ features = ["bundled"]
 [dependencies.rocket_contrib]
 version = "0.4.7"
 default-features = false
-features = ["diesel_sqlite_pool", "serve", "tera_templates"]
+features = ["diesel_sqlite_pool", "json", "serve", "tera_templates"]
 
 [dependencies.serde]
 version = "1.0.126"

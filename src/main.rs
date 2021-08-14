@@ -20,11 +20,13 @@ use rocket::request::Form;
 use rocket::response::Redirect;
 use rocket::{Rocket, State};
 //use rocket_contrib::databases::diesel; not working with current diesel
+use rocket_contrib::json::Json;
 use rocket_contrib::serve::StaticFiles;
 use rocket_contrib::templates::tera::{self, to_value, try_get_value, Value};
 use rocket_contrib::templates::Template;
 use std::collections::HashMap;
 use std::fmt::Write;
+use std::num::NonZeroU8;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::RwLock;
 use std::thread;
@@ -32,7 +34,6 @@ use std::time::{Instant, SystemTime};
 
 pub mod schema;
 use schema::checks::dsl::{checks, updated};
-use schema::instances::dsl::*;
 use schema::scans::dsl::{percent, rating, scanner, scans};
 pub mod models;
 use models::*;
@@ -50,22 +51,7 @@ const REGIONAL_INDICATOR_OFFSET: u32 = 0x1F1E6 - 0x41;
 
 #[get("/")]
 fn index(conn: DirectoryDbConn, cache: State<InstancesCache>) -> Template {
-    let now = SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap()
-        .as_secs();
-    if now >= cache.timeout.load(Ordering::Relaxed) {
-        match get_instances().load::<Instance>(&*conn) {
-            // flush cache
-            Ok(instances_live) => {
-                cache.timeout.store(now + CRON_INTERVAL, Ordering::Relaxed);
-                let mut instances_cache = cache.instances.write().unwrap();
-                *instances_cache = instances_live;
-            }
-            // database might be write-locked, try it again in a minute
-            Err(_) => cache.timeout.store(now + 60, Ordering::Relaxed),
-        }
-    }
+    update_instance_cache(conn, &cache);
 
     let header = [
         String::from("Address"),
@@ -150,6 +136,7 @@ fn add() -> Template {
 
 #[post("/add", data = "<form>")]
 fn save(conn: DirectoryDbConn, form: Form<AddForm>, cache: State<InstancesCache>) -> Template {
+    use schema::instances::dsl::*;
     let form = form.into_inner();
     let add_url = form.url.trim();
 
@@ -202,6 +189,38 @@ fn save(conn: DirectoryDbConn, form: Form<AddForm>, cache: State<InstancesCache>
     Template::render("add", &page)
 }
 
+#[get("/api?<top>&<attachments>&<country>&<https>&<https_redirect>&<version>", format = "json")]
+fn api(top: Option<NonZeroU8>, attachments: Option<bool>, country: Option<String>, https: Option<bool>, https_redirect: Option<bool>, version: Option<String>, conn: DirectoryDbConn, cache: State<InstancesCache>) -> Json<Vec<Instance>> {
+    let mut instance_list: Vec<Instance> = vec![];
+    update_instance_cache(conn, &cache);
+
+    let (mut major, mut minor) = (0, 0);
+    for instance in &*cache.instances.read().unwrap() {
+        // parse the major and minor bits of the version
+        let mmp: Vec<u16> = instance
+            .version
+            .split('.')
+            .filter_map(|s| s.parse::<u16>().ok())
+            .collect();
+        if mmp.is_empty() {
+            continue;
+        }
+        let (instance_major, instance_minor) = (mmp[0] as u16, mmp[1] as u16);
+
+        if minor == 0 {
+            // this is the first instance in the list
+            major = instance_major;
+            minor = instance_minor;
+        } else if major != instance_major || minor != instance_minor {
+            // start a new one
+            major = instance_major;
+            minor = instance_minor;
+        }
+        instance_list.push(instance.clone());
+    }
+    Json(instance_list)
+}
+
 fn cron(conn: DirectoryDbConn) {
     match get_instances().load::<Instance>(&*conn) {
         Ok(instance_list) => {
@@ -233,10 +252,7 @@ fn cron(conn: DirectoryDbConn) {
 
                     // delete checks older then:
                     // now - ((CHECKS_TO_STORE - 1) * CRON_INTERVAL)
-                    let cutoff = SystemTime::now()
-                        .duration_since(SystemTime::UNIX_EPOCH)
-                        .unwrap()
-                        .as_secs()
+                    let cutoff = get_epoch()
                         - ((CHECKS_TO_STORE - 1) * CRON_INTERVAL);
                     match diesel::delete(checks)
                         .filter(updated.lt(diesel::dsl::sql(&format!(
@@ -275,6 +291,7 @@ fn cron(conn: DirectoryDbConn) {
 }
 
 fn cron_full(conn: DirectoryDbConn) {
+    use schema::instances::dsl::*;
     match get_instances().load::<Instance>(&*conn) {
         Ok(instance_list) => {
             let mut instance_update_queries = vec![];
@@ -546,6 +563,13 @@ fn run_db_migrations(rocket: Rocket) -> Result<Rocket, Rocket> {
     }
 }
 
+fn get_epoch() -> u64 {
+    SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap()
+        .as_secs()
+}
+
 fn get_instances() -> diesel::query_builder::SqlQuery {
     sql_query(
         "SELECT instances.id, url, version, https, https_redirect, attachments, \
@@ -562,6 +586,22 @@ fn get_instances() -> diesel::query_builder::SqlQuery {
             mozilla_observatory.percent DESC, attachments DESC, uptime DESC, url ASC \
             LIMIT 1000",
     )
+}
+
+fn update_instance_cache(conn: DirectoryDbConn, cache: &State<InstancesCache>) {
+    let now = get_epoch();
+    if now >= cache.timeout.load(Ordering::Relaxed) {
+        match get_instances().load::<Instance>(&*conn) {
+            // flush cache
+            Ok(instances_live) => {
+                cache.timeout.store(now + CRON_INTERVAL, Ordering::Relaxed);
+                let mut instances_cache = cache.instances.write().unwrap();
+                *instances_cache = instances_live;
+            }
+            // database might be write-locked, try it again in a minute
+            Err(_) => cache.timeout.store(now + 60, Ordering::Relaxed),
+        }
+    }
 }
 
 fn filter_country(string: Value, _: HashMap<String, Value>) -> tera::Result<Value> {
@@ -583,7 +623,7 @@ fn filter_country(string: Value, _: HashMap<String, Value>) -> tera::Result<Valu
 
 fn rocket() -> Rocket {
     rocket::ignite()
-        .mount("/", routes![index, about, add, save, favicon])
+        .mount("/", routes![index, about, add, api, save, favicon])
         .mount("/img", StaticFiles::from("/img"))
         .mount("/css", StaticFiles::from("/css"))
         .attach(DirectoryDbConn::fairing())
