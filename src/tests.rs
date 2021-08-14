@@ -1,10 +1,12 @@
-use super::{cron, cron_full, rocket, DirectoryDbConn};
+use super::{
+    check_full, check_up, get_epoch, rocket, DirectoryDbConn, CHECKS_TO_STORE, CRON_INTERVAL,
+    MAX_FAILURES,
+};
 use diesel::prelude::*;
 use rocket::http::ContentType;
 use rocket::http::Status;
 use rocket::local::Client;
 use std::fmt::Write;
-use std::time::SystemTime;
 
 #[test]
 fn index() {
@@ -60,10 +62,7 @@ fn add_update_and_delete() {
     let conn = DirectoryDbConn::get_one(&rocket).expect("database connection");
     let client = Client::new(rocket).expect("valid rocket instance");
     let empty: Vec<i32> = vec![]; // needs an explicit type, as it can't be inferred from an immutable, empty vector
-    let now = SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap()
-        .as_secs();
+    let now = get_epoch();
 
     // insert an instance (tests run in parallel, so add_post_success() may not be ready)
     let mut add_response = client
@@ -79,16 +78,16 @@ fn add_update_and_delete() {
     // insert checks
     let mut query = "INSERT INTO checks (updated, up, instance_id) VALUES (".to_string();
     let mut instance_checks = vec![];
-    for interval in 0..(super::CHECKS_TO_STORE + 1) {
+    for interval in 0..(CHECKS_TO_STORE + 1) {
         instance_checks.push(format!(
             "datetime({}, 'unixepoch'), 1, 1",
-            now - (interval * super::CRON_INTERVAL)
+            now - (interval * CRON_INTERVAL)
         ));
     }
     let _ = write!(&mut query, "{})", instance_checks.join("), ("));
     conn.execute(&query)
         .expect("inserting test checks for instance ID 1");
-    let oldest_update = now - (super::CHECKS_TO_STORE * super::CRON_INTERVAL);
+    let oldest_update = now - (CHECKS_TO_STORE * CRON_INTERVAL);
     let oldest_check: Vec<i32> = checks
         .select(instance_id)
         .filter(updated.eq(diesel::dsl::sql(&format!(
@@ -99,7 +98,7 @@ fn add_update_and_delete() {
         .expect("selecting oldest check");
     assert_eq!(vec![1], oldest_check);
 
-    cron(DirectoryDbConn::get_one(&super::rocket()).expect("database connection"));
+    check_up(DirectoryDbConn::get_one(&super::rocket()).expect("database connection"));
     let oldest_check: Vec<i32> = checks
         .select(instance_id)
         .filter(updated.eq(diesel::dsl::sql(&format!("{}", oldest_update))))
@@ -121,17 +120,17 @@ fn add_update_and_delete() {
     // insert checks
     let mut query = "INSERT INTO checks (updated, up, instance_id) VALUES (".to_string();
     let mut instance_checks = vec![];
-    for interval in 0..super::MAX_FAILURES {
+    for interval in 0..MAX_FAILURES {
         instance_checks.push(format!(
             "datetime({}, 'unixepoch'), 0, 2",
-            now - (interval * super::CRON_INTERVAL)
+            now - (interval * CRON_INTERVAL)
         ));
     }
     let _ = write!(&mut query, "{})", instance_checks.join("), ("));
     conn.execute(&query)
         .expect("inserting test checks for instance ID 2");
 
-    cron_full(DirectoryDbConn::get_one(&super::rocket()).expect("database connection"));
+    check_full(DirectoryDbConn::get_one(&super::rocket()).expect("database connection"));
     let deleted_check: Vec<i32> = checks
         .select(instance_id)
         .filter(instance_id.eq(2))
@@ -149,7 +148,7 @@ fn add_update_and_delete() {
     let query = "UPDATE instances SET url = 'https://privatebin.info' WHERE id = 1".to_string();
     conn.execute(&query)
         .expect("manipulating instance ID 1 to point to a non-PrivateBin URL");
-    cron_full(DirectoryDbConn::get_one(&super::rocket()).expect("database connection"));
+    check_full(DirectoryDbConn::get_one(&super::rocket()).expect("database connection"));
     let deleted_check: Vec<i32> = checks
         .select(instance_id)
         .filter(instance_id.eq(1))
