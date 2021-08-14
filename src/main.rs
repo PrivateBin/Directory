@@ -194,33 +194,23 @@ fn api(
     conn: DirectoryDbConn,
     cache: State<InstancesCache>,
 ) -> Json<Vec<Instance>> {
+    use rand::seq::SliceRandom;
     let mut instance_list: Vec<Instance> = vec![];
     update_instance_cache(conn, &cache);
 
-    let (mut major, mut minor) = (0, 0);
-    for instance in &*cache.instances.read().unwrap() {
-        // parse the major and minor bits of the version
-        let mmp: Vec<u16> = instance
-            .version
-            .split('.')
-            .filter_map(|s| s.parse::<u16>().ok())
-            .collect();
-        if mmp.is_empty() {
-            continue;
-        }
-        let (instance_major, instance_minor) = (mmp[0] as u16, mmp[1] as u16);
-
-        if minor == 0 {
-            // this is the first instance in the list
-            major = instance_major;
-            minor = instance_minor;
-        } else if major != instance_major || minor != instance_minor {
-            // start a new one
-            major = instance_major;
-            minor = instance_minor;
-        }
-        instance_list.push(instance.clone());
+    let mut top = u8::from(top.unwrap_or_else(|| NonZeroU8::new(10).unwrap()));
+    if top > 100 {
+        top = 100;
     }
+    for instance in &*cache.instances.read().unwrap() {
+        instance_list.push(instance.clone());
+        top -= 1;
+        if top == 0 {
+            break;
+        }
+    }
+    let mut rng = rand::thread_rng();
+    instance_list.shuffle(&mut rng);
     Json(instance_list)
 }
 

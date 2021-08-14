@@ -1,5 +1,8 @@
 # Change log
 
+# 0.6.0
+- JSON api for retrieving top instances, randomized for load balancing
+
 # 0.5.2
 - hard 15s timeout on client connections
 - separating model and view logic of country flag

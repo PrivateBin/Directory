@@ -49,8 +49,8 @@ image: ## Build the container image.
 		-t $(IMAGE) .
 
 run: ## Run a container from the image.
-	docker run -d --init --name $(NAME) -p=$(PORT):$(PORT) \
-		--read-only -v "$(CURDIR)/var":/var --restart=always $(IMAGE)
+	docker run -d --rm --init --name $(NAME) -p=$(PORT):$(PORT) \
+		--read-only -v "$(CURDIR)/var":/var $(IMAGE)
 
 check: ## Launch tests to verify that the service works as expected, requires a running container.
 	@sleep 1
@@ -79,8 +79,7 @@ coverage: ## Run tarpaulin on the code to report on the tests code coverage.
 clean: $(DATABASE) ## Stops and removes the running container.
 	git checkout $(DATABASE)
 	docker ps -q --filter "name=$(NAME)" | grep -q . && \
-	docker stop $(NAME) && \
-	docker rm $(NAME) || true
+	docker stop $(NAME)
 
 help: ## Displays these usage instructions.
 	@echo "Usage: make <target(s)>"

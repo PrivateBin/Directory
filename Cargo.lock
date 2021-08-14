@@ -375,7 +375,7 @@ dependencies = [
 
 [[package]]
 name = "directory"
-version = "0.5.2"
+version = "0.6.0"
 dependencies = [
  "diesel",
  "diesel_migrations",
@@ -387,6 +387,7 @@ dependencies = [
  "lazy_static",
  "libsqlite3-sys",
  "maxminddb",
+ "rand",
  "regex",
  "rocket",
  "rocket_contrib",

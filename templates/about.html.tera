@@ -6,8 +6,9 @@
 			<nav>
 				<ol class="pagination">
 					<li class="page-item"><a href="#faq-remove-instance" class="page-link">Removing an instance</a></li>
-					<li class="page-item"><a href="#faq-how" class="page-link">How the instances are tested</a></li>
-					<li class="page-item"><a href="#faq-when" class="page-link">When the instances get updated</a></li>
+					<li class="page-item"><a href="#faq-how" class="page-link">How the instances get tested</a></li>
+					<li class="page-item"><a href="#faq-when" class="page-link">When do the instances get updated</a></li>
+					<li class="page-item"><a href="#faq-api" class="page-link">Using the instance list programmtically</a></li>
 				</ol>
 			</nav>
 			<h3 id="faq-remove-instance">Removing an instance</h3>
@@ -44,11 +45,11 @@ PrivateBinDirectoryBot/{{ success }} (+https://privatebin.info/directory/about)
 			</pre>
 			<p>You can validate your webserver configuration using the following <code>curl</code> command, expecting to get an HTTP 403 status code, if you block the bot:</p>
 			<pre>
-$ curl -I -H "User-Agent: PrivateBinDirectoryBot/{{ success }} (+https://privatebin.info/directory/about)" https://paste.example.com
+$ curl --head --header "User-Agent: PrivateBinDirectoryBot/{{ success }} (+https://privatebin.info/directory/about)" https://paste.example.com
 HTTP/2 403
 [...]
 			</pre>
-			<h3 id="faq-how">How the instances are tested</h3>
+			<h3 id="faq-how">How the instances get tested</h3>
 			<p>The columns of the lists are based on the following checks:</p>
 			<dl>
 				<dt>Version</dt>
@@ -67,5 +68,19 @@ HTTP/2 403
 				<dd>The IP assigned to the domain of the instance URL is checked against a GeoIP database. The precision of these databases is limited, but can serve as an indication in which country the instance is hosted. This may serve to select an instance that is close by or avoid instances located in undesirable jurisdictions.</dd>
 			</dl>
 			<h3 id="faq-when">When do the instances get updated</h3>
-			<dd>The uptime checks via HTTP(S) HEAD request are performed every 15 minutes. Once a day all the other properties get re-evaluated and the list updated.</dd>
+			<p>The uptime checks via HTTP(S) HEAD request are performed every 15 minutes. Once a day all the other properties get re-evaluated and the list updated.</p>
+			<h3 id="faq-api">Using the instance list programmtically</h3>
+			<p>The instance list can be retrieved as a JSON encoded data structure by calling the <code>/api</code> endpoint with the HTTP header <code>Accept: application/json</code> set. The list order is randomized every time to spread the load to the instances.</p>
+			<pre>
+$ curl --header "Accept: application/json" https://privatebin.info/directory/api
+			</pre>
+			<p>Additionally, the following optional GET parameters can be set, to adjust the output:</p>
+			<dl>
+				<dt>top</dt>
+				<dd>Number between 1 - 100, defaults to 10. How many instances to return from the top of the list.</dd>
+			</dl>
+			<p>For example, to retrieve the top 3 instances, randomized:</p>
+			<pre>
+$ curl --header "Accept: application/json" https://privatebin.info/directory/api?top=3
+			</pre>
 {% endblock content %}
