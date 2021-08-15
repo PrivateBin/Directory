@@ -1,4 +1,5 @@
 extern crate hyper_sync_rustls;
+use super::functions::rating_to_percent;
 use super::schema::checks;
 use super::schema::instances;
 use super::schema::scans;
@@ -510,24 +511,7 @@ pub struct ScanNew {
 
 impl ScanNew {
     pub fn new(scanner: &str, rating: &str, instance_id: i32) -> ScanNew {
-        // see https://en.wikipedia.org/wiki/Academic_grading_in_the_United_States#Numerical_and_letter_grades
-        let percent: i32;
-        match rating {
-            "A+" => percent = 97,
-            "A" => percent = 93,
-            "A-" => percent = 90,
-            "B+" => percent = 87,
-            "B" => percent = 83,
-            "B-" => percent = 80,
-            "C+" => percent = 77,
-            "C" => percent = 73,
-            "C-" => percent = 70,
-            "D+" => percent = 67,
-            "D" => percent = 63,
-            "D-" => percent = 60,
-            "F" => percent = 50,
-            _ => percent = 0,
-        }
+        let percent: i32 = rating_to_percent(rating).into();
         ScanNew {
             scanner: scanner.to_string(),
             rating: rating.to_string(),

@@ -34,6 +34,28 @@ pub fn get_instances() -> SqlQuery {
     )
 }
 
+pub fn rating_to_percent(rating: &str) -> u8 {
+    // see https://en.wikipedia.org/wiki/Academic_grading_in_the_United_States#Numerical_and_letter_grades
+    let percent: u8;
+    match rating {
+        "A+" => percent = 97,
+        "A" => percent = 93,
+        "A-" => percent = 90,
+        "B+" => percent = 87,
+        "B" => percent = 83,
+        "B-" => percent = 80,
+        "C+" => percent = 77,
+        "C" => percent = 73,
+        "C-" => percent = 70,
+        "D+" => percent = 67,
+        "D" => percent = 63,
+        "D-" => percent = 60,
+        "F" => percent = 50,
+        _ => percent = 0,
+    }
+    percent
+}
+
 pub fn update_instance_cache(conn: DirectoryDbConn, cache: &State<InstancesCache>) {
     let now = get_epoch();
     if now >= cache.timeout.load(Ordering::Relaxed) {

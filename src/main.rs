@@ -181,7 +181,7 @@ fn save(conn: DirectoryDbConn, form: Form<AddForm>, cache: State<InstancesCache>
 }
 
 #[get(
-    "/api?<top>&<attachments>&<country>&<https>&<https_redirect>&<version>",
+    "/api?<top>&<attachments>&<country>&<https>&<https_redirect>&<version>&<min_uptime>&<min_rating>",
     format = "json"
 )]
 fn api(
@@ -191,6 +191,8 @@ fn api(
     https: Option<bool>,
     https_redirect: Option<bool>,
     version: Option<String>,
+    min_uptime: Option<u8>,
+    min_rating: Option<String>,
     conn: DirectoryDbConn,
     cache: State<InstancesCache>,
 ) -> Json<Vec<Instance>> {
@@ -198,11 +200,60 @@ fn api(
     let mut instance_list: Vec<Instance> = vec![];
     update_instance_cache(conn, &cache);
 
-    let mut top = u8::from(top.unwrap_or_else(|| NonZeroU8::new(10).unwrap()));
+    // unwrap & validate arguments
+    let mut top: u8 = top.unwrap_or_else(|| NonZeroU8::new(10).unwrap()).into();
     if top > 100 {
         top = 100;
     }
+
+    let is_attachments_set = attachments.is_some();
+    let attachments = attachments.unwrap_or(false);
+
+    let is_country_set = country.is_some();
+    let country = country.unwrap_or_default();
+
+    let is_https_set = https.is_some();
+    let https = https.unwrap_or(false);
+
+    let is_https_redirect_set = https_redirect.is_some();
+    let https_redirect = https_redirect.unwrap_or(false);
+
+    let is_version_set = version.is_some();
+    let version = version.unwrap_or_default();
+
+    let mut min_uptime: i32 = min_uptime.unwrap_or(0).into();
+    if min_uptime > 100 {
+        min_uptime = 100;
+    }
+
+    let is_min_rating_set = min_rating.is_some();
+    let min_rating = rating_to_percent(&min_rating.unwrap_or_else(|| "F".to_string()));
+
+    // prepare list according to arguments
     for instance in &*cache.instances.read().unwrap() {
+        if is_attachments_set && instance.attachments != attachments {
+            continue;
+        }
+        if is_country_set && instance.country_id != country {
+            continue;
+        }
+        if is_https_set && instance.https != https {
+            continue;
+        }
+        if is_https_redirect_set && instance.https_redirect != https_redirect {
+            continue;
+        }
+        if is_version_set && instance.version.starts_with(&version) {
+            continue;
+        }
+        if instance.uptime < min_uptime {
+            continue;
+        }
+        if is_min_rating_set && min_rating < rating_to_percent(&instance.rating_mozilla_observatory)
+        {
+            continue;
+        }
+
         instance_list.push(instance.clone());
         top -= 1;
         if top == 0 {
