@@ -6,7 +6,7 @@ RUN sudo apt-get update && \
         zlib1g-dev \
     && \
     sudo rm -rf /var/lib/apt/lists/*
-RUN curl -Ls https://github.com/PrivateBin/Directory/archive/0.6.0.tar.gz | tar -xz --strip 1 && \
+RUN curl -Ls https://github.com/PrivateBin/Directory/archive/0.6.1.tar.gz | tar -xz --strip 1 && \
     cargo build --release && \
     mv target/x86_64-unknown-linux-musl/release/directory directory && \
     strip directory && \

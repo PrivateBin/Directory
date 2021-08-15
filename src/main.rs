@@ -243,13 +243,13 @@ fn api(
         if is_https_redirect_set && instance.https_redirect != https_redirect {
             continue;
         }
-        if is_version_set && instance.version.starts_with(&version) {
+        if is_version_set && !instance.version.starts_with(&version) {
             continue;
         }
         if instance.uptime < min_uptime {
             continue;
         }
-        if is_min_rating_set && min_rating < rating_to_percent(&instance.rating_mozilla_observatory)
+        if is_min_rating_set && rating_to_percent(&instance.rating_mozilla_observatory) < min_rating
         {
             continue;
         }

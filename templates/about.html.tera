@@ -74,10 +74,24 @@ HTTP/2 403
 			<pre>
 $ curl --header "Accept: application/json" https://privatebin.info/directory/api
 			</pre>
-			<p>Additionally, the following optional GET parameters can be set, to adjust the output:</p>
+			<p>Additionally, the following optional GET parameters can be sent, to adjust the output:</p>
 			<dl>
 				<dt>top</dt>
 				<dd>Number between 1 - 100, defaults to 10. How many instances to return from the top of the list.</dd>
+				<dt>attachments</dt>
+				<dd>Boolean (true or false), unset by default. Only return instances that offer attachment upload in their web UI - third party clients can always upload attachments.</dd>
+				<dt>country</dt>
+				<dd>ISO 3166-1 alpha-2 country code, unset by default. Only return instances of that country. Note the limitations of this type of lookup, as explained above.</dd>
+				<dt>https</dt>
+				<dd>Boolean (true or false), unset by default. Only return instances that offer HTTPS.</dd>
+				<dt>https_redirect</dt>
+				<dd>Boolean (true or false), unset by default. Only return instances that enforce HTTPS, either by having HTTP disabled or redirected to HTTPS.</dd>
+				<dt>version</dt>
+				<dd>Version prefix, for example "1" or "1.3" or "1.3.5". Only return instances that start with that version string.</dd>
+				<dt>min_uptime</dt>
+				<dd>Number between 1 - 100, unset by default. Only return instances that have an uptime of that percentage or higher.</dd>
+				<dt>min_rating</dt>
+				<dd>Ratings as per <a href="https://en.wikipedia.org/wiki/Academic_grading_in_the_United_States#Numerical_and_letter_grades">Academic grading in the USA</a> (A+, A, A−, B+, B, B−, C+, C, C−, D+, D, D−, F &amp; - (unrated)), unset by default. Only return instances that have that rating or higher.</dd>
 			</dl>
 			<p>For example, to retrieve the top 3 instances, randomized:</p>
 			<pre>

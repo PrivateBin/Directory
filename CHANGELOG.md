@@ -1,5 +1,8 @@
 # Change log
 
+# 0.6.1
+- implement additional filters for the JSON api
+
 # 0.6.0
 - JSON api for retrieving top instances, randomized for load balancing
 
