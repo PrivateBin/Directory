@@ -9,10 +9,10 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
-    - name: Install latest Rust nightly (required by Rocket)
+    - name: Install Rust
       uses: actions-rs/toolchain@v1
       with:
-        toolchain: nightly-2021-02-13
+        toolchain: 1.57.0
         override: true
         components: rustfmt, clippy
     - name: Cache GeoIP database
