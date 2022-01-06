@@ -1,40 +1,76 @@
-extern crate hyper_sync_rustls;
 use super::functions::rating_to_percent;
 use super::schema::checks;
 use super::schema::instances;
 use super::schema::scans;
+use diesel::SqliteConnection;
 use dns_lookup::lookup_host;
-use hyper::header::{Connection, Location, UserAgent};
-use hyper::net::HttpsConnector;
-use hyper::status::{StatusClass, StatusCode};
-use hyper::Client;
-use hyper::Url;
-use hyper_timeout_connector::HttpTimeoutConnector;
+use hyper::body::{aggregate, to_bytes, Buf}; // Buf provides the reader() trait
+use hyper::client::connect::HttpConnector;
+use hyper::header::{HeaderValue, CONNECTION, LOCATION, USER_AGENT};
+use hyper::{Body, Client, Method, Request, Response, StatusCode, Uri};
+use hyper_rustls::{HttpsConnector, HttpsConnectorBuilder};
 use maxminddb::geoip2::Country;
 use regex::Regex;
-use serde::Serialize;
-use std::io::{BufRead, BufReader};
+use rocket::serde::{json, Deserialize, Serialize};
+use std::io::BufRead; // provides the lines() trait
 use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
 use std::sync::RwLock;
 use std::time::Duration;
+use tokio::time::timeout;
 
 pub const TITLE: &str = "Instance Directory";
 const OBSERVATORY_API: &str = "https://http-observatory.security.mozilla.org/api/v1/analyze?host=";
 
 lazy_static! {
-    static ref HTTP_CLIENT: Arc<Client> = Arc::new({
-        let mut connector = HttpTimeoutConnector::new();
-        connector.set_connect_timeout(Some(Duration::from_secs(15)));
-        let mut client = Client::with_connector(HttpsConnector::with_connector(
-            hyper_sync_rustls::TlsClient::new(),
-            connector,
-        ));
-        client.set_redirect_policy(hyper::client::RedirectPolicy::FollowNone);
-        client.set_read_timeout(Some(Duration::from_secs(5)));
-        client.set_write_timeout(Some(Duration::from_secs(5)));
-        client
+    static ref HTTP_CLIENT: Arc<Client<HttpsConnector<HttpConnector>, Body>> = Arc::new({
+        let https_connector = HttpsConnectorBuilder::new()
+            .with_webpki_roots()
+            .https_or_http()
+            .enable_http1()
+            .enable_http2()
+            .build();
+        Client::builder().build(https_connector)
     });
+}
+
+// cache frequently used header values
+static CLOSE: HeaderValue = HeaderValue::from_static("close");
+static KEEPALIVE: HeaderValue = HeaderValue::from_static("keep-alive");
+
+fn get_user_name() -> HeaderValue {
+    HeaderValue::from_str(&format!(
+        "PrivateBinDirectoryBot/{} (+https://privatebin.info/directory/about)",
+        env!("CARGO_PKG_VERSION")
+    ))
+    .unwrap()
+}
+
+async fn request(uri: &str, method: Method, body: Body) -> hyper::Result<Response<Body>> {
+    let request = Request::builder()
+        .method(method)
+        .uri(uri)
+        .header(CONNECTION, &KEEPALIVE)
+        .header(USER_AGENT, get_user_name())
+        .body(body)
+        .expect("request");
+    if let Ok(result) = timeout(
+        Duration::from_secs(15),
+        HTTP_CLIENT.clone().request(request),
+    )
+    .await
+    {
+        return result;
+    }
+    request_error().await
+}
+
+// an always failing request to get a hyper::Error :-(
+async fn request_error() -> hyper::Result<Response<Body>> {
+    HTTP_CLIENT
+        .clone()
+        .get(hyper::Uri::from_static("localhost:12345"))
+        .await
 }
 
 #[derive(Queryable)]
@@ -58,7 +94,11 @@ impl CheckNew {
     }
 }
 
+#[database("directory")]
+pub struct DirectoryDbConn(SqliteConnection);
+
 #[derive(Clone, QueryableByName, Queryable, Serialize)]
+#[serde(crate = "rocket::serde")]
 #[table_name = "instances"]
 pub struct Instance {
     pub id: i32,
@@ -75,14 +115,9 @@ pub struct Instance {
 }
 
 impl Instance {
-    pub fn check_up(&self) -> bool {
-        match HTTP_CLIENT
-            .clone()
-            .head(&self.url)
-            .header(Self::get_user_agent())
-            .send()
-        {
-            Ok(res) => res.status == StatusCode::Ok,
+    pub async fn check_up(&self) -> bool {
+        match request(&self.url, Method::HEAD, Body::empty()).await {
+            Ok(res) => res.status() == StatusCode::OK,
             Err(_) => false,
         }
     }
@@ -93,13 +128,6 @@ impl Instance {
         } else {
             String::from("\u{2718}")
         }
-    }
-
-    pub fn get_user_agent() -> UserAgent {
-        UserAgent(format!(
-            "PrivateBinDirectoryBot/{} (+https://privatebin.info/directory/about)",
-            env!("CARGO_PKG_VERSION")
-        ))
     }
 }
 
@@ -139,42 +167,38 @@ pub struct InstancesCache {
     pub instances: RwLock<Vec<Instance>>,
 }
 
+#[derive(Deserialize)]
+#[serde(crate = "rocket::serde")]
+struct ObservatoryScan<'r> {
+    grade: &'r str,
+    state: &'r str,
+}
+
 pub struct PrivateBin {
     pub instance: InstanceNew,
     pub scans: Vec<ScanNew>,
 }
 
 impl PrivateBin {
-    pub fn new(url: String) -> Result<PrivateBin, String> {
-        let validation = Self::validate(url)?;
-        Ok(validation)
-    }
-
-    fn validate(url: String) -> Result<PrivateBin, String> {
-        use std::thread;
-
+    pub async fn new(url: String) -> Result<PrivateBin, String> {
         if !url.starts_with("http://") && !url.starts_with("https://") {
             return Err(format!("Not a valid URL: {}", url));
         }
 
         let check_url = Self::strip_url(url);
-        let (https, https_redirect, check_url) = Self::check_http(&check_url)?;
+        let (https, https_redirect, check_url) = Self::check_http(&check_url).await?;
         // don't proceed if the robots.txt tells us not to index the instance
-        Self::check_robots(&check_url)?;
+        Self::check_robots(&check_url).await?;
 
         // remaining checks may run in parallel
-        let country_check_url = check_url.clone();
-        let version_check_url = check_url.clone();
-        let rating_check_url = check_url.clone();
-        let check_country = thread::spawn(move || Self::check_country(&country_check_url));
-        let check_version = thread::spawn(move || Self::check_version(&version_check_url));
-        let check_rating =
-            thread::spawn(move || Self::check_rating_mozilla_observatory(&rating_check_url));
+        let check_country = Self::check_country(&check_url);
+        let check_version = Self::check_version(&check_url);
+        let check_rating = Self::check_rating_mozilla_observatory(&check_url);
 
-        // collect results of parallel checks
-        let country_code = check_country.join().unwrap()?;
-        let (version, attachments) = check_version.join().unwrap()?;
-        let scans = vec![check_rating.join().unwrap()];
+        // collect results of async checks
+        let country_code = check_country.await.unwrap();
+        let (version, attachments) = check_version.await.unwrap();
+        let scans = vec![check_rating.await];
 
         if !version.is_empty() {
             return Ok(PrivateBin {
@@ -196,10 +220,10 @@ impl PrivateBin {
     }
 
     // check country via geo IP database lookup
-    fn check_country(url: &str) -> Result<String, String> {
+    async fn check_country(url: &str) -> Result<String, String> {
         let mut country_code = "AQ".to_string();
-        if let Ok(parsed_url) = Url::parse(url) {
-            if let Some(host) = parsed_url.host_str() {
+        if let Ok(parsed_url) = url.parse::<Uri>() {
+            if let Some(host) = parsed_url.host() {
                 let ips = lookup_host(host);
                 if ips.is_err() {
                     return Err(format!("Host or domain of URL {} is not supported.", url));
@@ -225,7 +249,7 @@ impl PrivateBin {
     }
 
     // check for HTTP to HTTPS redirect
-    fn check_http(url: &str) -> Result<(bool, bool, String), String> {
+    async fn check_http(url: &str) -> Result<(bool, bool, String), String> {
         let mut https = false;
         let mut https_redirect = false;
         let mut http_url = url.to_string();
@@ -235,25 +259,27 @@ impl PrivateBin {
             https = true;
             http_url.replace_range(..5, "http");
         }
-        let client = HTTP_CLIENT.clone();
-        match client
-            .head(&http_url)
-            .header(Connection::keep_alive())
-            .header(Instance::get_user_agent())
-            .send()
-        {
+        match request(&http_url, Method::HEAD, Body::empty()).await {
             Ok(res) => {
-                if res.status.class() == StatusClass::Redirection {
+                let redirection_codes = [
+                    StatusCode::MULTIPLE_CHOICES,
+                    StatusCode::MOVED_PERMANENTLY,
+                    StatusCode::FOUND,
+                    StatusCode::SEE_OTHER,
+                    StatusCode::NOT_MODIFIED,
+                    StatusCode::TEMPORARY_REDIRECT,
+                    StatusCode::PERMANENT_REDIRECT,
+                ];
+                if redirection_codes.contains(&res.status()) {
                     // check header
-                    if let Some(location) = res.headers.get::<Location>() {
-                        let location_str = location.to_string();
-                        if location_str.starts_with("https://") {
+                    if let Ok(location) = res.headers()[LOCATION].to_str() {
+                        if location.starts_with("https://") {
                             https_redirect = true;
                         }
                         if !https && https_redirect {
                             // if the given URL was HTTP, but we got redirected to https,
                             // check & store the HTTPS URL instead
-                            resulting_url = Self::strip_url(location_str);
+                            resulting_url = Self::strip_url(location.to_string());
                             https = true;
                         }
                     }
@@ -273,33 +299,23 @@ impl PrivateBin {
     }
 
     // check rating at mozilla observatory
-    pub fn check_rating_mozilla_observatory(url: &str) -> ScanNew {
-        if let Ok(parsed_url) = Url::parse(url) {
-            if let Some(host) = parsed_url.host_str() {
-                let client = HTTP_CLIENT.clone();
+    pub async fn check_rating_mozilla_observatory(url: &str) -> ScanNew {
+        if let Ok(parsed_url) = url.parse::<Uri>() {
+            if let Some(host) = parsed_url.host() {
                 let observatory_url = format!("{}{}", OBSERVATORY_API, host);
-                let result = client
-                    .get(&observatory_url)
-                    .header(Instance::get_user_agent())
-                    .send();
-                if let Ok(res) = result {
-                    if res.status == StatusCode::Ok {
-                        let reader = BufReader::new(res);
-                        let api_response: serde_json::Value =
-                            serde_json::from_reader(reader).unwrap();
-                        if Some("FINISHED") == api_response["state"].as_str() {
-                            if let Some(grade) = api_response["grade"].as_str() {
-                                return ScanNew::new("mozilla_observatory", grade, 0);
+                if let Ok(res) = request(&observatory_url, Method::GET, Body::empty()).await {
+                    if res.status() == StatusCode::OK {
+                        let body_bytes = to_bytes(res.into_body()).await.unwrap();
+                        let api_response = json::from_slice::<ObservatoryScan>(body_bytes.chunk());
+                        if let Ok(api_response) = api_response {
+                            if "FINISHED" == api_response.state {
+                                return ScanNew::new("mozilla_observatory", api_response.grade, 0);
                             }
                         }
                         // initiate a rescan
-                        if api_response.get("error") != None {
-                            let _ = client
-                                .post(&observatory_url)
-                                .header(Instance::get_user_agent())
-                                .body("hidden=true")
-                                .send();
-                        }
+                        request(&observatory_url, Method::POST, Body::from("hidden=true"))
+                            .await
+                            .expect("Mozilla observatory rescan response");
                     }
                 }
             }
@@ -308,23 +324,17 @@ impl PrivateBin {
     }
 
     // check robots.txt and bail if server doesn't want us to index the instance
-    fn check_robots(url: &str) -> Result<bool, String> {
+    async fn check_robots(url: &str) -> Result<bool, String> {
         let robots_url = if url.ends_with('/') {
             format!("{}robots.txt", url)
         } else {
             format!("{}/robots.txt", url)
         };
-        let client = HTTP_CLIENT.clone();
-        let result = client
-            .get(&robots_url)
-            .header(Connection::keep_alive())
-            .header(Instance::get_user_agent())
-            .send();
-        if let Ok(res) = result {
-            if res.status == StatusCode::Ok {
+        if let Ok(res) = request(&robots_url, Method::GET, Body::empty()).await {
+            if res.status() == StatusCode::OK {
                 let mut rule_for_us = false;
-                let buffer = BufReader::new(res);
-                for line in buffer.lines() {
+                let body = aggregate(res).await.unwrap();
+                for line in body.reader().lines() {
                     let line_str = line.unwrap();
                     if !rule_for_us && line_str.starts_with("User-agent: PrivateBinDirectoryBot") {
                         rule_for_us = true;
@@ -346,21 +356,27 @@ impl PrivateBin {
     }
 
     // check version of privatebin / zerobin JS library & attachment support
-    fn check_version(url: &str) -> Result<(String, bool), String> {
-        let client = HTTP_CLIENT.clone();
-        let result = client
-            .get(url)
-            .header(Connection::close())
-            .header(Instance::get_user_agent())
-            .send();
+    async fn check_version(url: &str) -> Result<(String, bool), String> {
+        let request = Request::builder()
+            .method(Method::GET)
+            .uri(url)
+            .header(CONNECTION, &CLOSE)
+            .header(USER_AGENT, get_user_name())
+            .body(Body::empty())
+            .expect("request");
+        let result = timeout(
+            Duration::from_secs(15),
+            HTTP_CLIENT.clone().request(request),
+        )
+        .await;
         if result.is_err() {
             return Err(format!("Web server on URL {} is not responding.", url));
         }
-        let res = result.unwrap();
-        if res.status != StatusCode::Ok {
+        let res = result.unwrap().unwrap();
+        if res.status() != StatusCode::OK {
             return Err(format!(
                 "Web server responded with status code {}.",
-                res.status
+                res.status()
             ));
         }
 
@@ -368,8 +384,8 @@ impl PrivateBin {
         let mut attachments = false;
         let version_regex =
             Regex::new(r"js/(privatebin|zerobin).js\?(Alpha%20)?(\d+\.\d+\.*\d*)").unwrap();
-        let buffer = BufReader::new(res);
-        for line in buffer.lines() {
+        let body = aggregate(res).await.unwrap();
+        for line in body.reader().lines() {
             let line_str = line.unwrap();
             if line_str.contains(" id=\"attachment\" ") {
                 attachments = true;
@@ -387,11 +403,6 @@ impl PrivateBin {
             }
         }
         Ok((version, attachments))
-    }
-
-    // get latest rating at mozilla observatory
-    pub fn get_rating_mozilla_observatory(url: &str) -> ScanNew {
-        Self::check_rating_mozilla_observatory(url)
     }
 
     fn strip_url(url: String) -> String {
@@ -422,10 +433,15 @@ impl PrivateBin {
     }
 }
 
-#[test]
-fn test_privatebin() {
+#[tokio::test]
+async fn test_privatebin() {
     let url = String::from("https://privatebin.net");
-    let privatebin = PrivateBin::new(url.clone()).unwrap();
+    let test_url = url.clone();
+    let privatebin = tokio::task::spawn_blocking(move || PrivateBin::new(test_url))
+        .await
+        .unwrap()
+        .await
+        .unwrap();
     assert_eq!(privatebin.instance.url, url);
     assert_eq!(privatebin.instance.version, "1.3.5");
     assert_eq!(privatebin.instance.https, true);
@@ -434,43 +450,42 @@ fn test_privatebin() {
     assert_eq!(privatebin.instance.country_id, "CH");
 }
 
-#[test]
-fn test_url_rewrites() {
-    ["https", "http"]
-        .iter()
-        .flat_map(|schema| {
-            ["/", "/?foo", "/#foo", "//"]
-                .iter()
-                .map(move |suffix| (schema, suffix))
-        })
-        .for_each(|(schema, suffix)| {
-            let url = format!("{}://privatebin.net{}", schema, suffix);
-            let privatebin = PrivateBin::new(url).unwrap();
-            assert_eq!(
-                privatebin.instance.url,
-                String::from("https://privatebin.net")
-            );
-        });
+#[tokio::test]
+async fn test_url_rewrites() {
+    let components = ["https", "http"].iter().flat_map(|schema| {
+        ["/", "/?foo", "/#foo", "//"]
+            .iter()
+            .map(move |suffix| (schema, suffix))
+    });
+    for (schema, suffix) in components {
+        let url = format!("{}://privatebin.net{}", schema, suffix);
+        let privatebin = PrivateBin::new(url).await.unwrap();
+        assert_eq!(
+            privatebin.instance.url,
+            String::from("https://privatebin.net")
+        );
+    }
 }
 
-#[test]
-fn test_non_privatebin() {
+#[tokio::test]
+async fn test_non_privatebin() {
     let url = String::from("https://privatebin.info");
-    let privatebin = PrivateBin::new(url);
+    let privatebin = PrivateBin::new(url).await;
     assert!(privatebin.is_err());
 }
 
-#[test]
-fn test_robots_txt() {
+#[tokio::test]
+async fn test_robots_txt() {
     let url = String::from("http://zerobin-test.dssr.ch");
-    let privatebin = PrivateBin::new(url);
+    let privatebin = PrivateBin::new(url).await;
     assert!(privatebin.is_err());
 }
 
-#[test]
-fn test_zerobin() {
+#[tokio::test]
+async fn test_zerobin() {
     let url = String::from("http://zerobin-legacy.dssr.ch/");
-    let privatebin = PrivateBin::new(url.clone()).unwrap();
+    let test_url = url.clone();
+    let privatebin = PrivateBin::new(test_url).await.unwrap();
     assert_eq!(
         privatebin.instance.url,
         url.trim_end_matches('/').to_string()
@@ -482,10 +497,15 @@ fn test_zerobin() {
     assert_eq!(privatebin.instance.country_id, "CH");
 }
 
-#[test]
-fn test_no_http() {
+#[tokio::test]
+async fn test_no_http() {
     let url = String::from("https://pasta.lysergic.dev");
-    let privatebin = PrivateBin::new(url.clone()).unwrap();
+    let test_url = url.clone();
+    let privatebin = tokio::task::spawn_blocking(move || PrivateBin::new(test_url))
+        .await
+        .unwrap()
+        .await
+        .unwrap();
     assert_eq!(privatebin.instance.url, url.to_string());
     assert_eq!(privatebin.instance.https, true);
     assert_eq!(privatebin.instance.https_redirect, true);
@@ -522,6 +542,7 @@ impl ScanNew {
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize)]
+#[serde(crate = "rocket::serde")]
 pub struct Page {
     pub title: String,
     pub topic: String,
@@ -537,6 +558,7 @@ impl Page {
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize)]
+#[serde(crate = "rocket::serde")]
 pub struct StatusPage {
     pub title: String,
     pub topic: String,
@@ -558,6 +580,7 @@ impl StatusPage {
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize)]
+#[serde(crate = "rocket::serde")]
 pub struct TablePage {
     pub title: String,
     pub topic: String,
@@ -575,6 +598,7 @@ impl TablePage {
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize)]
+#[serde(crate = "rocket::serde")]
 pub struct HtmlTable {
     pub title: String,
     pub header: [String; 8],

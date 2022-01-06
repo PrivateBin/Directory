@@ -1,5 +1,8 @@
 # Change log
 
+# 0.7.0
+- upgrade to rocket 0.5.0-rc.1, bump libraries, update rustc
+
 # 0.6.1
 - implement additional filters for the JSON api
 

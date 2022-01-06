@@ -9,11 +9,11 @@ ENV ROCKET_DATABASES $ROCKET_DATABASES
 ARG PORT
 EXPOSE $PORT
 USER 1000:1000
-WORKDIR /bin
+WORKDIR /
 VOLUME /var
 CMD ["directory"]
 
 COPY css /css
 COPY img /img
 COPY target/x86_64-unknown-linux-musl/release/directory /bin/
-COPY templates /bin/templates
+COPY templates /templates

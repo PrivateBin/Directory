@@ -1,6 +1,6 @@
 [package]
 name = "directory"
-version = "0.6.1"
+version = "0.7.0"
 authors = ["El RIDO <elrido@gmx.net>"]
 edition = "2018"
 license = "AGPL-3.0"
@@ -8,37 +8,42 @@ license = "AGPL-3.0"
 [dependencies]
 diesel_migrations = "1.4.0"
 dns-lookup = "1.0.8"
-hyper = "0.10.16"
-hyper-timeout-connector = "0.1.0"
+futures = "0.3.19"
 isocountry = "0.3.2"
 lazy_static = "1.4.0"
 maxminddb = "0.21.0"
 rand = "0.8.4"
 regex = "1.5.4"
-rocket = "0.4.7"
-serde_json = "1.0.64"
+tokio = "1.15.0"
 
 [dependencies.diesel]
-version = "1.4.7"
+version = "1.4.8"
 features = ["sqlite"]
 
-[dependencies.hyper-sync-rustls]
-version = "0.3.0-rc.17"
-default-features = false
+[dependencies.hyper]
+version = "0.14.16"
 features = ["client"]
 
+[dependencies.hyper-rustls]
+version = "0.23.0"
+default-features = false
+features = ["native-tokio", "http1", "http2", "tls12", "webpki-tokio"]
+
 [dependencies.libsqlite3-sys] # included for the static binary to link it in
-version = "0.22.2"
+version = "0.22.2" # this version needs to be compatible with diesel
 features = ["bundled"]
 
-[dependencies.rocket_contrib]
-version = "0.4.7"
-default-features = false
-features = ["diesel_sqlite_pool", "json", "serve", "tera_templates"]
+[dependencies.rocket]
+version = "0.5.0-rc.1"
+features = ["json"]
 
-[dependencies.serde]
-version = "1.0.126"
-features = ["derive"]
+[dependencies.rocket_dyn_templates]
+version = "0.1.0-rc.1"
+features = ["tera"]
+
+[dependencies.rocket_sync_db_pools]
+version = "0.1.0-rc.1"
+features = ["diesel_sqlite_pool"]
 
 [profile.release]
 opt-level = 'z'  # Optimize for size.

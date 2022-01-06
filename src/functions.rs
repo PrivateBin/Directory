@@ -1,8 +1,14 @@
-use super::{sql_query, DirectoryDbConn, Instance, InstancesCache, Ordering, State, CRON_INTERVAL};
+use super::{
+    about, add, api, favicon, index, save, sql_query, Build, DirectoryDbConn, Instance,
+    InstancesCache, Relaxed, Rocket, State, Template, CRON_INTERVAL,
+};
 use diesel::prelude::*;
 use diesel::query_builder::SqlQuery;
-use rocket_contrib::templates::tera::{self, to_value, try_get_value, Value};
+use rocket::fs::FileServer;
+use rocket_dyn_templates::tera::{to_value, try_get_value, Result, Value};
 use std::collections::HashMap;
+use std::sync::atomic::AtomicU64;
+use std::sync::RwLock;
 
 // 1F1E6 is the unicode code point for the "REGIONAL INDICATOR SYMBOL
 // LETTER A" and 41 is the one for A in unicode and ASCII
@@ -36,43 +42,70 @@ pub fn get_instances() -> SqlQuery {
 
 pub fn rating_to_percent(rating: &str) -> u8 {
     // see https://en.wikipedia.org/wiki/Academic_grading_in_the_United_States#Numerical_and_letter_grades
-    let percent: u8;
     match rating {
-        "A+" => percent = 97,
-        "A" => percent = 93,
-        "A-" => percent = 90,
-        "B+" => percent = 87,
-        "B" => percent = 83,
-        "B-" => percent = 80,
-        "C+" => percent = 77,
-        "C" => percent = 73,
-        "C-" => percent = 70,
-        "D+" => percent = 67,
-        "D" => percent = 63,
-        "D-" => percent = 60,
-        "F" => percent = 50,
-        _ => percent = 0,
+        "A+" => 97,
+        "A" => 93,
+        "A-" => 90,
+        "B+" => 87,
+        "B" => 83,
+        "B-" => 80,
+        "C+" => 77,
+        "C" => 73,
+        "C-" => 70,
+        "D+" => 67,
+        "D" => 63,
+        "D-" => 60,
+        "F" => 50,
+        _ => 0,
     }
-    percent
 }
 
-pub fn update_instance_cache(conn: DirectoryDbConn, cache: &State<InstancesCache>) {
+pub fn rocket() -> Rocket<Build> {
+    rocket::build()
+        .mount("/", routes![about, add, api, favicon, index, save])
+        .mount("/img", FileServer::from("img"))
+        .mount("/css", FileServer::from("css"))
+        .attach(DirectoryDbConn::fairing())
+        .attach(Template::custom(|engines| {
+            engines.tera.register_filter("country", filter_country);
+        }))
+        .manage(InstancesCache {
+            timeout: AtomicU64::new(0),
+            instances: RwLock::new(vec![]),
+        })
+}
+
+pub async fn run_db_migrations(rocket: Rocket<Build>) -> Rocket<Build> {
+    embed_migrations!();
+    let db = DirectoryDbConn::get_one(&rocket)
+        .await
+        .expect("database connection");
+    db.run(|conn| embedded_migrations::run(conn))
+        .await
+        .expect("diesel migrations");
+    rocket
+}
+
+pub async fn update_instance_cache(db: DirectoryDbConn, cache: &State<InstancesCache>) {
     let now = get_epoch();
-    if now >= cache.timeout.load(Ordering::Relaxed) {
-        match get_instances().load::<Instance>(&*conn) {
+    if now >= cache.timeout.load(Relaxed) {
+        match db
+            .run(|conn| get_instances().load::<Instance>(&*conn))
+            .await
+        {
             // flush cache
             Ok(instances_live) => {
-                cache.timeout.store(now + CRON_INTERVAL, Ordering::Relaxed);
+                cache.timeout.store(now + CRON_INTERVAL, Relaxed);
                 let mut instances_cache = cache.instances.write().unwrap();
                 *instances_cache = instances_live;
             }
             // database might be write-locked, try it again in a minute
-            Err(_) => cache.timeout.store(now + 60, Ordering::Relaxed),
+            Err(_) => cache.timeout.store(now + 60, Relaxed),
         }
     }
 }
 
-pub fn filter_country(string: Value, _: HashMap<String, Value>) -> tera::Result<Value> {
+pub fn filter_country(string: &Value, _: &HashMap<String, Value>) -> Result<Value> {
     use isocountry::CountryCode;
     let country_code = try_get_value!("country", "value", String, string);
     let mut country_chars = country_code.chars();

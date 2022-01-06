@@ -3,7 +3,7 @@
 NAME = directory
 IMAGE = privatebin/$(NAME)
 PORT = 8000
-BUILD_IMAGE = ekidd/rust-musl-builder:nightly-2021-02-13-sqlite
+BUILD_IMAGE = ekidd/rust-musl-builder:1.57.0-sqlite
 DATABASE = var/directory.sqlite
 ROCKET_DATABASES = "{directory={url=\"$(DATABASE)\"}}"
 GEOIP_MMDB = var/geoip-country.mmdb
@@ -17,6 +17,7 @@ test: .cargo/registry $(DATABASE) ## Build and run the unit tests.
 	docker run --rm -t --init \
 		-e GEOIP_MMDB="$(GEOIP_MMDB)" \
 		-e ROCKET_DATABASES=$(ROCKET_DATABASES) \
+		-e RUST_BACKTRACE=1 \
 		-v "$(CURDIR)":/home/rust/src \
 		-v "$(CURDIR)"/.cargo/registry:/home/rust/.cargo/registry \
 		$(BUILD_IMAGE) \

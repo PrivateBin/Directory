@@ -1,5 +1,4 @@
 #![forbid(unsafe_code)]
-#![feature(proc_macro_hygiene, decl_macro)]
 
 #[macro_use]
 extern crate diesel;
@@ -10,21 +9,18 @@ extern crate lazy_static;
 #[macro_use]
 extern crate rocket;
 #[macro_use]
-extern crate rocket_contrib;
+extern crate rocket_sync_db_pools;
 
 use diesel::dsl::sql_query;
 use diesel::prelude::*;
 use rocket::fairing::AdHoc;
-use rocket::request::Form;
+use rocket::form::Form;
 use rocket::response::Redirect;
-use rocket::{Rocket, State};
-//use rocket_contrib::databases::diesel; not working with current diesel
-use rocket_contrib::json::Json;
-use rocket_contrib::serve::StaticFiles;
-use rocket_contrib::templates::Template;
+use rocket::serde::json::Json;
+use rocket::{Build, Error, Rocket, State};
+use rocket_dyn_templates::Template;
 use std::num::NonZeroU8;
-use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::RwLock;
+use std::sync::atomic::Ordering::Relaxed;
 
 pub mod functions;
 use functions::*;
@@ -41,8 +37,8 @@ mod tests;
 const ADD_TITLE: &str = "Add instance";
 
 #[get("/")]
-fn index(conn: DirectoryDbConn, cache: State<InstancesCache>) -> Template {
-    update_instance_cache(conn, &cache);
+async fn index(db: DirectoryDbConn, cache: &State<InstancesCache>) -> Template {
+    update_instance_cache(db, cache).await;
 
     let header = [
         String::from("Address"),
@@ -126,56 +122,69 @@ fn add() -> Template {
 }
 
 #[post("/add", data = "<form>")]
-fn save(conn: DirectoryDbConn, form: Form<AddForm>, cache: State<InstancesCache>) -> Template {
-    use schema::instances::dsl::*;
+async fn save(db: DirectoryDbConn, form: Form<AddForm>, cache: &State<InstancesCache>) -> Template {
     let form = form.into_inner();
     let add_url = form.url.trim();
-
-    let page: StatusPage;
-    match PrivateBin::new(add_url.to_string()) {
+    let privatebin_result = PrivateBin::new(add_url.to_string()).await;
+    let (do_cache_flush, page) = match privatebin_result {
         Ok(privatebin) => {
-            match diesel::insert_into(instances)
-                .values(&privatebin.instance)
-                .execute(&*conn)
-            {
-                Ok(_) => {
-                    // need to store at least one check and scan, or the JOIN in /index produces NULL
-                    let instance: i32 = instances
-                        .select(id)
-                        .filter(url.eq(privatebin.instance.url.clone()))
-                        .limit(1)
-                        .first(&*conn)
-                        .expect("selecting the just inserted the instance");
-                    diesel::insert_into(checks)
-                        .values(CheckNew::new(true, instance))
-                        .execute(&*conn)
-                        .expect("inserting first check on a newly created instance");
-                    diesel::insert_into(scans)
-                        .values(ScanNew::new("mozilla_observatory", "-", instance))
-                        .execute(&*conn)
-                        .expect("inserting first scan on a newly created instance");
+            db.run(move |conn| {
+                use schema::instances::dsl::*;
+                match diesel::insert_into(instances)
+                    .values(&privatebin.instance)
+                    .execute(conn)
+                {
+                    Ok(_) => {
+                        // need to store at least one check and scan, or the JOIN in /index produces NULL
+                        let instance: i32 = instances
+                            .select(id)
+                            .filter(url.eq(privatebin.instance.url.clone()))
+                            .limit(1)
+                            .first(&*conn)
+                            .expect("selecting the just inserted the instance");
+                        diesel::insert_into(checks)
+                            .values(CheckNew::new(true, instance))
+                            .execute(&*conn)
+                            .expect("inserting first check on a newly created instance");
+                        diesel::insert_into(scans)
+                            .values(ScanNew::new("mozilla_observatory", "-", instance))
+                            .execute(&*conn)
+                            .expect("inserting first scan on a newly created instance");
 
-                    page = StatusPage::new(
-                        String::from(ADD_TITLE),
-                        None,
-                        Some(format!(
-                            "Successfully added URL: {}",
-                            privatebin.instance.url
-                        )),
-                    );
-                    // flush cache
-                    cache.timeout.store(0, Ordering::Relaxed);
+                        (
+                            true,
+                            StatusPage::new(
+                                String::from(ADD_TITLE),
+                                None,
+                                Some(format!(
+                                    "Successfully added URL: {}",
+                                    privatebin.instance.url
+                                )),
+                            ),
+                        )
+                    }
+                    Err(e) => {
+                        let add_url = form.url.trim();
+                        (
+                            false,
+                            StatusPage::new(
+                                String::from(ADD_TITLE),
+                                Some(format!("Error adding URL {}, due to: {:?}", add_url, e)),
+                                None,
+                            ),
+                        )
+                    }
                 }
-                Err(e) => {
-                    page = StatusPage::new(
-                        String::from(ADD_TITLE),
-                        Some(format!("Error adding URL {}, due to: {:?}", add_url, e)),
-                        None,
-                    )
-                }
-            }
+            })
+            .await
         }
-        Err(e) => page = StatusPage::new(String::from(ADD_TITLE), Some(e), None),
+        Err(e) => (
+            false,
+            StatusPage::new(String::from(ADD_TITLE), Some(e), None),
+        ),
+    };
+    if do_cache_flush {
+        cache.timeout.store(0, Relaxed);
     }
     Template::render("add", &page)
 }
@@ -184,7 +193,7 @@ fn save(conn: DirectoryDbConn, form: Form<AddForm>, cache: State<InstancesCache>
     "/api?<top>&<attachments>&<country>&<https>&<https_redirect>&<version>&<min_uptime>&<min_rating>",
     format = "json"
 )]
-fn api(
+async fn api(
     top: Option<NonZeroU8>,
     attachments: Option<bool>,
     country: Option<String>,
@@ -193,12 +202,12 @@ fn api(
     version: Option<String>,
     min_uptime: Option<u8>,
     min_rating: Option<String>,
-    conn: DirectoryDbConn,
-    cache: State<InstancesCache>,
+    db: DirectoryDbConn,
+    cache: &State<InstancesCache>,
 ) -> Json<Vec<Instance>> {
     use rand::seq::SliceRandom;
     let mut instance_list: Vec<Instance> = vec![];
-    update_instance_cache(conn, &cache);
+    update_instance_cache(db, cache).await;
 
     // unwrap & validate arguments
     let mut top: u8 = top.unwrap_or_else(|| NonZeroU8::new(10).unwrap()).into();
@@ -231,25 +240,14 @@ fn api(
 
     // prepare list according to arguments
     for instance in &*cache.instances.read().unwrap() {
-        if is_attachments_set && instance.attachments != attachments {
-            continue;
-        }
-        if is_country_set && instance.country_id != country {
-            continue;
-        }
-        if is_https_set && instance.https != https {
-            continue;
-        }
-        if is_https_redirect_set && instance.https_redirect != https_redirect {
-            continue;
-        }
-        if is_version_set && !instance.version.starts_with(&version) {
-            continue;
-        }
-        if instance.uptime < min_uptime {
-            continue;
-        }
-        if is_min_rating_set && rating_to_percent(&instance.rating_mozilla_observatory) < min_rating
+        if (is_attachments_set && instance.attachments != attachments)
+            || (is_country_set && instance.country_id != country)
+            || (is_https_set && instance.https != https)
+            || (is_https_redirect_set && instance.https_redirect != https_redirect)
+            || (is_version_set && !instance.version.starts_with(&version))
+            || (instance.uptime < min_uptime)
+            || (is_min_rating_set
+                && rating_to_percent(&instance.rating_mozilla_observatory) < min_rating)
         {
             continue;
         }
@@ -270,48 +268,20 @@ fn favicon() -> Redirect {
     Redirect::permanent("/img/favicon.ico")
 }
 
-#[database("directory")]
-pub struct DirectoryDbConn(diesel::SqliteConnection);
-embed_migrations!();
-
-fn run_db_migrations(rocket: Rocket) -> Result<Rocket, Rocket> {
-    let conn = DirectoryDbConn::get_one(&rocket).expect("database connection");
-    match embedded_migrations::run(&*conn) {
-        Ok(()) => Ok(rocket),
-        Err(e) => {
-            println!("Failed to run database migrations: {:?}", e);
-            Err(rocket)
-        }
-    }
-}
-
-fn rocket() -> Rocket {
-    rocket::ignite()
-        .mount("/", routes![index, about, add, api, save, favicon])
-        .mount("/img", StaticFiles::from("/img"))
-        .mount("/css", StaticFiles::from("/css"))
-        .attach(DirectoryDbConn::fairing())
-        .attach(Template::custom(|engines| {
-            engines.tera.register_filter("country", filter_country);
-        }))
-        .manage(InstancesCache {
-            timeout: AtomicU64::new(0),
-            instances: RwLock::new(vec![]),
-        })
-}
-
-fn main() {
+#[rocket::main]
+async fn main() -> Result<(), Error> {
     let rocket = rocket();
     if let Ok(cron_env) = std::env::var("CRON") {
-        let conn = DirectoryDbConn::get_one(&rocket).expect("database connection");
         if cron_env == "FULL" {
-            check_full(conn);
+            check_full(rocket).await;
         } else {
-            check_up(conn);
+            check_up(rocket).await;
         }
+        Ok(())
     } else {
         rocket
-            .attach(AdHoc::on_attach("Database Migrations", run_db_migrations))
-            .launch();
+            .attach(AdHoc::on_ignite("Diesel Migrations", run_db_migrations))
+            .launch()
+            .await
     }
 }
