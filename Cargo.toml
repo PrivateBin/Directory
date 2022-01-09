@@ -2,7 +2,7 @@
 name = "directory"
 version = "0.7.1"
 authors = ["El RIDO <elrido@gmx.net>"]
-edition = "2018"
+edition = "2021"
 license = "AGPL-3.0"
 
 [dependencies]
