@@ -13,6 +13,7 @@ use maxminddb::geoip2::Country;
 use regex::Regex;
 use rocket::serde::{json, Deserialize, Serialize};
 use std::io::BufRead; // provides the lines() trait
+use std::net::IpAddr;
 use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
 use std::sync::RwLock;
@@ -217,8 +218,8 @@ impl PrivateBin {
         let check_rating = Self::check_rating_mozilla_observatory(&check_url);
 
         // collect results of async checks
-        let country_code = check_country.await.unwrap();
-        let (version, attachments) = check_version.await.unwrap();
+        let country_code = check_country.await?;
+        let (version, attachments) = check_version.await?;
         let scans = vec![check_rating.await];
 
         if !version.is_empty() {
@@ -243,28 +244,37 @@ impl PrivateBin {
     // check country via geo IP database lookup
     async fn check_country(url: &str) -> Result<String, String> {
         let mut country_code = "AQ".to_string();
-        if let Ok(parsed_url) = url.parse::<Uri>() {
-            if let Some(host) = parsed_url.host() {
+        if let Ok(parsed_url) = Url::parse(url) {
+            let ip: IpAddr;
+            if let Some(host) = parsed_url.domain() {
                 let ips = lookup_host(host);
                 if ips.is_err() {
                     return Err(format!("Host or domain of URL {} is not supported.", url));
                 }
-
-                let geoip_mmdb = std::env::var("GEOIP_MMDB")
-                    .expect("environment variable GEOIP_MMDB needs to be set");
-                let opener = maxminddb::Reader::open_readfile(&geoip_mmdb);
-                if opener.is_err() {
-                    return Err(
-                        format!(
-                            "Error opening geo IP database {} (defined in environment variable GEOIP_MMDB).",
-                            geoip_mmdb
-                        )
-                    );
+                ip = ips.unwrap()[0]
+            } else if let Some(host) = parsed_url.host_str() {
+                match host.parse() {
+                    Ok(parsed_ip) => ip = parsed_ip,
+                    Err(_) => return Ok(country_code),
                 }
-                let reader = opener.unwrap();
-                let country: Country = reader.lookup(ips.unwrap()[0]).unwrap();
-                country_code = country.country.unwrap().iso_code.unwrap().to_string();
+            } else {
+                return Ok(country_code);
             }
+
+            let geoip_mmdb = std::env::var("GEOIP_MMDB")
+                .expect("environment variable GEOIP_MMDB needs to be set");
+            let opener = maxminddb::Reader::open_readfile(&geoip_mmdb);
+            if opener.is_err() {
+                return Err(
+                    format!(
+                        "Error opening geo IP database {} (defined in environment variable GEOIP_MMDB).",
+                        geoip_mmdb
+                    )
+                );
+            }
+            let reader = opener.unwrap();
+            let country: Country = reader.lookup(ip).unwrap();
+            country_code = country.country.unwrap().iso_code.unwrap().to_string();
         }
         Ok(country_code)
     }
@@ -321,8 +331,8 @@ impl PrivateBin {
 
     // check rating at mozilla observatory
     pub async fn check_rating_mozilla_observatory(url: &str) -> ScanNew {
-        if let Ok(parsed_url) = url.parse::<Uri>() {
-            if let Some(host) = parsed_url.host() {
+        if let Ok(parsed_url) = Url::parse(url) {
+            if let Some(host) = parsed_url.host_str() {
                 let observatory_url = format!("{}{}", OBSERVATORY_API, host);
                 if let Ok(res) = request(&observatory_url, Method::GET, Body::empty()).await {
                     if res.status() == StatusCode::OK {
@@ -397,7 +407,11 @@ impl PrivateBin {
         if result.is_err() {
             return Err(format!("Web server on URL {} is not responding.", url));
         }
-        let res = result.unwrap().unwrap();
+        let hyper_result = result.unwrap();
+        if hyper_result.is_err() {
+            return Err(format!("Web server on URL {} is not responding.", url));
+        }
+        let res = hyper_result.unwrap();
         if res.status() != StatusCode::OK {
             return Err(format!(
                 "Web server responded with status code {}.",
@@ -548,6 +562,7 @@ async fn test_idn() {
     assert_eq!(privatebin.instance.url, url.to_string());
     assert_eq!(privatebin.instance.https, true);
     assert_eq!(privatebin.instance.https_redirect, true);
+    assert_ne!(privatebin.instance.country_id, "AQ");
 }
 
 #[derive(Queryable)]

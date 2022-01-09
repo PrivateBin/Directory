@@ -41,6 +41,7 @@ pub async fn check_full(rocket: Rocket<Build>) {
             let mut pinned_children: Vec<_> = children.into_iter().map(Box::pin).collect();
             while !pinned_children.is_empty() {
                 let (result, _index, remaining_children) = select_all(pinned_children).await;
+                pinned_children = remaining_children;
                 print!("{}", result.result);
 
                 // robots.txt must have changed or site no longer an instance, delete it immediately
@@ -63,7 +64,7 @@ pub async fn check_full(rocket: Rocket<Build>) {
                             println!("    error removing the instance: {}", e);
                         }
                     }
-                    return;
+                    continue;
                 }
 
                 if let Some(updated_scan) = result.scan_update {
@@ -94,7 +95,6 @@ pub async fn check_full(rocket: Rocket<Build>) {
                         result.instance.url,
                     ));
                 }
-                pinned_children = remaining_children;
             }
 
             let timer = Instant::now();

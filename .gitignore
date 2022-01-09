@@ -1,5 +1,6 @@
 /.cargo/
 /target/
 /TODO.md
+/var/directory.sqlite-*
 /var/geoip-country.mmdb
 /tarpaulin-report.html

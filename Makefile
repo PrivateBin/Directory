@@ -13,6 +13,7 @@ all: test build image run check clean ## Equivalent to "make test build image ru
 release: test build pack license image run check clean ## Equivalent to "make test build pack image run check clean".
 
 test: .cargo/registry $(DATABASE) ## Build and run the unit tests.
+	rm -f $(DATABASE)-*
 	git checkout $(DATABASE)
 	docker run --rm -t --init \
 		-e GEOIP_MMDB="$(GEOIP_MMDB)" \
@@ -25,6 +26,7 @@ test: .cargo/registry $(DATABASE) ## Build and run the unit tests.
 	git checkout $(DATABASE)
 
 build: .cargo/registry ## Build the binary for release.
+	rm -f $(DATABASE)-*
 	git checkout $(DATABASE)
 	docker run --rm -t --init \
 		-v "$(CURDIR)":/home/rust/src \
@@ -78,6 +80,7 @@ coverage: ## Run tarpaulin on the code to report on the tests code coverage.
 	git checkout $(DATABASE)
 
 clean: $(DATABASE) ## Stops and removes the running container.
+	rm -f $(DATABASE)-*
 	git checkout $(DATABASE)
 	docker ps -q --filter "name=$(NAME)" | grep -q . && \
 	docker stop $(NAME)
