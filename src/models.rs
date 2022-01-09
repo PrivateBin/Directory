@@ -18,6 +18,7 @@ use std::sync::Arc;
 use std::sync::RwLock;
 use std::time::Duration;
 use tokio::time::timeout;
+use url::{Position, Url};
 
 pub const TITLE: &str = "Instance Directory";
 const OBSERVATORY_API: &str = "https://http-observatory.security.mozilla.org/api/v1/analyze?host=";
@@ -46,10 +47,14 @@ fn get_user_name() -> HeaderValue {
     .unwrap()
 }
 
-async fn request(uri: &str, method: Method, body: Body) -> hyper::Result<Response<Body>> {
+async fn request(url: &str, method: Method, body: Body) -> hyper::Result<Response<Body>> {
+    let uri = parse_idna_url(url);
+    if uri.is_err() {
+        return request_error().await;
+    }
     let request = Request::builder()
         .method(method)
-        .uri(uri)
+        .uri(uri.unwrap())
         .header(CONNECTION, &KEEPALIVE)
         .header(USER_AGENT, get_user_name())
         .body(body)
@@ -71,6 +76,22 @@ async fn request_error() -> hyper::Result<Response<Body>> {
         .clone()
         .get(hyper::Uri::from_static("localhost:12345"))
         .await
+}
+
+fn parse_idna_url(url: &str) -> Result<Uri, ()> {
+    if let Ok(parsed_url) = Url::parse(url) {
+        let authority = match parsed_url.port() {
+            Some(port) => format!("{}:{:?}", parsed_url.host_str().unwrap(), port.to_string()),
+            None => String::from(parsed_url.host_str().unwrap()),
+        };
+        return Ok(Uri::builder()
+            .scheme(parsed_url.scheme())
+            .authority(authority)
+            .path_and_query(&parsed_url[Position::BeforePath..])
+            .build()
+            .unwrap());
+    };
+    Err(())
 }
 
 #[derive(Queryable)]
@@ -357,9 +378,13 @@ impl PrivateBin {
 
     // check version of privatebin / zerobin JS library & attachment support
     async fn check_version(url: &str) -> Result<(String, bool), String> {
+        let uri = parse_idna_url(url);
+        if uri.is_err() {
+            return Err(format!("URL {} couldn't be parsed.", url));
+        }
         let request = Request::builder()
             .method(Method::GET)
-            .uri(url)
+            .uri(uri.unwrap())
             .header(CONNECTION, &CLOSE)
             .header(USER_AGENT, get_user_name())
             .body(Body::empty())
@@ -500,6 +525,20 @@ async fn test_zerobin() {
 #[tokio::test]
 async fn test_no_http() {
     let url = String::from("https://pasta.lysergic.dev");
+    let test_url = url.clone();
+    let privatebin = tokio::task::spawn_blocking(move || PrivateBin::new(test_url))
+        .await
+        .unwrap()
+        .await
+        .unwrap();
+    assert_eq!(privatebin.instance.url, url.to_string());
+    assert_eq!(privatebin.instance.https, true);
+    assert_eq!(privatebin.instance.https_redirect, true);
+}
+
+#[tokio::test]
+async fn test_idn() {
+    let url = String::from("https://тайны.миры-аномалии.рф");
     let test_url = url.clone();
     let privatebin = tokio::task::spawn_blocking(move || PrivateBin::new(test_url))
         .await

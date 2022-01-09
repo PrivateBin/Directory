@@ -1,5 +1,8 @@
 # Change log
 
+# 0.7.1
+- re-implementing support for internationalized domain names (IDN), lost in the hyper upgrade at 0.7.0
+
 # 0.7.0
 - upgrade to rocket 0.5.0-rc.1, bump libraries, update rustc
 
