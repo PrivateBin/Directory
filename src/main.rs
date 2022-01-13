@@ -22,6 +22,7 @@ use rocket_dyn_templates::Template;
 use std::num::NonZeroU8;
 use std::sync::atomic::Ordering::Relaxed;
 
+pub mod connections;
 pub mod functions;
 use functions::*;
 pub mod models;

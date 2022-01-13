@@ -1,3 +1,4 @@
+use super::connections::*;
 use super::functions::rating_to_percent;
 use super::schema::checks;
 use super::schema::instances;
@@ -5,95 +6,19 @@ use super::schema::scans;
 use diesel::SqliteConnection;
 use dns_lookup::lookup_host;
 use hyper::body::{aggregate, to_bytes, Buf}; // Buf provides the reader() trait
-use hyper::client::connect::HttpConnector;
-use hyper::header::{HeaderValue, CONNECTION, LOCATION, USER_AGENT};
-use hyper::{Body, Client, Method, Request, Response, StatusCode, Uri};
-use hyper_rustls::{HttpsConnector, HttpsConnectorBuilder};
+use hyper::header::LOCATION;
+use hyper::{Body, Method, StatusCode};
 use maxminddb::geoip2::Country;
 use regex::Regex;
 use rocket::serde::{json, Deserialize, Serialize};
 use std::io::BufRead; // provides the lines() trait
 use std::net::IpAddr;
 use std::sync::atomic::AtomicU64;
-use std::sync::Arc;
 use std::sync::RwLock;
-use std::time::Duration;
-use tokio::time::timeout;
-use url::{Position, Url};
+use url::Url;
 
 pub const TITLE: &str = "Instance Directory";
 const OBSERVATORY_API: &str = "https://http-observatory.security.mozilla.org/api/v1/analyze?host=";
-
-lazy_static! {
-    static ref HTTP_CLIENT: Arc<Client<HttpsConnector<HttpConnector>, Body>> = Arc::new({
-        let https_connector = HttpsConnectorBuilder::new()
-            .with_webpki_roots()
-            .https_or_http()
-            .enable_http1()
-            .enable_http2()
-            .build();
-        Client::builder().build(https_connector)
-    });
-}
-
-// cache frequently used header values
-static CLOSE: HeaderValue = HeaderValue::from_static("close");
-static KEEPALIVE: HeaderValue = HeaderValue::from_static("keep-alive");
-
-fn get_user_name() -> HeaderValue {
-    HeaderValue::from_str(&format!(
-        "PrivateBinDirectoryBot/{} (+https://privatebin.info/directory/about)",
-        env!("CARGO_PKG_VERSION")
-    ))
-    .unwrap()
-}
-
-async fn request(url: &str, method: Method, body: Body) -> hyper::Result<Response<Body>> {
-    let uri = parse_idna_url(url);
-    if uri.is_err() {
-        return request_error().await;
-    }
-    let request = Request::builder()
-        .method(method)
-        .uri(uri.unwrap())
-        .header(CONNECTION, &KEEPALIVE)
-        .header(USER_AGENT, get_user_name())
-        .body(body)
-        .expect("request");
-    if let Ok(result) = timeout(
-        Duration::from_secs(15),
-        HTTP_CLIENT.clone().request(request),
-    )
-    .await
-    {
-        return result;
-    }
-    request_error().await
-}
-
-// an always failing request to get a hyper::Error :-(
-async fn request_error() -> hyper::Result<Response<Body>> {
-    HTTP_CLIENT
-        .clone()
-        .get(hyper::Uri::from_static("localhost:12345"))
-        .await
-}
-
-fn parse_idna_url(url: &str) -> Result<Uri, ()> {
-    if let Ok(parsed_url) = Url::parse(url) {
-        let authority = match parsed_url.port() {
-            Some(port) => format!("{}:{:?}", parsed_url.host_str().unwrap(), port.to_string()),
-            None => String::from(parsed_url.host_str().unwrap()),
-        };
-        return Ok(Uri::builder()
-            .scheme(parsed_url.scheme())
-            .authority(authority)
-            .path_and_query(&parsed_url[Position::BeforePath..])
-            .build()
-            .unwrap());
-    };
-    Err(())
-}
 
 #[derive(Queryable)]
 pub struct Check {
@@ -138,7 +63,7 @@ pub struct Instance {
 
 impl Instance {
     pub async fn check_up(&self) -> bool {
-        match request(&self.url, Method::HEAD, Body::empty()).await {
+        match request_head(&self.url).await {
             Ok(res) => res.status() == StatusCode::OK,
             Err(_) => false,
         }
@@ -290,7 +215,7 @@ impl PrivateBin {
             https = true;
             http_url.replace_range(..5, "http");
         }
-        match request(&http_url, Method::HEAD, Body::empty()).await {
+        match request_head(&http_url).await {
             Ok(res) => {
                 let redirection_codes = [
                     StatusCode::MULTIPLE_CHOICES,
@@ -316,11 +241,11 @@ impl PrivateBin {
                     }
                 }
             }
-            Err(_) => {
+            Err(message) => {
                 // only emit an error if this server is reported as HTTP,
                 // HTTPS-only webservers, though uncommon, do enforce HTTPS
                 if url.starts_with("http://") {
-                    return Err(format!("Web server on URL {} is not responding.", http_url));
+                    return Err(message);
                 } else {
                     https_redirect = true;
                 }
@@ -334,7 +259,7 @@ impl PrivateBin {
         if let Ok(parsed_url) = Url::parse(url) {
             if let Some(host) = parsed_url.host_str() {
                 let observatory_url = format!("{}{}", OBSERVATORY_API, host);
-                if let Ok(res) = request(&observatory_url, Method::GET, Body::empty()).await {
+                if let Ok(res) = request_get(&observatory_url).await {
                     if res.status() == StatusCode::OK {
                         let body_bytes = to_bytes(res.into_body()).await.unwrap();
                         let api_response = json::from_slice::<ObservatoryScan>(body_bytes.chunk());
@@ -344,9 +269,13 @@ impl PrivateBin {
                             }
                         }
                         // initiate a rescan
-                        request(&observatory_url, Method::POST, Body::from("hidden=true"))
-                            .await
-                            .expect("Mozilla observatory rescan response");
+                        let _ = request(
+                            &observatory_url,
+                            Method::POST,
+                            &KEEPALIVE,
+                            Body::from("hidden=true"),
+                        )
+                        .await;
                     }
                 }
             }
@@ -361,7 +290,7 @@ impl PrivateBin {
         } else {
             format!("{}/robots.txt", url)
         };
-        if let Ok(res) = request(&robots_url, Method::GET, Body::empty()).await {
+        if let Ok(res) = request_get(&robots_url).await {
             if res.status() == StatusCode::OK {
                 let mut rule_for_us = false;
                 let body = aggregate(res).await.unwrap();
@@ -388,30 +317,8 @@ impl PrivateBin {
 
     // check version of privatebin / zerobin JS library & attachment support
     async fn check_version(url: &str) -> Result<(String, bool), String> {
-        let uri = parse_idna_url(url);
-        if uri.is_err() {
-            return Err(format!("URL {} couldn't be parsed.", url));
-        }
-        let request = Request::builder()
-            .method(Method::GET)
-            .uri(uri.unwrap())
-            .header(CONNECTION, &CLOSE)
-            .header(USER_AGENT, get_user_name())
-            .body(Body::empty())
-            .expect("request");
-        let result = timeout(
-            Duration::from_secs(15),
-            HTTP_CLIENT.clone().request(request),
-        )
-        .await;
-        if result.is_err() {
-            return Err(format!("Web server on URL {} is not responding.", url));
-        }
-        let hyper_result = result.unwrap();
-        if hyper_result.is_err() {
-            return Err(format!("Web server on URL {} is not responding.", url));
-        }
-        let res = hyper_result.unwrap();
+        let result = request(url, Method::GET, &CLOSE, Body::empty()).await;
+        let res = result?;
         if res.status() != StatusCode::OK {
             return Err(format!(
                 "Web server responded with status code {}.",
