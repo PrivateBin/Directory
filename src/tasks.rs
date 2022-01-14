@@ -49,12 +49,7 @@ pub async fn check_full(rocket: Rocket<Build>) {
                 if message.ends_with("doesn't want to get added to the directory.\n")
                     || message.ends_with("doesn't seem to be a PrivateBin instance.\n")
                 {
-                    match sql_query(&format!(
-                        "DELETE FROM instances \
-                        WHERE id LIKE {};",
-                        result.instance.id
-                    ))
-                    .execute(&conn)
+                    match diesel::delete(instances.filter(id.eq(result.instance.id))).execute(&conn)
                     {
                         Ok(_) => println!("    removed the instance, due to: {message}"),
                         Err(e) => {
