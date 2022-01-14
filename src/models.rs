@@ -21,6 +21,11 @@ use url::Url;
 pub const TITLE: &str = "Instance Directory";
 const OBSERVATORY_API: &str = "https://http-observatory.security.mozilla.org/api/v1/analyze?host=";
 
+lazy_static! {
+    static ref SLASHES_EXP: Regex = Regex::new(r"/{2,}").unwrap();
+    static ref VERSION_EXP: Regex = Regex::new(r"js/(privatebin|zerobin).js\?(Alpha%20)?(\d+\.\d+\.*\d*)").unwrap();
+}
+
 #[derive(Queryable)]
 pub struct Check {
     pub id: i32,
@@ -324,8 +329,6 @@ impl PrivateBin {
 
         let mut version = String::new();
         let mut attachments = false;
-        let version_regex =
-            Regex::new(r"js/(privatebin|zerobin).js\?(Alpha%20)?(\d+\.\d+\.*\d*)").unwrap();
         let body = aggregate(res).await.unwrap();
         for line in body.reader().lines() {
             let line_str = line.unwrap();
@@ -340,7 +343,7 @@ impl PrivateBin {
                 // we got the version already, keep looking for the attachment
                 continue;
             }
-            if let Some(matches) = version_regex.captures(&line_str) {
+            if let Some(matches) = VERSION_EXP.captures(&line_str) {
                 version = matches[3].to_string();
             }
         }
@@ -362,10 +365,8 @@ impl PrivateBin {
         // - https://example.com// -> https://example.com
         // - but https://example.com/path/ remains unchanged
         let (schema, uri) = check_url.split_at(7);
-        check_url = format!(
-            "{schema}{}",
-            Regex::new(r"/{2,}").unwrap().replace_all(uri, "/")
-        );
+        let cleaned_uri = SLASHES_EXP.replace_all(uri, "/");
+        check_url = format!("{schema}{cleaned_uri}");
         if check_url.matches('/').count() == 3 {
             check_url = check_url.trim_end_matches('/').to_string();
         }
