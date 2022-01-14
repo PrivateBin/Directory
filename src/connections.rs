@@ -17,19 +17,16 @@ lazy_static! {
             .build();
         Client::builder().build(https_connector)
     });
+
+    static ref USER_AGENT_STRING: String = format!(
+        "PrivateBinDirectoryBot/{} (+https://privatebin.info/directory/about)",
+        env!("CARGO_PKG_VERSION")
+    );
 }
 
 // cache frequently used header values
-static CARGO_PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub static CLOSE: HeaderValue = HeaderValue::from_static("close");
 pub static KEEPALIVE: HeaderValue = HeaderValue::from_static("keep-alive");
-
-fn get_user_agent() -> HeaderValue {
-    HeaderValue::from_str(&format!(
-        "PrivateBinDirectoryBot/{CARGO_PKG_VERSION} (+https://privatebin.info/directory/about)"
-    ))
-    .unwrap()
-}
 
 pub async fn request(
     url: &str,
@@ -60,7 +57,7 @@ pub async fn request(
         .method(method)
         .uri(uri.unwrap())
         .header(CONNECTION, connection)
-        .header(USER_AGENT, get_user_agent())
+        .header(USER_AGENT, HeaderValue::from_static(&USER_AGENT_STRING))
         .body(body)
         .expect("request");
     let result = timeout(
