@@ -1,5 +1,11 @@
 # Change log
 
+# 0.7.2
+- cleaning up the request code
+- switch to rust 1.58.0 and make use of it's captured identifiers
+- use diesel DSL over format string SQL statements
+- cache compiled regular expressions and formatted user agent string
+
 # 0.7.1
 - re-implementing support for internationalized domain names (IDN), lost in the hyper upgrade at 0.7.0
 - switching to rust edition 2021
