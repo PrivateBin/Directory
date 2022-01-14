@@ -3,10 +3,11 @@
 NAME = directory
 IMAGE = privatebin/$(NAME)
 PORT = 8000
-BUILD_IMAGE = ekidd/rust-musl-builder:1.57.0-sqlite
+BUILD_IMAGE = ekidd/rust-musl-builder:stable-sqlite
 DATABASE = var/directory.sqlite
 ROCKET_DATABASES = "{directory={url=\"$(DATABASE)\"}}"
 GEOIP_MMDB = var/geoip-country.mmdb
+NPROC = $(shell nproc)
 
 all: test build image run check clean ## Equivalent to "make test build image run check clean" (default).
 
@@ -22,7 +23,7 @@ test: .cargo/registry $(DATABASE) ## Build and run the unit tests.
 		-v "$(CURDIR)":/home/rust/src \
 		-v "$(CURDIR)"/.cargo/registry:/home/rust/.cargo/registry \
 		$(BUILD_IMAGE) \
-		cargo test --release # -- --nocapture
+		cargo test --release -- --test-threads=$(NPROC) # --nocapture
 	git checkout $(DATABASE)
 
 build: .cargo/registry ## Build the binary for release.
