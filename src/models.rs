@@ -11,6 +11,7 @@ use hyper::{Body, Method, StatusCode};
 use maxminddb::geoip2::Country;
 use regex::Regex;
 use rocket::serde::{json, Deserialize, Serialize};
+use std::env::var;
 use std::io::BufRead; // provides the lines() trait
 use std::net::IpAddr;
 use std::sync::atomic::AtomicU64;
@@ -129,7 +130,7 @@ pub struct PrivateBin {
 impl PrivateBin {
     pub async fn new(url: String) -> Result<PrivateBin, String> {
         if !url.starts_with("http://") && !url.starts_with("https://") {
-            return Err(format!("Not a valid URL: {}", url));
+            return Err(format!("Not a valid URL: {url}"));
         }
 
         let check_url = Self::strip_url(url);
@@ -161,8 +162,7 @@ impl PrivateBin {
             });
         }
         Err(format!(
-            "The URL {} doesn't seem to be a PrivateBin instance.",
-            check_url
+            "The URL {check_url} doesn't seem to be a PrivateBin instance."
         ))
     }
 
@@ -174,7 +174,7 @@ impl PrivateBin {
             if let Some(host) = parsed_url.domain() {
                 let ips = lookup_host(host);
                 if ips.is_err() {
-                    return Err(format!("Host or domain of URL {} is not supported.", url));
+                    return Err(format!("Host or domain of URL {url} is not supported."));
                 }
                 ip = ips.unwrap()[0]
             } else if let Some(host) = parsed_url.host_str() {
@@ -186,14 +186,13 @@ impl PrivateBin {
                 return Ok(country_code);
             }
 
-            let geoip_mmdb = std::env::var("GEOIP_MMDB")
-                .expect("environment variable GEOIP_MMDB needs to be set");
+            let geoip_mmdb =
+                var("GEOIP_MMDB").expect("environment variable GEOIP_MMDB needs to be set");
             let opener = maxminddb::Reader::open_readfile(&geoip_mmdb);
             if opener.is_err() {
                 return Err(
                     format!(
-                        "Error opening geo IP database {} (defined in environment variable GEOIP_MMDB).",
-                        geoip_mmdb
+                        "Error opening geo IP database {geoip_mmdb} (defined in environment variable GEOIP_MMDB)."
                     )
                 );
             }
@@ -258,7 +257,7 @@ impl PrivateBin {
     pub async fn check_rating_mozilla_observatory(url: &str) -> ScanNew {
         if let Ok(parsed_url) = Url::parse(url) {
             if let Some(host) = parsed_url.host_str() {
-                let observatory_url = format!("{}{}", OBSERVATORY_API, host);
+                let observatory_url = format!("{OBSERVATORY_API}{host}");
                 if let Ok(res) = request_get(&observatory_url).await {
                     if res.status() == StatusCode::OK {
                         let body_bytes = to_bytes(res.into_body()).await.unwrap();
@@ -286,9 +285,9 @@ impl PrivateBin {
     // check robots.txt and bail if server doesn't want us to index the instance
     async fn check_robots(url: &str) -> Result<bool, String> {
         let robots_url = if url.ends_with('/') {
-            format!("{}robots.txt", url)
+            format!("{url}robots.txt")
         } else {
-            format!("{}/robots.txt", url)
+            format!("{url}/robots.txt")
         };
         if let Ok(res) = request_get(&robots_url).await {
             if res.status() == StatusCode::OK {
@@ -303,8 +302,7 @@ impl PrivateBin {
                     if rule_for_us {
                         if line_str.starts_with("Disallow: /") {
                             return Err(format!(
-                                "Web server on URL {} doesn't want to get added to the directory.",
-                                url
+                                "Web server on URL {url} doesn't want to get added to the directory."
                             ));
                         }
                         break;
@@ -319,11 +317,9 @@ impl PrivateBin {
     async fn check_version(url: &str) -> Result<(String, bool), String> {
         let result = request(url, Method::GET, &CLOSE, Body::empty()).await;
         let res = result?;
-        if res.status() != StatusCode::OK {
-            return Err(format!(
-                "Web server responded with status code {}.",
-                res.status()
-            ));
+        let status = res.status();
+        if status != StatusCode::OK {
+            return Err(format!("Web server responded with status code {status}."));
         }
 
         let mut version = String::new();
@@ -365,12 +361,10 @@ impl PrivateBin {
         // - https://example.com/ -> https://example.com
         // - https://example.com// -> https://example.com
         // - but https://example.com/path/ remains unchanged
+        let (schema, uri) = check_url.split_at(7);
         check_url = format!(
-            "{}{}",
-            &check_url[..7],
-            Regex::new(r"/{2,}")
-                .unwrap()
-                .replace_all(&check_url[7..], "/")
+            "{schema}{}",
+            Regex::new(r"/{2,}").unwrap().replace_all(uri, "/")
         );
         if check_url.matches('/').count() == 3 {
             check_url = check_url.trim_end_matches('/').to_string();
@@ -404,7 +398,7 @@ async fn test_url_rewrites() {
             .map(move |suffix| (schema, suffix))
     });
     for (schema, suffix) in components {
-        let url = format!("{}://privatebin.net{}", schema, suffix);
+        let url = format!("{schema}://privatebin.net{suffix}");
         let privatebin = PrivateBin::new(url).await.unwrap();
         assert_eq!(
             privatebin.instance.url,

@@ -82,10 +82,8 @@ async fn add_update_and_delete() {
     let mut query = "INSERT INTO checks (updated, up, instance_id) VALUES (".to_string();
     let mut instance_checks = vec![];
     for interval in 0..(CHECKS_TO_STORE + 1) {
-        instance_checks.push(format!(
-            "datetime({}, 'unixepoch'), 1, 1",
-            now - (interval * CRON_INTERVAL)
-        ));
+        let interval_update = now - (interval * CRON_INTERVAL);
+        instance_checks.push(format!("datetime({interval_update}, 'unixepoch'), 1, 1"));
     }
     let _ = write!(&mut query, "{})", instance_checks.join("), ("));
     conn.execute(&query)
@@ -94,8 +92,7 @@ async fn add_update_and_delete() {
     let oldest_check: Vec<i32> = checks
         .select(instance_id)
         .filter(updated.eq(diesel::dsl::sql(&format!(
-            "datetime({}, 'unixepoch')",
-            oldest_update
+            "datetime({oldest_update}, 'unixepoch')"
         ))))
         .load(&conn)
         .expect("selecting oldest check");
@@ -104,7 +101,7 @@ async fn add_update_and_delete() {
     check_up(rocket()).await;
     let oldest_check: Vec<i32> = checks
         .select(instance_id)
-        .filter(updated.eq(diesel::dsl::sql(&format!("{}", oldest_update))))
+        .filter(updated.eq(diesel::dsl::sql(&format!("{oldest_update}"))))
         .load(&conn)
         .expect("selecting oldest check, now deleted");
     assert_eq!(empty, oldest_check);
@@ -124,10 +121,8 @@ async fn add_update_and_delete() {
     let mut query = "INSERT INTO checks (updated, up, instance_id) VALUES (".to_string();
     let mut instance_checks = vec![];
     for interval in 0..MAX_FAILURES {
-        instance_checks.push(format!(
-            "datetime({}, 'unixepoch'), 0, 2",
-            now - (interval * CRON_INTERVAL)
-        ));
+        let interval_update = now - (interval * CRON_INTERVAL);
+        instance_checks.push(format!("datetime({interval_update}, 'unixepoch'), 0, 2"));
     }
     let _ = write!(&mut query, "{})", instance_checks.join("), ("));
     conn.execute(&query)

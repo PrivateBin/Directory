@@ -73,7 +73,7 @@ async fn index(db: DirectoryDbConn, cache: &State<InstancesCache>) -> Template {
         } else if major != instance_major || minor != instance_minor {
             // close table
             tables.push(HtmlTable {
-                title: format!("Version {}.{}", major, minor).to_string(),
+                title: format!("Version {major}.{minor}").to_string(),
                 header: header.clone(),
                 body: body.clone(),
             });
@@ -97,7 +97,7 @@ async fn index(db: DirectoryDbConn, cache: &State<InstancesCache>) -> Template {
         ]);
     }
     tables.push(HtmlTable {
-        title: format!("Version {}.{}", major, minor),
+        title: format!("Version {major}.{minor}"),
         header,
         body,
     });
@@ -109,7 +109,7 @@ async fn index(db: DirectoryDbConn, cache: &State<InstancesCache>) -> Template {
 #[get("/about")]
 fn about() -> Template {
     let page = StatusPage::new(
-        format!("About the {}", TITLE),
+        format!("About the {TITLE}"),
         None,
         Some(env!("CARGO_PKG_VERSION").to_string()),
     );
@@ -152,15 +152,13 @@ async fn save(db: DirectoryDbConn, form: Form<AddForm>, cache: &State<InstancesC
                             .execute(&*conn)
                             .expect("inserting first scan on a newly created instance");
 
+                        let add_url = privatebin.instance.url;
                         (
                             true,
                             StatusPage::new(
                                 String::from(ADD_TITLE),
                                 None,
-                                Some(format!(
-                                    "Successfully added URL: {}",
-                                    privatebin.instance.url
-                                )),
+                                Some(format!("Successfully added URL: {add_url}")),
                             ),
                         )
                     }
@@ -170,7 +168,7 @@ async fn save(db: DirectoryDbConn, form: Form<AddForm>, cache: &State<InstancesC
                             false,
                             StatusPage::new(
                                 String::from(ADD_TITLE),
-                                Some(format!("Error adding URL {}, due to: {:?}", add_url, e)),
+                                Some(format!("Error adding URL {add_url}, due to: {e:?}")),
                                 None,
                             ),
                         )

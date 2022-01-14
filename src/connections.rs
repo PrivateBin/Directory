@@ -20,13 +20,13 @@ lazy_static! {
 }
 
 // cache frequently used header values
+static CARGO_PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub static CLOSE: HeaderValue = HeaderValue::from_static("close");
 pub static KEEPALIVE: HeaderValue = HeaderValue::from_static("keep-alive");
 
-fn get_user_name() -> HeaderValue {
+fn get_user_agent() -> HeaderValue {
     HeaderValue::from_str(&format!(
-        "PrivateBinDirectoryBot/{} (+https://privatebin.info/directory/about)",
-        env!("CARGO_PKG_VERSION")
+        "PrivateBinDirectoryBot/{CARGO_PKG_VERSION} (+https://privatebin.info/directory/about)"
     ))
     .unwrap()
 }
@@ -40,11 +40,11 @@ pub async fn request(
     // parse URL to convert IDN into punycode
     let parse_result = Url::parse(url);
     if parse_result.is_err() {
-        return Err(format!("Host or domain of URL {} is not supported.", url));
+        return Err(format!("Host or domain of URL {url} is not supported."));
     }
     let parsed_url = parse_result.unwrap();
     let authority = match parsed_url.port() {
-        Some(port) => format!("{}:{:?}", parsed_url.host_str().unwrap(), port.to_string()),
+        Some(port) => format!("{}:{}", parsed_url.host_str().unwrap(), port.to_string()),
         None => String::from(parsed_url.host_str().unwrap()),
     };
     let uri = Uri::builder()
@@ -53,14 +53,14 @@ pub async fn request(
         .path_and_query(&parsed_url[Position::BeforePath..])
         .build();
     if uri.is_err() {
-        return Err(format!("Host or domain of URL {} is not supported.", url));
+        return Err(format!("Host or domain of URL {url} is not supported."));
     }
 
     let request = Request::builder()
         .method(method)
         .uri(uri.unwrap())
         .header(CONNECTION, connection)
-        .header(USER_AGENT, get_user_name())
+        .header(USER_AGENT, get_user_agent())
         .body(body)
         .expect("request");
     let result = timeout(
@@ -70,13 +70,12 @@ pub async fn request(
     .await;
     if result.is_err() {
         return Err(format!(
-            "Web server on URL {} is not responding within 15s.",
-            url
+            "Web server on URL {url} is not responding within 15s."
         ));
     }
     let response = result.unwrap();
     if response.is_err() {
-        return Err(format!("Web server on URL {} is not responding.", url));
+        return Err(format!("Web server on URL {url} is not responding."));
     }
     Ok(response.unwrap())
 }

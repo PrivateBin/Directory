@@ -14,7 +14,7 @@ pub const CHECKS_TO_STORE: u64 = 100; // amount of checks to keep
 pub const MAX_FAILURES: u64 = 90; // remove instances that failed this many times
 
 struct InstanceCheckResult {
-    result: String,
+    message: String,
     scan_update: Option<ScanNew>,
     scan_update_success: String,
     instance: Instance,
@@ -42,15 +42,12 @@ pub async fn check_full(rocket: Rocket<Build>) {
             while !pinned_children.is_empty() {
                 let (result, _index, remaining_children) = select_all(pinned_children).await;
                 pinned_children = remaining_children;
-                print!("{}", result.result);
+                let message = result.message;
+                print!("{message}");
 
                 // robots.txt must have changed or site no longer an instance, delete it immediately
-                if result
-                    .result
-                    .ends_with("doesn't want to get added to the directory.\n")
-                    || result
-                        .result
-                        .ends_with("doesn't seem to be a PrivateBin instance.\n")
+                if message.ends_with("doesn't want to get added to the directory.\n")
+                    || message.ends_with("doesn't seem to be a PrivateBin instance.\n")
                 {
                     match sql_query(&format!(
                         "DELETE FROM instances \
@@ -59,9 +56,9 @@ pub async fn check_full(rocket: Rocket<Build>) {
                     ))
                     .execute(&conn)
                     {
-                        Ok(_) => println!("    removed the instance, due to: {}", result.result),
+                        Ok(_) => println!("    removed the instance, due to: {message}"),
                         Err(e) => {
-                            println!("    error removing the instance: {}", e);
+                            println!("    error removing the instance: {e:?}");
                         }
                     }
                     continue;
@@ -101,13 +98,10 @@ pub async fn check_full(rocket: Rocket<Build>) {
             for (query, query_success, instance_url) in instance_update_queries {
                 match query.execute(&conn) {
                     Ok(_) => {
-                        println!("{}", query_success);
+                        println!("{query_success}");
                     }
                     Err(e) => {
-                        println!(
-                            "Instance {} failed to be updated with error: {:?}",
-                            instance_url, e
-                        );
+                        println!("Instance {instance_url} failed to be updated with error: {e:?}");
                     }
                 }
             }
@@ -120,13 +114,10 @@ pub async fn check_full(rocket: Rocket<Build>) {
             for (query, query_success, instance_url) in scan_update_queries {
                 match query.execute(&conn) {
                     Ok(_) => {
-                        println!("{}", query_success);
+                        println!("{query_success}");
                     }
                     Err(e) => {
-                        println!(
-                            "Instance {} failed to be updated with error: {:?}",
-                            instance_url, e
-                        );
+                        println!("Instance {instance_url} failed to be updated with error: {e:?}");
                     }
                 }
             }
@@ -141,9 +132,8 @@ pub async fn check_full(rocket: Rocket<Build>) {
                     FROM checks \
                     WHERE up = 0 \
                     GROUP BY instance_id \
-                    HAVING COUNT(up) >= {} \
-                );",
-                MAX_FAILURES
+                    HAVING COUNT(up) >= {MAX_FAILURES} \
+                );"
             ))
             .execute(&conn)
             {
@@ -152,22 +142,19 @@ pub async fn check_full(rocket: Rocket<Build>) {
                     timer.elapsed()
                 ),
                 Err(e) => {
-                    println!("error removing instances failing too many times: {}", e);
+                    println!("error removing instances failing too many times: {e:?}");
                 }
             }
         }
         Err(e) => {
-            println!(
-                "failed retrieving instances from database with error: {}",
-                e
-            );
+            println!("failed retrieving instances from database with error: {e:?}");
         }
     }
 }
 
 async fn check_instance(instance: Instance) -> InstanceCheckResult {
     let timer = Instant::now();
-    let mut result = String::new();
+    let mut message = String::new();
     let mut instance_options = [
         ("version", instance.version.clone(), String::new()),
         (
@@ -192,6 +179,7 @@ async fn check_instance(instance: Instance) -> InstanceCheckResult {
     let mut instance_update_success = String::new();
     let mut scan_update = None;
     let mut scan_update_success = String::new();
+    let instance_url = instance.url.clone();
     match PrivateBin::new(instance.url.clone()).await {
         Ok(privatebin) => {
             instance_options[0].2 = privatebin.instance.version.clone();
@@ -199,70 +187,61 @@ async fn check_instance(instance: Instance) -> InstanceCheckResult {
             instance_options[2].2 = format!("{:?}", privatebin.instance.https_redirect.clone());
             instance_options[3].2 = format!("{:?}", privatebin.instance.attachments.clone());
             instance_options[4].2 = privatebin.instance.country_id.clone();
+            let elapsed = timer.elapsed();
+            let timer = Instant::now();
             if instance_options.iter().any(|x| x.1 != x.2) {
                 instance_update = Some(privatebin.instance);
                 let _ = writeln!(
                     &mut instance_update_success,
-                    "Instance {} checked and updated ({:?}):",
-                    instance.url,
-                    timer.elapsed()
+                    "Instance {instance_url} checked and updated ({elapsed:?}):"
                 );
                 for (label, old, new) in instance_options.iter() {
                     if old != new {
                         let _ = writeln!(
                             &mut instance_update_success,
-                            "    {} was {}, updated to {}",
-                            label, old, new
+                            "    {label} was {old}, updated to {new}"
                         );
                     }
                 }
             } else {
                 let _ = writeln!(
-                    &mut result,
-                    "Instance {} checked, no update required ({:?})",
-                    instance.url,
-                    timer.elapsed()
+                    &mut message,
+                    "Instance {instance_url} checked, no update required ({elapsed:?})"
                 );
             }
 
-            let timer = Instant::now();
             // retrieve latest scan
             scan = privatebin.scans[0].clone();
             // if missing, wait for the scan to conclude and poll again
-            if scan.rating == "-" {
+            let rating = scan.rating.clone();
+            if rating == "-" {
                 sleep(Duration::from_secs(5)).await;
-                scan = PrivateBin::check_rating_mozilla_observatory(&instance.url).await;
+                scan = PrivateBin::check_rating_mozilla_observatory(&instance_url).await;
             }
-            if scan.rating != "-" && scan.rating != instance.rating_mozilla_observatory {
+            let elapsed = timer.elapsed();
+            if rating != "-" && rating != instance.rating_mozilla_observatory {
                 scan_update = Some(scan.clone());
                 let _ = writeln!(
                     &mut scan_update_success,
-                    "Instance {} rating updated to: {} ({:?})",
-                    instance.url,
-                    scan.rating,
-                    timer.elapsed()
+                    "Instance {instance_url} rating updated to: {rating} ({elapsed:?})"
                 );
             } else {
                 let _ = writeln!(
                     &mut scan_update_success,
-                    "Instance {} rating remains unchanged at: {} ({:?})",
-                    instance.url,
-                    scan.rating,
-                    timer.elapsed()
+                    "Instance {instance_url} rating remains unchanged at: {rating} ({elapsed:?})"
                 );
             }
         }
         Err(e) => {
             let _ = writeln!(
-                &mut result,
-                "Instance {} failed to be checked with error: {}",
-                instance.url, e
+                &mut message,
+                "Instance {instance_url} failed to be checked with error: {e:?}"
             );
         }
     }
 
     InstanceCheckResult {
-        result,
+        message,
         scan_update,
         scan_update_success,
         instance,
@@ -298,7 +277,7 @@ pub async fn check_up(rocket: Rocket<Build>) {
                 let ((instance_url, instance_check, elapsed), _index, remaining_children) =
                     select_all(pinned_children).await;
                 instance_checks.push(instance_check);
-                println!("Instance {} checked ({:?})", instance_url, elapsed);
+                println!("Instance {instance_url} checked ({elapsed:?})");
                 pinned_children = remaining_children;
             }
 
@@ -316,36 +295,30 @@ pub async fn check_up(rocket: Rocket<Build>) {
                     let cutoff = get_epoch() - ((CHECKS_TO_STORE - 1) * CRON_INTERVAL);
                     match diesel::delete(checks)
                         .filter(updated.lt(diesel::dsl::sql(&format!(
-                            "datetime({}, 'unixepoch')",
-                            cutoff
+                            "datetime({cutoff}, 'unixepoch')"
                         ))))
                         .execute(&conn)
                     {
                         Ok(_) => {
                             println!(
-                                "cleaned up checks stored before {} ({:?})",
-                                cutoff,
+                                "cleaned up checks stored before {cutoff} ({:?})",
                                 timer.elapsed()
                             );
                         }
                         Err(e) => {
                             println!(
-                                "failed to cleanup checks stored before {}, with error: {}",
-                                cutoff, e
+                                "failed to cleanup checks stored before {cutoff}, with error: {e:?}"
                             );
                         }
                     }
                 }
                 Err(e) => {
-                    println!("failed to store uptime checks with error: {}", e);
+                    println!("failed to store uptime checks with error: {e:?}");
                 }
             }
         }
         Err(e) => {
-            println!(
-                "failed retrieving instances from database with error: {}",
-                e
-            );
+            println!("failed retrieving instances from database with error: {e:?}");
         }
     }
 }
