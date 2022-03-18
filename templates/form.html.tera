@@ -4,12 +4,14 @@
 {% block content %}
 {{ draw::error(message=error) }}
 {{ draw::success(message=success) }}
-			<form  action="/add" method="POST">
+{% set action = topic | split(pat=" ") | first -%}
+{% set target = action | lower -%}
+			<form  action="/{{ target }}" method="POST">
 				<div class="form-group">
-					<label for="url">Add an instance:</label>
+					<label for="url">{{ action }} an instance{% if action == "Check" %} (without adding it){% endif %}:</label>
 					<input type="url" class="form-control" id="url" name="url" aria-describedby="url-help">
 					<small id="url-help" class="form-text text-muted">Copy the URL from your browsers address bar, including http(s):// and paste it in here.</small>
 				</div>
-				<button type="submit" class="btn btn-primary">Add</button>
+				<button type="submit" class="btn btn-primary">{{ action }}</button>
 			</form>
 {% endblock content %}

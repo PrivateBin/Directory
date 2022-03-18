@@ -1,5 +1,5 @@
 use super::{
-    about, add, api, favicon, index, save, sql_query, Build, DirectoryDbConn, Instance,
+    about, add, api, check, favicon, index, save, sql_query, Build, DirectoryDbConn, Instance,
     InstancesCache, Relaxed, Rocket, State, Template, CRON_INTERVAL,
 };
 use diesel::prelude::*;
@@ -62,7 +62,7 @@ pub fn rating_to_percent(rating: &str) -> u8 {
 
 pub fn rocket() -> Rocket<Build> {
     rocket::build()
-        .mount("/", routes![about, add, api, favicon, index, save])
+        .mount("/", routes![about, add, api, check, favicon, index, save])
         .mount("/img", FileServer::from("img"))
         .mount("/css", FileServer::from("css"))
         .attach(DirectoryDbConn::fairing())

@@ -36,6 +36,7 @@ use tasks::*;
 mod tests;
 
 const ADD_TITLE: &str = "Add instance";
+const CHECK_TITLE: &str = "Check instance";
 
 #[get("/")]
 async fn index(db: DirectoryDbConn, cache: &State<InstancesCache>) -> Template {
@@ -119,7 +120,7 @@ fn about() -> Template {
 #[get("/add")]
 fn add() -> Template {
     let page = StatusPage::new(String::from(ADD_TITLE), None, None);
-    Template::render("add", &page)
+    Template::render("form", &page)
 }
 
 #[post("/add", data = "<form>")]
@@ -185,7 +186,13 @@ async fn save(db: DirectoryDbConn, form: Form<AddForm>, cache: &State<InstancesC
     if do_cache_flush {
         cache.timeout.store(0, Relaxed);
     }
-    Template::render("add", &page)
+    Template::render("form", &page)
+}
+
+#[get("/check")]
+fn check() -> Template {
+    let page = StatusPage::new(String::from(CHECK_TITLE), None, None);
+    Template::render("form", &page)
 }
 
 #[get(
