@@ -6,6 +6,17 @@ h2 {
 }
 
 /*
+ * avoids having to use JavaScript for the navbar toggle
+ */
+#navbarToggleCheckbox:checked ~ .collapse {
+	display: block;
+}
+
+#navbarToggleCheckbox {
+	display: none;
+}
+
+/*
  * color-fonts display check marks and crosses using their built-in colors,
  * the trick below ensures that the selected colors get used instead
  */

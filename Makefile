@@ -57,7 +57,7 @@ run: ## Run a container from the image.
 		--read-only -v "$(CURDIR)/var":/var $(IMAGE)
 
 check: ## Launch tests to verify that the service works as expected, requires a running container.
-	@sleep 1
+	@sleep 2
 	nc -z localhost $(PORT)
 	curl -s http://localhost:$(PORT)/ | grep "Welcome!"
 	curl -s http://localhost:$(PORT)/about | grep "About"

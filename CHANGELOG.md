@@ -1,5 +1,10 @@
 # Change log
 
+# 0.8.0
+- adding a "check instance" form, to retrieve a detailed report on an instance, without adding it
+- upgrade to bootstrap CSS 5.1.3
+- fix navbar toggle in mobile display
+
 # 0.7.2
 - cleaning up the request code
 - switch to rust 1.58.0 and make use of it's captured identifiers

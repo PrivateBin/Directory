@@ -12,35 +12,36 @@
 	</head>
 	<body>
 		<nav class="navbar navbar-expand-lg bg-light">
-			<a class="navbar-brand" href="/">
-				<img src="/img/icon.svg" width="38" alt="PrivateBin">
-				{{ title }}
-			</a>
-			<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-				<span class="navbar-toggler-icon"></span>
-			</button>
-			<div id="navbarSupportedContent" class="collapse navbar-collapse">
-				<ul class="navbar-nav mr-auto">
-					<li class="nav-item active">
-						<a class="nav-link" href="/">Home</a>
-					</li>
-					<li class="nav-item">
-						<a class="nav-link" href="/add">Add</a>
-					</li>
-					<li class="nav-item">
-						<a class="nav-link" href="/check">Check</a>
-					</li>
-					<li class="nav-item">
-						<a class="nav-link" href="/about">About</a>
-					</li>
-					<li class="nav-item ml-5">
-						<div class="custom-control custom-switch navbar-text">
-							<input id="darkSwitch" type="checkbox" class="custom-control-input">
-							<label for="darkSwitch" class="custom-control-label">Dark Mode</label>
-						</div>
-						<script src="/css/dark-mode-switch.js"></script>
-					</li>
-				</ul>
+			<div class="container-fluid">
+				<a class="navbar-brand" href="/">
+					<img src="/img/icon.svg" width="38" alt="PrivateBin">
+					{{ title }}
+				</a>
+				<input type="checkbox" id="navbarToggleCheckbox">
+				<label for="navbarToggleCheckbox" class="navbar-toggler hidden-sm-up" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-label="Toggle navigation">&#9776;</label>
+				<div id="navbarSupportedContent" class="collapse navbar-collapse">
+					<ul class="navbar-nav me-auto">
+						<li class="nav-item active">
+							<a class="nav-link" href="/">Home</a>
+						</li>
+						<li class="nav-item">
+							<a class="nav-link" href="/add">Add</a>
+						</li>
+						<li class="nav-item">
+							<a class="nav-link" href="/check">Check</a>
+						</li>
+						<li class="nav-item">
+							<a class="nav-link" href="/about">About</a>
+						</li>
+						<li class="nav-item ms-5">
+							<div class="form-check form-switch navbar-text">
+								<input id="darkSwitch" type="checkbox" class="form-check-input">
+								<label for="darkSwitch" class="form-check-label">Dark Mode</label>
+							</div>
+							<script src="/css/dark-mode-switch.js"></script>
+						</li>
+					</ul>
+				</div>
 			</div>
 		</nav>
 		<div class="container-fluid">
