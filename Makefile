@@ -40,11 +40,10 @@ pack: ## Strips and compresses the binary to reduce it's size, only intended for
 	upx --ultra-brute target/x86_64-unknown-linux-musl/release/directory
 
 license: ## Generates the LICENSE.md file
-	docker run --rm -t --init \
-		-v "$(CURDIR)":/home/rust/src \
-		-v "$(CURDIR)"/.cargo/registry:/home/rust/.cargo/registry \
-		$(BUILD_IMAGE) \
-		sh -c "cargo install cargo-about && cargo about init && cargo about generate about.hbs > /home/rust/src/LICENSE.md"
+	cargo about init
+	cargo about generate about.hbs > LICENSE.md
+
+LICENSE.md: license
 
 image: ## Build the container image.
 	docker build --build-arg PORT=$(PORT) \
