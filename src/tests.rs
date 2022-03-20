@@ -56,7 +56,6 @@ fn add_post_success() {
         .header(ContentType::Form)
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    assert!(response
-        .into_string()
-        .map_or(false, |s| s.contains(&"Successfully added URL: https:&#x2F;&#x2F;privatebin.net")));
+    assert!(response.into_string().map_or(false, |s| s
+        .contains(&"Successfully added URL: https:&#x2F;&#x2F;privatebin.net")));
 }

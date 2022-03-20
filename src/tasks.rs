@@ -250,7 +250,7 @@ async fn check_instance_up(instance: Instance) -> (String, CheckNew, Duration) {
     let timer = Instant::now();
     let check_result = CheckNew {
         up: instance.check_up().await,
-        instance_id: instance.id
+        instance_id: instance.id,
     };
     (instance.url, check_result, timer.elapsed())
 }
@@ -323,29 +323,29 @@ pub async fn check_up(rocket: Rocket<Build>) {
 
 #[tokio::test]
 async fn add_update_and_delete() {
-    use super::{
-        rocket, CHECKS_TO_STORE, CRON_INTERVAL, MAX_FAILURES,
-    };
     use super::schema::checks::dsl::*;
     use super::schema::{instances, scans};
+    use super::{rocket, CHECKS_TO_STORE, CRON_INTERVAL, MAX_FAILURES};
     use diesel::prelude::*;
 
-    let directory_config =
-        rocket_sync_db_pools::Config::from("directory", &rocket()).expect("configuration of directory database");
+    let directory_config = rocket_sync_db_pools::Config::from("directory", &rocket())
+        .expect("configuration of directory database");
     let conn = SqliteConnection::establish(&directory_config.url)
         .expect("connection to directory database");
     let empty: Vec<i32> = vec![]; // needs an explicit type, as it can't be inferred from an immutable, empty vector
     let now = get_epoch();
 
     // insert an instance
-    let query = "INSERT INTO instances (id, url, version, https, https_redirect, country_id, attachments) \
-        VALUES (1, 'https://privatebin.net', '1.3.5', 1, 1, 'CH', 0)".to_string();
-    conn.execute(&query)
-        .expect("inserting instance ID 1");
+    let query =
+        "INSERT INTO instances (id, url, version, https, https_redirect, country_id, attachments) \
+        VALUES (1, 'https://privatebin.net', '1.3.5', 1, 1, 'CH', 0)"
+            .to_string();
+    conn.execute(&query).expect("inserting instance ID 1");
 
     // insert scan
     let query = "INSERT INTO scans (scanner, rating, percent, instance_id) \
-        VALUES ('mozilla_observatory', '-', 0, 1)".to_string();
+        VALUES ('mozilla_observatory', '-', 0, 1)"
+        .to_string();
     conn.execute(&query)
         .expect("inserting scan for instance ID 1");
 
@@ -378,14 +378,16 @@ async fn add_update_and_delete() {
     assert_eq!(empty, oldest_check);
 
     // insert another instance, subsequently to be deleted
-    let query = "INSERT INTO instances (id, url, version, https, https_redirect, country_id, attachments) \
-        VALUES (2, 'http://zerobin-legacy.dssr.ch', '0.20', 1, 0, 'CH', 0)".to_string();
-    conn.execute(&query)
-        .expect("inserting instance ID 2");
+    let query =
+        "INSERT INTO instances (id, url, version, https, https_redirect, country_id, attachments) \
+        VALUES (2, 'http://zerobin-legacy.dssr.ch', '0.20', 1, 0, 'CH', 0)"
+            .to_string();
+    conn.execute(&query).expect("inserting instance ID 2");
 
     // insert scan
     let query = "INSERT INTO scans (scanner, rating, percent, instance_id) \
-        VALUES ('mozilla_observatory', '-', 0, 2)".to_string();
+        VALUES ('mozilla_observatory', '-', 0, 2)"
+        .to_string();
     conn.execute(&query)
         .expect("inserting scan for instance ID 2");
 

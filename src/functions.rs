@@ -67,7 +67,10 @@ pub fn rating_to_percent(rating: &str) -> u8 {
 
 pub fn rocket() -> Rocket<Build> {
     rocket::build()
-        .mount("/", routes![about, add, api, check, favicon, index, report, save])
+        .mount(
+            "/",
+            routes![about, add, api, check, favicon, index, report, save],
+        )
         .mount("/img", FileServer::from("img"))
         .mount("/css", FileServer::from("css"))
         .attach(DirectoryDbConn::fairing())
@@ -144,25 +147,23 @@ pub fn filter_country(value: &Value, args: &HashMap<String, Value>) -> Result<Va
             .unwrap(),
     ];
     let output = match args.get("label") {
-        Some(label) => {
-            match try_get_value!("country", "label", bool, label) {
-                true => format!(
-                    "{0}. {1}",
-                    CountryCode::for_alpha2(&country_code).unwrap().name(),
-                    country_code_points.iter().cloned().collect::<String>()
-                ),
-                false => format!(
-                    "<td title=\"{0}\" aria-label=\"{0}\">{1}</td>",
-                    CountryCode::for_alpha2(&country_code).unwrap().name(),
-                    country_code_points.iter().cloned().collect::<String>()
-                )
-            }
+        Some(label) => match try_get_value!("country", "label", bool, label) {
+            true => format!(
+                "{0}. {1}",
+                CountryCode::for_alpha2(&country_code).unwrap().name(),
+                country_code_points.iter().cloned().collect::<String>()
+            ),
+            false => format!(
+                "<td title=\"{0}\" aria-label=\"{0}\">{1}</td>",
+                CountryCode::for_alpha2(&country_code).unwrap().name(),
+                country_code_points.iter().cloned().collect::<String>()
+            ),
         },
         None => format!(
             "<td title=\"{0}\" aria-label=\"{0}\">{1}</td>",
             CountryCode::for_alpha2(&country_code).unwrap().name(),
             country_code_points.iter().cloned().collect::<String>()
-        )
+        ),
     };
     Ok(to_value(output).unwrap())
 }

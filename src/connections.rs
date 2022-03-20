@@ -17,7 +17,6 @@ lazy_static! {
             .build();
         Client::builder().build(https_connector)
     });
-
     static ref USER_AGENT_STRING: String = format!(
         "PrivateBinDirectoryBot/{} (+https://privatebin.info/directory/about)",
         env!("CARGO_PKG_VERSION")

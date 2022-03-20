@@ -144,7 +144,10 @@ async fn save(db: DirectoryDbConn, form: Form<AddForm>, cache: &State<InstancesC
                             .first(&*conn)
                             .expect("selecting the just inserted the instance");
                         diesel::insert_into(checks)
-                            .values(CheckNew { up: true, instance_id })
+                            .values(CheckNew {
+                                up: true,
+                                instance_id,
+                            })
                             .execute(&*conn)
                             .expect("inserting first check on a newly created instance");
                         diesel::insert_into(scans)
@@ -195,53 +198,65 @@ fn check() -> Template {
 }
 
 #[post("/check", data = "<form>")]
-async fn report(db: DirectoryDbConn, form: Form<AddForm>, cache: &State<InstancesCache>) -> Template {
+async fn report(
+    db: DirectoryDbConn,
+    form: Form<AddForm>,
+    cache: &State<InstancesCache>,
+) -> Template {
     let form = form.into_inner();
     let form_url = form.url.trim().to_string();
     let check_url = strip_url(form_url.clone());
     let check_success_title = format!("Results of checking {check_url}");
-    let existing_instance = db.run(move |conn| {
-        use schema::instances::dsl::*;
-        use diesel::sql_types::{Integer, Text};
-        instances
-            .select((
-                id,
-                url,
-                version,
-                https,
-                https_redirect,
-                country_id,
-                attachments,
-                diesel::dsl::sql::<Integer>("(100 * SUM(checks.up) / COUNT(checks.up))"),
-                diesel::dsl::sql::<Text>("scans.rating")
-            ))
-            .inner_join(checks)
-            .inner_join(scans)
-            .filter(url.eq(check_url))
-            .first(&*conn)
-    })
-    .await;
+    let existing_instance = db
+        .run(move |conn| {
+            use diesel::sql_types::{Integer, Text};
+            use schema::instances::dsl::*;
+            instances
+                .select((
+                    id,
+                    url,
+                    version,
+                    https,
+                    https_redirect,
+                    country_id,
+                    attachments,
+                    diesel::dsl::sql::<Integer>("(100 * SUM(checks.up) / COUNT(checks.up))"),
+                    diesel::dsl::sql::<Text>("scans.rating"),
+                ))
+                .inner_join(checks)
+                .inner_join(scans)
+                .filter(url.eq(check_url))
+                .first(&*conn)
+        })
+        .await;
     let page = match existing_instance {
         Ok(instance) => InstancePage::new(check_success_title, Some(instance), None),
-        Err(_) => {
-            match PrivateBin::new(form_url.clone()).await {
-                Ok(privatebin) => {
-                    let instance = Instance {
-                        id: 0,
-                        url: privatebin.instance.url,
-                        version: privatebin.instance.version,
-                        https: privatebin.instance.https,
-                        https_redirect: privatebin.instance.https_redirect,
-                        country_id: privatebin.instance.country_id,
-                        attachments: privatebin.instance.attachments,
-                        uptime: 0,
-                        rating_mozilla_observatory: privatebin.scans.last().unwrap_or(&ScanNew::default()).rating.clone(),
-                    };
-                    InstancePage::new(check_success_title, Some(instance), None)
-                },
-                Err(e) => InstancePage::new(String::from(CHECK_TITLE), None, Some(format!("Error scanning URL {form_url}, due to: {e:?}")))
+        Err(_) => match PrivateBin::new(form_url.clone()).await {
+            Ok(privatebin) => {
+                let instance = Instance {
+                    id: 0,
+                    url: privatebin.instance.url,
+                    version: privatebin.instance.version,
+                    https: privatebin.instance.https,
+                    https_redirect: privatebin.instance.https_redirect,
+                    country_id: privatebin.instance.country_id,
+                    attachments: privatebin.instance.attachments,
+                    uptime: 0,
+                    rating_mozilla_observatory: privatebin
+                        .scans
+                        .last()
+                        .unwrap_or(&ScanNew::default())
+                        .rating
+                        .clone(),
+                };
+                InstancePage::new(check_success_title, Some(instance), None)
             }
-        }
+            Err(e) => InstancePage::new(
+                String::from(CHECK_TITLE),
+                None,
+                Some(format!("Error scanning URL {form_url}, due to: {e:?}")),
+            ),
+        },
     };
     if page.error.len() > 0 {
         return Template::render("form", &StatusPage::new(page.topic, Some(page.error), None));

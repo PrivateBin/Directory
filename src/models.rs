@@ -22,7 +22,8 @@ pub const TITLE: &str = "Instance Directory";
 const OBSERVATORY_API: &str = "https://http-observatory.security.mozilla.org/api/v1/analyze?host=";
 
 lazy_static! {
-    static ref VERSION_EXP: Regex = Regex::new(r"js/(privatebin|zerobin).js\?(Alpha%20)?(\d+\.\d+\.*\d*)").unwrap();
+    static ref VERSION_EXP: Regex =
+        Regex::new(r"js/(privatebin|zerobin).js\?(Alpha%20)?(\d+\.\d+\.*\d*)").unwrap();
 }
 
 #[derive(Queryable)]
@@ -328,9 +329,7 @@ impl PrivateBin {
 async fn test_privatebin() {
     let url = String::from("https://privatebin.net");
     let test_url = url.clone();
-    let privatebin = PrivateBin::new(test_url)
-        .await
-        .unwrap();
+    let privatebin = PrivateBin::new(test_url).await.unwrap();
     assert_eq!(privatebin.instance.url, url);
     assert_eq!(privatebin.instance.version, "1.3.5");
     assert_eq!(privatebin.instance.https, true);
@@ -348,9 +347,7 @@ async fn test_url_rewrites() {
     });
     for (schema, suffix) in components {
         let url = format!("{schema}://privatebin.net{suffix}");
-        let privatebin = PrivateBin::new(url)
-            .await
-            .unwrap();
+        let privatebin = PrivateBin::new(url).await.unwrap();
         assert_eq!(
             privatebin.instance.url,
             String::from("https://privatebin.net")
@@ -376,9 +373,7 @@ async fn test_robots_txt() {
 async fn test_zerobin() {
     let url = String::from("http://zerobin-legacy.dssr.ch/");
     let test_url = url.clone();
-    let privatebin = PrivateBin::new(test_url)
-        .await
-        .unwrap();
+    let privatebin = PrivateBin::new(test_url).await.unwrap();
     assert_eq!(
         privatebin.instance.url,
         url.trim_end_matches('/').to_string()
@@ -394,9 +389,7 @@ async fn test_zerobin() {
 async fn test_no_http() {
     let url = String::from("https://pasta.lysergic.dev");
     let test_url = url.clone();
-    let privatebin = PrivateBin::new(test_url)
-        .await
-        .unwrap();
+    let privatebin = PrivateBin::new(test_url).await.unwrap();
     assert_eq!(privatebin.instance.url, url.to_string());
     assert_eq!(privatebin.instance.https, true);
     assert_eq!(privatebin.instance.https_redirect, true);
@@ -406,9 +399,7 @@ async fn test_no_http() {
 async fn test_idn() {
     let url = String::from("https://тайны.миры-аномалии.рф");
     let test_url = url.clone();
-    let privatebin = PrivateBin::new(test_url)
-        .await
-        .unwrap();
+    let privatebin = PrivateBin::new(test_url).await.unwrap();
     assert_eq!(privatebin.instance.url, url.to_string());
     assert_eq!(privatebin.instance.https, true);
     assert_eq!(privatebin.instance.https_redirect, true);
