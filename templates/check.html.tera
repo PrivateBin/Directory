@@ -1,0 +1,29 @@
+{% extends "base" %}
+{% import "macros" as draw %}
+
+{% block content %}
+{{ draw::error(message=error) }}
+	{%- if not error -%}
+			<p>These are the results of checking the PrivateBin instance on URL {{ instance.url }}:</p>
+			<dl>
+				<dt>The version advertised is <em>{{ instance.version }}</em>.</dt>
+				<dd>The version number, as advertised as part of the main JavaScript file name. You can find instructions to upgrade your instance in the <a href="https://github.com/PrivateBin/PrivateBin/releases">list of all releases</a>, the latest release being the one on top.</dd>
+				<dt>HTTPS <em>is{% if not instance.https %}n't{% endif %}</em> supported. {% if instance.https %}<span class="check_passed">✔{% else %}<span class="check_failed">✘{% endif %}</span></dt>
+				<dd>The instance URL is responding, when accessed over HTTPS. The connection could be established successfully, which implies the certificate hasn't expired and was signed by one of the certificate authorities on Mozilla's 🐲 trusted list (as retrieved from <a href="https://mkcert.org/">mkcert.org</a>, with some <a href="https://github.com/rustls/webpki-roots/blob/73ec28fb6b2294a6c18477cba8d761dd5a2cfd51/build.py#L34-L57">opinionated exclusions</a>).</dd>
+				<dt>HTTPS <em>is{% if not instance.https_redirect %}n't{% endif %}</em> enforced. {% if instance.https_redirect %}<span class="check_passed" aria-label="passed">✔{% else %}<span class="check_failed" aria-label="failed">✘{% endif %}</span></dt>
+				<dd>The instance URL is accessed over HTTP and a 30x redirection status code is received with an HTTP <code>Location</code> header, that points to a matching HTTPS URL or there is no HTTP access offered on port 80.</dd>
+		{%- if instance.rating_mozilla_observatory != "-" -%}
+				<dt>The rating given by the Mozilla 🐲 Observatory is <em>{{ instance.rating_mozilla_observatory }}</em>.</dt>
+				<dd>The <a href="https://github.com/mozilla/http-observatory/blob/master/httpobs/docs/scoring.md#http-observatory-scoring-methodology">score</a> of the instance as per the <a href="https://observatory.mozilla.org/">Mozilla 🐲 Observatory</a>.</dd>
+		{%- endif -%}
+				<dt>File uploads are {% if instance.attachments %}<em>enabled</em>. <span class="check_passed" aria-label="passed">✔{% else %}<em>disabled</em>. <span class="check_failed" aria-label="failed">✘{% endif %}</span></dt>
+				<dd>If the instance has the <a href="https://github.com/PrivateBin/PrivateBin/wiki/Configuration#fileupload"><code>fileupload</code> option</a> enabled, you can upload attachments along side your texts.</dd>
+		{%- if instance.uptime > 0 -%}
+				<dt>An uptime of <em>{{ instance.uptime }}%</em> was achieved.</dt>
+				<dd>This percentage is an indication if the instance expirienced any prolonged downtime during the last day. The instance is checked for availability every 15 minutes, using an HTTP(S) <code>HEAD</code> request to reduce transmitted data. Only the last 100 results (25h) are kept and the percentage is calculated based on this.</dd>
+		{%- endif -%}
+				<dt>The instance is likely hosted in {{ instance.country_id | country(label=true) | safe }}</dt>
+				<dd>The country of the IP serving the domain of the instance URL as per the <a href="https://db-ip.com/db/lite.php">DB-IP Lite geolocation database</a>. The precision of these databases is limited, but can serve as an indication in which country the instance is hosted. This may serve to select an instance that is close by or avoid instances located in undesirable jurisdictions. If the instance is using a <a href="https://en.wikipedia.org/wiki/Content_delivery_network">CDN</a> to serve it's content, the IP will be one that is geographically close to this service, which is hosted in Switzerland, and therefore the result will be unreliable.</dd>
+			</dl>
+	{%- endif -%}
+{% endblock content %}

@@ -1,5 +1,5 @@
 use super::connections::*;
-use super::functions::rating_to_percent;
+use super::functions::{rating_to_percent, strip_url};
 use super::schema::checks;
 use super::schema::instances;
 use super::schema::scans;
@@ -22,7 +22,6 @@ pub const TITLE: &str = "Instance Directory";
 const OBSERVATORY_API: &str = "https://http-observatory.security.mozilla.org/api/v1/analyze?host=";
 
 lazy_static! {
-    static ref SLASHES_EXP: Regex = Regex::new(r"/{2,}").unwrap();
     static ref VERSION_EXP: Regex = Regex::new(r"js/(privatebin|zerobin).js\?(Alpha%20)?(\d+\.\d+\.*\d*)").unwrap();
 }
 
@@ -39,12 +38,6 @@ pub struct Check {
 pub struct CheckNew {
     pub up: bool,
     pub instance_id: i32,
-}
-
-impl CheckNew {
-    pub fn new(up: bool, instance_id: i32) -> CheckNew {
-        CheckNew { up, instance_id }
-    }
 }
 
 #[database("directory")]
@@ -95,26 +88,6 @@ pub struct InstanceNew {
     pub attachments: bool,
 }
 
-impl InstanceNew {
-    pub fn new(
-        url: String,
-        version: String,
-        https: bool,
-        https_redirect: bool,
-        country_id: String,
-        attachments: bool,
-    ) -> InstanceNew {
-        InstanceNew {
-            url,
-            version,
-            https,
-            https_redirect,
-            country_id,
-            attachments,
-        }
-    }
-}
-
 pub struct InstancesCache {
     pub timeout: AtomicU64,
     pub instances: RwLock<Vec<Instance>>,
@@ -138,7 +111,7 @@ impl PrivateBin {
             return Err(format!("Not a valid URL: {url}"));
         }
 
-        let check_url = Self::strip_url(url);
+        let check_url = strip_url(url);
         let (https, https_redirect, check_url) = Self::check_http(&check_url).await?;
         // don't proceed if the robots.txt tells us not to index the instance
         Self::check_robots(&check_url).await?;
@@ -155,14 +128,14 @@ impl PrivateBin {
 
         if !version.is_empty() {
             return Ok(PrivateBin {
-                instance: InstanceNew::new(
-                    check_url,
+                instance: InstanceNew {
+                    url: check_url,
                     version,
                     https,
                     https_redirect,
-                    country_code,
+                    country_id: country_code,
                     attachments,
-                ),
+                },
                 scans,
             });
         }
@@ -239,7 +212,7 @@ impl PrivateBin {
                         if !https && https_redirect {
                             // if the given URL was HTTP, but we got redirected to https,
                             // check & store the HTTPS URL instead
-                            resulting_url = Self::strip_url(location.to_string());
+                            resulting_url = strip_url(location.to_string());
                             https = true;
                         }
                     }
@@ -284,7 +257,7 @@ impl PrivateBin {
                 }
             }
         }
-        ScanNew::new("mozilla_observatory", "-", 0)
+        Default::default()
     }
 
     // check robots.txt and bail if server doesn't want us to index the instance
@@ -349,45 +322,20 @@ impl PrivateBin {
         }
         Ok((version, attachments))
     }
-
-    fn strip_url(url: String) -> String {
-        let mut check_url = url;
-        // remove query from URL
-        if let Some(query_start) = check_url.find('?') {
-            check_url = check_url[..query_start].to_string();
-        }
-        // remove hash from URL
-        if let Some(query_start) = check_url.find('#') {
-            check_url = check_url[..query_start].to_string();
-        }
-        // remove trailing slash, but only for web root, not for paths:
-        // - https://example.com/ -> https://example.com
-        // - https://example.com// -> https://example.com
-        // - but https://example.com/path/ remains unchanged
-        let (schema, uri) = check_url.split_at(7);
-        let cleaned_uri = SLASHES_EXP.replace_all(uri, "/");
-        check_url = format!("{schema}{cleaned_uri}");
-        if check_url.matches('/').count() == 3 {
-            check_url = check_url.trim_end_matches('/').to_string();
-        }
-        check_url
-    }
 }
 
 #[tokio::test]
 async fn test_privatebin() {
     let url = String::from("https://privatebin.net");
     let test_url = url.clone();
-    let privatebin = tokio::task::spawn_blocking(move || PrivateBin::new(test_url))
-        .await
-        .unwrap()
+    let privatebin = PrivateBin::new(test_url)
         .await
         .unwrap();
     assert_eq!(privatebin.instance.url, url);
     assert_eq!(privatebin.instance.version, "1.3.5");
     assert_eq!(privatebin.instance.https, true);
     assert_eq!(privatebin.instance.https_redirect, true);
-    assert_eq!(privatebin.instance.attachments, false);
+    assert_eq!(privatebin.instance.attachments, true);
     assert_eq!(privatebin.instance.country_id, "CH");
 }
 
@@ -400,7 +348,9 @@ async fn test_url_rewrites() {
     });
     for (schema, suffix) in components {
         let url = format!("{schema}://privatebin.net{suffix}");
-        let privatebin = PrivateBin::new(url).await.unwrap();
+        let privatebin = PrivateBin::new(url)
+            .await
+            .unwrap();
         assert_eq!(
             privatebin.instance.url,
             String::from("https://privatebin.net")
@@ -426,7 +376,9 @@ async fn test_robots_txt() {
 async fn test_zerobin() {
     let url = String::from("http://zerobin-legacy.dssr.ch/");
     let test_url = url.clone();
-    let privatebin = PrivateBin::new(test_url).await.unwrap();
+    let privatebin = PrivateBin::new(test_url)
+        .await
+        .unwrap();
     assert_eq!(
         privatebin.instance.url,
         url.trim_end_matches('/').to_string()
@@ -442,9 +394,7 @@ async fn test_zerobin() {
 async fn test_no_http() {
     let url = String::from("https://pasta.lysergic.dev");
     let test_url = url.clone();
-    let privatebin = tokio::task::spawn_blocking(move || PrivateBin::new(test_url))
-        .await
-        .unwrap()
+    let privatebin = PrivateBin::new(test_url)
         .await
         .unwrap();
     assert_eq!(privatebin.instance.url, url.to_string());
@@ -456,9 +406,7 @@ async fn test_no_http() {
 async fn test_idn() {
     let url = String::from("https://тайны.миры-аномалии.рф");
     let test_url = url.clone();
-    let privatebin = tokio::task::spawn_blocking(move || PrivateBin::new(test_url))
-        .await
-        .unwrap()
+    let privatebin = PrivateBin::new(test_url)
         .await
         .unwrap();
     assert_eq!(privatebin.instance.url, url.to_string());
@@ -497,6 +445,12 @@ impl ScanNew {
     }
 }
 
+impl Default for ScanNew {
+    fn default() -> Self {
+        ScanNew::new("mozilla_observatory", "-", 0)
+    }
+}
+
 #[derive(Debug, PartialEq, Eq, Serialize)]
 #[serde(crate = "rocket::serde")]
 pub struct Page {
@@ -509,6 +463,27 @@ impl Page {
         Page {
             title: String::from(TITLE),
             topic,
+        }
+    }
+}
+
+#[derive(Serialize)]
+#[serde(crate = "rocket::serde")]
+pub struct InstancePage {
+    pub title: String,
+    pub topic: String,
+    pub instance: Option<Instance>,
+    pub error: String,
+}
+
+impl InstancePage {
+    pub fn new(topic: String, instance: Option<Instance>, error: Option<String>) -> InstancePage {
+        let error_string = error.unwrap_or_default();
+        InstancePage {
+            title: String::from(TITLE),
+            topic,
+            instance,
+            error: error_string,
         }
     }
 }

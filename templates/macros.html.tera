@@ -21,9 +21,9 @@
 							<a href="{{ col }}">{{ col }}</a>
 				{%- else %}
 					{%- if col == "✔" %}
-							<span class="check_passed">
+							<span class="check_passed" aria-label="passed">
 					{%- elif col == "✘" %}
-							<span class="check_failed">
+							<span class="check_failed" aria-label="failed">
 					{%- endif %}
 							{% if col == "✔" or col == "✘" %}	{% endif %}{{ col }}
 					{%- if col == "✔" or col == "✘" %}

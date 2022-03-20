@@ -1,9 +1,10 @@
 use super::{
-    about, add, api, check, favicon, index, save, sql_query, Build, DirectoryDbConn, Instance,
+    about, add, api, check, favicon, index, report, save, Build, DirectoryDbConn, Instance,
     InstancesCache, Relaxed, Rocket, State, Template, CRON_INTERVAL,
 };
 use diesel::prelude::*;
 use diesel::query_builder::SqlQuery;
+use regex::Regex;
 use rocket::fs::FileServer;
 use rocket_dyn_templates::tera::{to_value, try_get_value, Result, Value};
 use std::collections::HashMap;
@@ -14,6 +15,10 @@ use std::sync::RwLock;
 // LETTER A" and 41 is the one for A in unicode and ASCII
 const REGIONAL_INDICATOR_OFFSET: u32 = 0x1F1E6 - 0x41;
 
+lazy_static! {
+    static ref SLASHES_EXP: Regex = Regex::new(r"/{2,}").unwrap();
+}
+
 pub fn get_epoch() -> u64 {
     use std::time::SystemTime;
     SystemTime::now()
@@ -23,7 +28,7 @@ pub fn get_epoch() -> u64 {
 }
 
 pub fn get_instances() -> SqlQuery {
-    sql_query(
+    diesel::dsl::sql_query(
         "SELECT instances.id, url, version, https, https_redirect, attachments, \
             country_id, (100 * SUM(checks.up) / COUNT(checks.up)) AS uptime, \
             mozilla_observatory.rating AS rating_mozilla_observatory \
@@ -62,7 +67,7 @@ pub fn rating_to_percent(rating: &str) -> u8 {
 
 pub fn rocket() -> Rocket<Build> {
     rocket::build()
-        .mount("/", routes![about, add, api, check, favicon, index, save])
+        .mount("/", routes![about, add, api, check, favicon, index, report, save])
         .mount("/img", FileServer::from("img"))
         .mount("/css", FileServer::from("css"))
         .attach(DirectoryDbConn::fairing())
@@ -86,6 +91,29 @@ pub async fn run_db_migrations(rocket: Rocket<Build>) -> Rocket<Build> {
     rocket
 }
 
+pub fn strip_url(url: String) -> String {
+    let mut check_url = url;
+    // remove query from URL
+    if let Some(query_start) = check_url.find('?') {
+        check_url = check_url[..query_start].to_string();
+    }
+    // remove hash from URL
+    if let Some(query_start) = check_url.find('#') {
+        check_url = check_url[..query_start].to_string();
+    }
+    // remove trailing slash, but only for web root, not for paths:
+    // - https://example.com/ -> https://example.com
+    // - https://example.com// -> https://example.com
+    // - but https://example.com/path/ remains unchanged
+    let (schema, uri) = check_url.split_at(7);
+    let cleaned_uri = SLASHES_EXP.replace_all(uri, "/");
+    check_url = format!("{schema}{cleaned_uri}");
+    if check_url.matches('/').count() == 3 {
+        check_url = check_url.trim_end_matches('/').to_string();
+    }
+    check_url
+}
+
 pub async fn update_instance_cache(db: DirectoryDbConn, cache: &State<InstancesCache>) {
     let now = get_epoch();
     if now >= cache.timeout.load(Relaxed) {
@@ -105,9 +133,9 @@ pub async fn update_instance_cache(db: DirectoryDbConn, cache: &State<InstancesC
     }
 }
 
-pub fn filter_country(string: &Value, _: &HashMap<String, Value>) -> Result<Value> {
+pub fn filter_country(value: &Value, args: &HashMap<String, Value>) -> Result<Value> {
     use isocountry::CountryCode;
-    let country_code = try_get_value!("country", "value", String, string);
+    let country_code = try_get_value!("country", "value", String, value);
     let mut country_chars = country_code.chars();
     let country_code_points = [
         std::char::from_u32(REGIONAL_INDICATOR_OFFSET + country_chars.next().unwrap() as u32)
@@ -115,10 +143,26 @@ pub fn filter_country(string: &Value, _: &HashMap<String, Value>) -> Result<Valu
         std::char::from_u32(REGIONAL_INDICATOR_OFFSET + country_chars.next().unwrap() as u32)
             .unwrap(),
     ];
-    Ok(to_value(format!(
-        "<td title=\"{0}\" aria-label=\"{0}\">{1}</td>",
-        CountryCode::for_alpha2(&country_code).unwrap().name(),
-        country_code_points.iter().cloned().collect::<String>()
-    ))
-    .unwrap())
+    let output = match args.get("label") {
+        Some(label) => {
+            match try_get_value!("country", "label", bool, label) {
+                true => format!(
+                    "{0}. {1}",
+                    CountryCode::for_alpha2(&country_code).unwrap().name(),
+                    country_code_points.iter().cloned().collect::<String>()
+                ),
+                false => format!(
+                    "<td title=\"{0}\" aria-label=\"{0}\">{1}</td>",
+                    CountryCode::for_alpha2(&country_code).unwrap().name(),
+                    country_code_points.iter().cloned().collect::<String>()
+                )
+            }
+        },
+        None => format!(
+            "<td title=\"{0}\" aria-label=\"{0}\">{1}</td>",
+            CountryCode::for_alpha2(&country_code).unwrap().name(),
+            country_code_points.iter().cloned().collect::<String>()
+        )
+    };
+    Ok(to_value(output).unwrap())
 }

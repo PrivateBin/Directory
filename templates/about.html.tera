@@ -2,7 +2,7 @@
 {% import "macros" as draw %}
 
 {% block content %}
-			<dd>This is a directory application intended to collect a list of federated instances of a PrivateBin, written in <a href="https://www.rust-lang.org/">Rust 🦀</a>.</dd>
+			<p>This is a directory application intended to collect a list of federated instances of a PrivateBin, written in <a href="https://www.rust-lang.org/">Rust 🦀</a>.</p>
 			<nav>
 				<ol class="pagination">
 					<li class="page-item"><a href="#faq-remove-instance" class="page-link">Removing an instance</a></li>
@@ -57,13 +57,13 @@ HTTP/2 403
 				<dt>HTTPS</dt>
 				<dd>A simple check if the instance URL is responding, when accessed over HTTPS.</dd>
 				<dt>HTTPS enforced</dt>
-				<dd>The instance URL is accessed over HTTP and a 30x redirection status is recieved with an HTTP <code>Location</code> header, that points to a matching HTTPS URL or there is no HTTP access offered on port 80.</dd>
+				<dd>The instance URL is accessed over HTTP and a 30x redirection status code is received with an HTTP <code>Location</code> header, that points to a matching HTTPS URL or there is no HTTP access offered on port 80.</dd>
 				<dt>Observatory Rating</dt>
-				<dd>The <a href="https://github.com/mozilla/http-observatory/blob/master/httpobs/docs/scoring.md#http-observatory-scoring-methodology">score</a> of an instance as per the <a href="https://observatory.mozilla.org/">Mozilla Observatory 🐲</a>.</dd>
+				<dd>The <a href="https://github.com/mozilla/http-observatory/blob/master/httpobs/docs/scoring.md#http-observatory-scoring-methodology">score</a> of an instance as per the <a href="https://observatory.mozilla.org/">Mozilla 🐲 Observatory</a>.</dd>
 				<dt>File upload</dt>
-				<dd>If the instance has the <a href="https://github.com/PrivateBin/PrivateBin/wiki/Configuration#fileupload"><code>fileupload</code></a> option enabled, you can upload attachments along side your text.</dd>
+				<dd>If the instance has the <a href="https://github.com/PrivateBin/PrivateBin/wiki/Configuration#fileupload"><code>fileupload</code> option</a> enabled, you can upload attachments along side your texts.</dd>
 				<dt>Uptime</dt>
-				<dd>The instances are checked for availability every 15 minutes, using an HTTP(S) HEAD request to reduce transmitted data. Only the last 100 results (25h) are kept and the percentage is calculated based on this. Basically this percentage is an indication if an instance expirienced any prolonged downtime during the last day.</dd>
+				<dd>The instances are checked for availability every 15 minutes, using an HTTP(S) <code>HEAD</code> request to reduce transmitted data. Only the last 100 results (25h) are kept and the percentage is calculated based on this. Basically this percentage is an indication if an instance expirienced any prolonged downtime during the last day.</dd>
 				<dt>Country</dt>
 				<dd>The IP assigned to the domain of the instance URL is checked against a GeoIP database. The precision of these databases is limited, but can serve as an indication in which country the instance is hosted. This may serve to select an instance that is close by or avoid instances located in undesirable jurisdictions.</dd>
 			</dl>

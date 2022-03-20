@@ -4,6 +4,7 @@
 - adding a "check instance" form, to retrieve a detailed report on an instance, without adding it
 - upgrade to bootstrap CSS 5.1.3
 - fix navbar toggle in mobile display
+- fix unit test that stopped working in 0.7.0
 
 # 0.7.2
 - cleaning up the request code

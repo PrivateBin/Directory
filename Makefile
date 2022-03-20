@@ -23,7 +23,7 @@ test: .cargo/registry $(DATABASE) ## Build and run the unit tests.
 		-v "$(CURDIR)":/home/rust/src \
 		-v "$(CURDIR)"/.cargo/registry:/home/rust/.cargo/registry \
 		$(BUILD_IMAGE) \
-		cargo test --release -- --test-threads=$(NPROC) # --nocapture
+		cargo test --release -- --test-threads=1 #$(NPROC) --nocapture
 	git checkout $(DATABASE)
 
 build: .cargo/registry ## Build the binary for release.
