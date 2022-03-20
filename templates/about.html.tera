@@ -84,6 +84,8 @@ $ curl --header "Accept: application/json" https://privatebin.info/directory/api
 				<dd>Boolean (true or false), unset by default. Only return instances that offer attachment upload in their web UI - third party clients can always upload attachments.</dd>
 				<dt>country</dt>
 				<dd>ISO 3166-1 alpha-2 country code, unset by default. Only return instances of that country. Note the limitations of this type of lookup, as explained above.</dd>
+				<dt>csp_header</dt>
+				<dd>Boolean (true or false), unset by default. Only return instances that set the currently recommend HTTP <code>Content-Security-Policy</code> (<a href="https://content-security-policy.com/">CSP</a>) header (see above).</dd>
 				<dt>https</dt>
 				<dd>Boolean (true or false), unset by default. Only return instances that offer HTTPS.</dd>
 				<dt>https_redirect</dt>

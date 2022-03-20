@@ -269,13 +269,14 @@ async fn report(
 }
 
 #[get(
-    "/api?<top>&<attachments>&<country>&<https>&<https_redirect>&<version>&<min_uptime>&<min_rating>",
+    "/api?<top>&<attachments>&<country>&<csp_header>&<https>&<https_redirect>&<version>&<min_uptime>&<min_rating>",
     format = "json"
 )]
 async fn api(
     top: Option<NonZeroU8>,
     attachments: Option<bool>,
     country: Option<String>,
+    csp_header: Option<bool>,
     https: Option<bool>,
     https_redirect: Option<bool>,
     version: Option<String>,
@@ -300,6 +301,9 @@ async fn api(
     let is_country_set = country.is_some();
     let country = country.unwrap_or_default();
 
+    let is_csp_header_set = csp_header.is_some();
+    let csp_header = csp_header.unwrap_or(false);
+
     let is_https_set = https.is_some();
     let https = https.unwrap_or(false);
 
@@ -321,6 +325,7 @@ async fn api(
     for instance in &*cache.instances.read().unwrap() {
         if (is_attachments_set && instance.attachments != attachments)
             || (is_country_set && instance.country_id != country)
+            || (is_csp_header_set && instance.csp_header != csp_header)
             || (is_https_set && instance.https != https)
             || (is_https_redirect_set && instance.https_redirect != https_redirect)
             || (is_version_set && !instance.version.starts_with(&version))

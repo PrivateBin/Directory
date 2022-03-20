@@ -51,7 +51,7 @@ pub async fn check_full(rocket: Rocket<Build>) {
                 {
                     match diesel::delete(instances.filter(id.eq(result.instance.id))).execute(&conn)
                     {
-                        Ok(_) => println!("    removed the instance, due to: {message}"),
+                        Ok(_) => print!("    removed the instance, due to: {message}"),
                         Err(e) => {
                             println!("    error removing the instance: {e:?}");
                         }
@@ -80,6 +80,7 @@ pub async fn check_full(rocket: Rocket<Build>) {
                             version.eq(updated_instance.version),
                             https.eq(updated_instance.https),
                             https_redirect.eq(updated_instance.https_redirect),
+                            csp_header.eq(updated_instance.csp_header),
                             attachments.eq(updated_instance.attachments),
                             country_id.eq(updated_instance.country_id),
                         )),
@@ -163,6 +164,11 @@ async fn check_instance(instance: Instance) -> InstanceCheckResult {
             String::new(),
         ),
         (
+            "csp_header",
+            format!("{:?}", instance.csp_header.clone()),
+            String::new(),
+        ),
+        (
             "attachments",
             format!("{:?}", instance.attachments.clone()),
             String::new(),
@@ -180,8 +186,9 @@ async fn check_instance(instance: Instance) -> InstanceCheckResult {
             instance_options[0].2 = privatebin.instance.version.clone();
             instance_options[1].2 = format!("{:?}", privatebin.instance.https.clone());
             instance_options[2].2 = format!("{:?}", privatebin.instance.https_redirect.clone());
-            instance_options[3].2 = format!("{:?}", privatebin.instance.attachments.clone());
-            instance_options[4].2 = privatebin.instance.country_id.clone();
+            instance_options[3].2 = format!("{:?}", privatebin.instance.csp_header.clone());
+            instance_options[4].2 = format!("{:?}", privatebin.instance.attachments.clone());
+            instance_options[5].2 = privatebin.instance.country_id.clone();
             let elapsed = timer.elapsed();
             let timer = Instant::now();
             if instance_options.iter().any(|x| x.1 != x.2) {
