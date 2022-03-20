@@ -146,24 +146,19 @@ pub fn filter_country(value: &Value, args: &HashMap<String, Value>) -> Result<Va
         std::char::from_u32(REGIONAL_INDICATOR_OFFSET + country_chars.next().unwrap() as u32)
             .unwrap(),
     ];
+    let country_name = CountryCode::for_alpha2(&country_code).unwrap().name();
+    let country_emoji = country_code_points.iter().cloned().collect::<String>();
+    macro_rules! TABLE_CELL_FORMAT {
+        () => {
+            "<td title=\"{0}\" aria-label=\"{0}\">{1}</td>"
+        };
+    }
     let output = match args.get("label") {
         Some(label) => match try_get_value!("country", "label", bool, label) {
-            true => format!(
-                "{0}. {1}",
-                CountryCode::for_alpha2(&country_code).unwrap().name(),
-                country_code_points.iter().cloned().collect::<String>()
-            ),
-            false => format!(
-                "<td title=\"{0}\" aria-label=\"{0}\">{1}</td>",
-                CountryCode::for_alpha2(&country_code).unwrap().name(),
-                country_code_points.iter().cloned().collect::<String>()
-            ),
+            true => format!("{0}. {1}", country_name, country_emoji),
+            false => format!(TABLE_CELL_FORMAT!(), country_name, country_emoji),
         },
-        None => format!(
-            "<td title=\"{0}\" aria-label=\"{0}\">{1}</td>",
-            CountryCode::for_alpha2(&country_code).unwrap().name(),
-            country_code_points.iter().cloned().collect::<String>()
-        ),
+        None => format!(TABLE_CELL_FORMAT!(), country_name, country_emoji),
     };
     Ok(to_value(output).unwrap())
 }

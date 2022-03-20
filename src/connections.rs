@@ -40,7 +40,7 @@ pub async fn request(
     }
     let parsed_url = parse_result.unwrap();
     let authority = match parsed_url.port() {
-        Some(port) => format!("{}:{}", parsed_url.host_str().unwrap(), port.to_string()),
+        Some(port) => format!("{}:{}", parsed_url.host_str().unwrap(), port),
         None => String::from(parsed_url.host_str().unwrap()),
     };
     let uri = Uri::builder()

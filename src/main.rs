@@ -258,10 +258,10 @@ async fn report(
             ),
         },
     };
-    if page.error.len() > 0 {
-        return Template::render("form", &StatusPage::new(page.topic, Some(page.error), None));
+    if page.error.is_empty() {
+        return Template::render("check", &page);
     }
-    Template::render("check", &page)
+    Template::render("form", &StatusPage::new(page.topic, Some(page.error), None))
 }
 
 #[get(
