@@ -213,8 +213,7 @@ impl PrivateBin {
                     StatusCode::TEMPORARY_REDIRECT,
                     StatusCode::PERMANENT_REDIRECT,
                 ];
-                if redirection_codes.contains(&res.status()) &&
-                    res.headers().contains_key(LOCATION)
+                if redirection_codes.contains(&res.status()) && res.headers().contains_key(LOCATION)
                 {
                     // check Location header
                     if let Ok(location) = res.headers()[LOCATION].to_str() {
