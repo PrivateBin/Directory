@@ -16,6 +16,7 @@ table! {
         https_redirect -> Bool,
         country_id -> Text,
         attachments -> Bool,
+        csp_header -> Bool,
     }
 }
 
@@ -32,4 +33,8 @@ table! {
 joinable!(checks -> instances (instance_id));
 joinable!(scans -> instances (instance_id));
 
-allow_tables_to_appear_in_same_query!(checks, instances, scans,);
+allow_tables_to_appear_in_same_query!(
+    checks,
+    instances,
+    scans,
+);

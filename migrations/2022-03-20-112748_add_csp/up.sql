@@ -1,0 +1,2 @@
+ALTER TABLE instances
+ADD csp_header BOOLEAN NOT NULL DEFAULT 0;

@@ -58,6 +58,8 @@ HTTP/2 403
 				<dd>A simple check if the instance URL is responding, when accessed over HTTPS.</dd>
 				<dt>HTTPS enforced</dt>
 				<dd>The instance URL is accessed over HTTP and a 30x redirection status code is received with an HTTP <code>Location</code> header, that points to a matching HTTPS URL or there is no HTTP access offered on port 80.</dd>
+				<dt>recommended CSP</dt>
+				<dd>If the instance responds with the currently recommend HTTP <code>Content-Security-Policy</code> (<a href="https://content-security-policy.com/">CSP</a>) header. This policy disables browser functions that PrivateBin doesn't use and can, among other things, mitigate execution of scripts that bypass other security mechanisms while viewing a paste that contains such. We currently recommed the following policy: <code>{{ error }}</code></dd>
 				<dt>Observatory Rating</dt>
 				<dd>The <a href="https://github.com/mozilla/http-observatory/blob/master/httpobs/docs/scoring.md#http-observatory-scoring-methodology">score</a> of an instance as per the <a href="https://observatory.mozilla.org/">Mozilla 🐲 Observatory</a>.</dd>
 				<dt>File upload</dt>

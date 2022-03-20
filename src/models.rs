@@ -6,7 +6,7 @@ use super::schema::scans;
 use diesel::SqliteConnection;
 use dns_lookup::lookup_host;
 use hyper::body::{aggregate, to_bytes, Buf}; // Buf provides the reader() trait
-use hyper::header::LOCATION;
+use hyper::header::{CONTENT_SECURITY_POLICY, LOCATION};
 use hyper::{Body, Method, StatusCode};
 use maxminddb::geoip2::Country;
 use regex::Regex;
@@ -18,8 +18,14 @@ use std::sync::atomic::AtomicU64;
 use std::sync::RwLock;
 use url::Url;
 
-pub const TITLE: &str = "Instance Directory";
+pub const CSP_RECOMMENDATION: &str = "default-src 'none'; base-uri 'self'; \
+    form-action 'none'; manifest-src 'self'; connect-src * blob:; \
+    script-src 'self' 'unsafe-eval' resource:; style-src 'self'; font-src 'self'; \
+    frame-ancestors 'none'; img-src 'self' data: blob:; media-src blob:; \
+    object-src blob:; sandbox allow-same-origin allow-scripts allow-forms \
+    allow-popups allow-modals allow-downloads";
 const OBSERVATORY_API: &str = "https://http-observatory.security.mozilla.org/api/v1/analyze?host=";
+pub const TITLE: &str = "Instance Directory";
 
 lazy_static! {
     static ref VERSION_EXP: Regex =
@@ -55,6 +61,7 @@ pub struct Instance {
     pub https_redirect: bool,
     pub country_id: String,
     pub attachments: bool,
+    pub csp_header: bool,
     #[sql_type = "diesel::sql_types::Integer"]
     pub uptime: i32,
     #[sql_type = "diesel::sql_types::Text"]
@@ -87,6 +94,7 @@ pub struct InstanceNew {
     pub https_redirect: bool,
     pub country_id: String,
     pub attachments: bool,
+    pub csp_header: bool,
 }
 
 pub struct InstancesCache {
@@ -118,13 +126,13 @@ impl PrivateBin {
         Self::check_robots(&check_url).await?;
 
         // remaining checks may run in parallel
+        let check_properties = Self::check_properties(&check_url);
         let check_country = Self::check_country(&check_url);
-        let check_version = Self::check_version(&check_url);
         let check_rating = Self::check_rating_mozilla_observatory(&check_url);
 
         // collect results of async checks
+        let (version, attachments, csp_header) = check_properties.await?;
         let country_code = check_country.await?;
-        let (version, attachments) = check_version.await?;
         let scans = vec![check_rating.await];
 
         if !version.is_empty() {
@@ -136,6 +144,7 @@ impl PrivateBin {
                     https_redirect,
                     country_id: country_code,
                     attachments,
+                    csp_header,
                 },
                 scans,
             });
@@ -204,8 +213,10 @@ impl PrivateBin {
                     StatusCode::TEMPORARY_REDIRECT,
                     StatusCode::PERMANENT_REDIRECT,
                 ];
-                if redirection_codes.contains(&res.status()) {
-                    // check header
+                if redirection_codes.contains(&res.status()) &&
+                    res.headers().contains_key(LOCATION)
+                {
+                    // check Location header
                     if let Ok(location) = res.headers()[LOCATION].to_str() {
                         if location.starts_with("https://") {
                             https_redirect = true;
@@ -230,6 +241,48 @@ impl PrivateBin {
             }
         }
         Ok((https, https_redirect, resulting_url))
+    }
+
+    // check version of privatebin / zerobin JS library, attachment support & CSP header
+    async fn check_properties(url: &str) -> Result<(String, bool, bool), String> {
+        let mut csp_header = false;
+        let result = request(url, Method::GET, &CLOSE, Body::empty()).await;
+        let res = result?;
+        let status = res.status();
+        if status != StatusCode::OK {
+            return Err(format!("Web server responded with status code {status}."));
+        }
+
+        // check Content-Security-Policy header
+        if res.headers().contains_key(CONTENT_SECURITY_POLICY) {
+            if let Ok(csp) = res.headers()[CONTENT_SECURITY_POLICY].to_str() {
+                if csp.eq(CSP_RECOMMENDATION) {
+                    csp_header = true;
+                }
+            }
+        }
+
+        let mut version = String::new();
+        let mut attachments = false;
+        let body = aggregate(res).await.unwrap();
+        for line in body.reader().lines() {
+            let line_str = line.unwrap();
+            if line_str.contains(" id=\"attachment\" ") {
+                attachments = true;
+                if !version.is_empty() {
+                    // we got both version and attachment, stop parsing
+                    break;
+                }
+            }
+            if !version.is_empty() {
+                // we got the version already, keep looking for the attachment
+                continue;
+            }
+            if let Some(matches) = VERSION_EXP.captures(&line_str) {
+                version = matches[3].to_string();
+            }
+        }
+        Ok((version, attachments, csp_header))
     }
 
     // check rating at mozilla observatory
@@ -291,38 +344,6 @@ impl PrivateBin {
         }
         Ok(true)
     }
-
-    // check version of privatebin / zerobin JS library & attachment support
-    async fn check_version(url: &str) -> Result<(String, bool), String> {
-        let result = request(url, Method::GET, &CLOSE, Body::empty()).await;
-        let res = result?;
-        let status = res.status();
-        if status != StatusCode::OK {
-            return Err(format!("Web server responded with status code {status}."));
-        }
-
-        let mut version = String::new();
-        let mut attachments = false;
-        let body = aggregate(res).await.unwrap();
-        for line in body.reader().lines() {
-            let line_str = line.unwrap();
-            if line_str.contains(" id=\"attachment\" ") {
-                attachments = true;
-                if !version.is_empty() {
-                    // we got both version and attachment, stop parsing
-                    break;
-                }
-            }
-            if !version.is_empty() {
-                // we got the version already, keep looking for the attachment
-                continue;
-            }
-            if let Some(matches) = VERSION_EXP.captures(&line_str) {
-                version = matches[3].to_string();
-            }
-        }
-        Ok((version, attachments))
-    }
 }
 
 #[tokio::test]
@@ -334,6 +355,7 @@ async fn test_privatebin() {
     assert_eq!(privatebin.instance.version, "1.3.5");
     assert_eq!(privatebin.instance.https, true);
     assert_eq!(privatebin.instance.https_redirect, true);
+    assert_eq!(privatebin.instance.csp_header, false);
     assert_eq!(privatebin.instance.attachments, true);
     assert_eq!(privatebin.instance.country_id, "CH");
 }
@@ -380,6 +402,7 @@ async fn test_zerobin() {
     );
     assert_eq!(privatebin.instance.https, false);
     assert_eq!(privatebin.instance.https_redirect, false);
+    assert_eq!(privatebin.instance.csp_header, true);
     assert_eq!(privatebin.instance.version, "0.20");
     assert_eq!(privatebin.instance.attachments, false);
     assert_eq!(privatebin.instance.country_id, "CH");
@@ -463,6 +486,7 @@ impl Page {
 pub struct InstancePage {
     pub title: String,
     pub topic: String,
+    pub csp_recommendation: String,
     pub instance: Option<Instance>,
     pub error: String,
 }
@@ -473,6 +497,7 @@ impl InstancePage {
         InstancePage {
             title: String::from(TITLE),
             topic,
+            csp_recommendation: CSP_RECOMMENDATION.to_string(),
             instance,
             error: error_string,
         }
@@ -523,8 +548,8 @@ impl TablePage {
 #[serde(crate = "rocket::serde")]
 pub struct HtmlTable {
     pub title: String,
-    pub header: [String; 8],
-    pub body: Vec<[String; 9]>,
+    pub header: [String; 9],
+    pub body: Vec<[String; 10]>,
 }
 
 #[derive(Debug, FromForm)]

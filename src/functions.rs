@@ -29,8 +29,8 @@ pub fn get_epoch() -> u64 {
 
 pub fn get_instances() -> SqlQuery {
     diesel::dsl::sql_query(
-        "SELECT instances.id, url, version, https, https_redirect, attachments, \
-            country_id, (100 * SUM(checks.up) / COUNT(checks.up)) AS uptime, \
+        "SELECT instances.id, url, version, https, https_redirect, country_id, \
+            attachments, csp_header, (100 * SUM(checks.up) / COUNT(checks.up)) AS uptime, \
             mozilla_observatory.rating AS rating_mozilla_observatory \
             FROM instances \
             JOIN checks ON instances.id = checks.instance_id \
@@ -39,7 +39,7 @@ pub fn get_instances() -> SqlQuery {
                 FROM scans WHERE scanner = \"mozilla_observatory\" \
             ) AS mozilla_observatory ON instances.id = mozilla_observatory.instance_id \
             GROUP BY instances.id \
-            ORDER BY version DESC, https DESC, https_redirect DESC, \
+            ORDER BY version DESC, https DESC, https_redirect DESC, csp_header DESC, \
             mozilla_observatory.percent DESC, attachments DESC, uptime DESC, url ASC \
             LIMIT 1000",
     )

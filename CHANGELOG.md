@@ -1,5 +1,8 @@
 # Change log
 
+# 0.9.0
+- added Content-Security-Policy header rating
+
 # 0.8.0
 - adding a "check instance" form, to retrieve a detailed report on an instance, without adding it
 - upgrade to bootstrap CSS 5.1.3

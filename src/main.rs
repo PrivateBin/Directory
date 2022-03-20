@@ -46,6 +46,7 @@ async fn index(db: DirectoryDbConn, cache: &State<InstancesCache>) -> Template {
         String::from("Version"),
         String::from("HTTPS"),
         String::from("HTTPS enforced"),
+        String::from("recommended CSP"),
         String::from("Observatory Rating"),
         String::from("File upload"),
         String::from("Uptime"),
@@ -90,6 +91,7 @@ async fn index(db: DirectoryDbConn, cache: &State<InstancesCache>) -> Template {
             instance.version.clone(),
             Instance::format(instance.https),
             Instance::format(instance.https_redirect),
+            Instance::format(instance.csp_header),
             instance.rating_mozilla_observatory.clone(),
             Instance::format(instance.attachments),
             format!("{}%", instance.uptime),
@@ -110,7 +112,7 @@ async fn index(db: DirectoryDbConn, cache: &State<InstancesCache>) -> Template {
 fn about() -> Template {
     let page = StatusPage::new(
         format!("About the {TITLE}"),
-        None,
+        Some(CSP_RECOMMENDATION.to_string()),
         Some(env!("CARGO_PKG_VERSION").to_string()),
     );
     Template::render("about", &page)
@@ -220,6 +222,7 @@ async fn report(
                     https_redirect,
                     country_id,
                     attachments,
+                    csp_header,
                     diesel::dsl::sql::<Integer>("(100 * SUM(checks.up) / COUNT(checks.up))"),
                     diesel::dsl::sql::<Text>("scans.rating"),
                 ))
@@ -241,6 +244,7 @@ async fn report(
                     https_redirect: privatebin.instance.https_redirect,
                     country_id: privatebin.instance.country_id,
                     attachments: privatebin.instance.attachments,
+                    csp_header: privatebin.instance.csp_header,
                     uptime: 0,
                     rating_mozilla_observatory: privatebin
                         .scans
