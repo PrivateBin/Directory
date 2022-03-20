@@ -7,7 +7,14 @@
 	color: #ccc;
 }
 
-[data-theme="dark"] .bg-light {
+[data-theme="dark"] a,
+[data-theme="dark"] .nav-link,
+[data-theme="dark"] .page-link {
+	color: #8bf;
+}
+
+[data-theme="dark"] .bg-light,
+[data-theme="dark"] .page-link {
 	background-color: #333 !important;
 }
 
