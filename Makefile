@@ -77,7 +77,7 @@ coverage: ## Run tarpaulin on the code to report on the tests code coverage.
 	git checkout $(DATABASE)
 	GEOIP_MMDB="$(GEOIP_MMDB)" \
 	ROCKET_DATABASES=$(ROCKET_DATABASES) \
-	cargo tarpaulin --release -o Html
+	cargo tarpaulin --release -o Html -- --test-threads=1
 	git checkout $(DATABASE)
 
 clean: $(DATABASE) ## Stops and removes the running container.
