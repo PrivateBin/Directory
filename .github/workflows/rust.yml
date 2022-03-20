@@ -40,7 +40,8 @@ jobs:
         GEOIP_MMDB: var/geoip-country.mmdb
         ROCKET_DATABASES: '{directory={url="var/directory.sqlite"}}'
       with:
-        command: test -- --test-threads=1
+        command: test
+        args: -- --test-threads=1
     - name: Check formatting of code and suggest improvements
       uses: actions-rs/cargo@v1
       with:
