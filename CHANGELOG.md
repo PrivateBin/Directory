@@ -1,5 +1,8 @@
 # Change log
 
+# 0.9.1
+- removed "script-src resource:" Content-Security-Policy, previously required for PDF preview in FireFox
+
 # 0.9.0
 - added Content-Security-Policy header rating
 

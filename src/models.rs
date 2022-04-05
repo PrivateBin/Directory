@@ -20,7 +20,7 @@ use url::Url;
 
 pub const CSP_RECOMMENDATION: &str = "default-src 'none'; base-uri 'self'; \
     form-action 'none'; manifest-src 'self'; connect-src * blob:; \
-    script-src 'self' 'unsafe-eval' resource:; style-src 'self'; font-src 'self'; \
+    script-src 'self' 'unsafe-eval'; style-src 'self'; font-src 'self'; \
     frame-ancestors 'none'; img-src 'self' data: blob:; media-src blob:; \
     object-src blob:; sandbox allow-same-origin allow-scripts allow-forms \
     allow-popups allow-modals allow-downloads";
