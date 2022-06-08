@@ -1,4 +1,8 @@
-# Change log
+# Change Log
+
+# 0.9.2
+- version bump unit tests
+- bump libraries
 
 # 0.9.1
 - removed "script-src resource:" Content-Security-Policy, previously required for PDF preview in FireFox

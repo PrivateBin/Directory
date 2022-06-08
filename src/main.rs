@@ -361,11 +361,11 @@ async fn main() -> Result<(), Error> {
         } else {
             check_up(rocket).await;
         }
-        Ok(())
-    } else {
-        rocket
-            .attach(AdHoc::on_ignite("Diesel Migrations", run_db_migrations))
-            .launch()
-            .await
+        return Ok(());
     }
+    rocket
+        .attach(AdHoc::on_ignite("Diesel Migrations", run_db_migrations))
+        .launch()
+        .await
+        .map(|_| ())
 }
