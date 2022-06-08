@@ -345,7 +345,7 @@ async fn add_update_and_delete() {
     // insert an instance
     let query =
         "INSERT INTO instances (id, url, version, https, https_redirect, country_id, attachments, csp_header) \
-        VALUES (1, 'https://privatebin.net', '1.3.5', 1, 1, 'CH', 0, 0)"
+        VALUES (1, 'https://privatebin.net', '1.4.0', 1, 1, 'CH', 0, 0)"
             .to_string();
     conn.execute(&query).expect("inserting instance ID 1");
 

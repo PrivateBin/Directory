@@ -351,10 +351,10 @@ async fn test_privatebin() {
     let test_url = url.clone();
     let privatebin = PrivateBin::new(test_url).await.unwrap();
     assert_eq!(privatebin.instance.url, url);
-    assert_eq!(privatebin.instance.version, "1.3.5");
+    assert_eq!(privatebin.instance.version, "1.4.0");
     assert_eq!(privatebin.instance.https, true);
     assert_eq!(privatebin.instance.https_redirect, true);
-    assert_eq!(privatebin.instance.csp_header, false);
+    assert_eq!(privatebin.instance.csp_header, true);
     assert_eq!(privatebin.instance.attachments, true);
     assert_eq!(privatebin.instance.country_id, "CH");
 }
