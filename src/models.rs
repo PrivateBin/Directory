@@ -263,7 +263,10 @@ impl PrivateBin {
 
         let mut version = String::new();
         let mut attachments = false;
-        let body = aggregate(res).await.unwrap();
+        let body = match aggregate(res).await {
+            Ok(body) => body,
+            Err(_) => return Err(String::from("Error reading the web server response.")),
+        };
         for line in body.reader().lines() {
             let line_str = line.unwrap();
             if line_str.contains(" id=\"attachment\" ") {

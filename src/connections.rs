@@ -34,46 +34,52 @@ pub async fn request(
     body: Body,
 ) -> Result<Response<Body>, String> {
     // parse URL to convert IDN into punycode
-    let parse_result = Url::parse(url);
-    if parse_result.is_err() {
-        return Err(format!("Host or domain of URL {url} is not supported."));
-    }
-    let parsed_url = parse_result.unwrap();
-    let authority = match parsed_url.port() {
-        Some(port) => format!("{}:{}", parsed_url.host_str().unwrap(), port),
-        None => String::from(parsed_url.host_str().unwrap()),
+    let parsed_url = match Url::parse(url) {
+        Ok(parsed_url) => parsed_url,
+        Err(_) => return Err(format!("Host or domain of URL {url} is not supported.")),
     };
-    let uri = Uri::builder()
+    let parsed_host = match parsed_url.host_str() {
+        Some(host) => host,
+        None => return Err(format!("Unable to parse host from URL {url}.")),
+    };
+    let authority = match parsed_url.port() {
+        Some(port) => format!("{}:{}", parsed_host, port),
+        None => String::from(parsed_host),
+    };
+    let uri = match Uri::builder()
         .scheme(parsed_url.scheme())
         .authority(authority)
         .path_and_query(&parsed_url[Position::BeforePath..])
-        .build();
-    if uri.is_err() {
-        return Err(format!("Host or domain of URL {url} is not supported."));
-    }
+        .build()
+    {
+        Ok(uri) => uri,
+        Err(_) => return Err(format!("Host or domain of URL {url} is not supported.")),
+    };
 
     let request = Request::builder()
         .method(method)
-        .uri(uri.unwrap())
+        .uri(uri)
         .header(CONNECTION, connection)
         .header(USER_AGENT, HeaderValue::from_static(&USER_AGENT_STRING))
         .body(body)
         .expect("request");
-    let result = timeout(
+    let result = match timeout(
         Duration::from_secs(15),
         HTTP_CLIENT.clone().request(request),
     )
-    .await;
-    if result.is_err() {
-        return Err(format!(
-            "Web server on URL {url} is not responding within 15s."
-        ));
+    .await
+    {
+        Ok(result) => result,
+        Err(_) => {
+            return Err(format!(
+                "Web server on URL {url} is not responding within 15s."
+            ))
+        }
+    };
+    match result {
+        Ok(response) => Ok(response),
+        Err(_) => Err(format!("Web server on URL {url} is not responding.")),
     }
-    let response = result.unwrap();
-    if response.is_err() {
-        return Err(format!("Web server on URL {url} is not responding."));
-    }
-    Ok(response.unwrap())
 }
 
 pub async fn request_get(url: &str) -> Result<Response<Body>, String> {

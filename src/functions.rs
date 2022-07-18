@@ -23,7 +23,9 @@ pub fn get_epoch() -> u64 {
     use std::time::SystemTime;
     SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap()
+        .expect(
+            "Negative seconds since UNIX epoch returned - your running software from the future.",
+        )
         .as_secs()
 }
 
@@ -127,8 +129,9 @@ pub async fn update_instance_cache(db: DirectoryDbConn, cache: &State<InstancesC
             // flush cache
             Ok(instances_live) => {
                 cache.timeout.store(now + CRON_INTERVAL, Relaxed);
-                let mut instances_cache = cache.instances.write().unwrap();
-                *instances_cache = instances_live;
+                if let Ok(mut instances_cache) = cache.instances.write() {
+                    *instances_cache = instances_live;
+                }
             }
             // database might be write-locked, try it again in a minute
             Err(_) => cache.timeout.store(now + 60, Relaxed),
@@ -139,14 +142,21 @@ pub async fn update_instance_cache(db: DirectoryDbConn, cache: &State<InstancesC
 pub fn filter_country(value: &Value, args: &HashMap<String, Value>) -> Result<Value> {
     use isocountry::CountryCode;
     let country_code = try_get_value!("country", "value", String, value);
+    let mut country_code_points = ['A', 'Q'];
     let mut country_chars = country_code.chars();
-    let country_code_points = [
-        std::char::from_u32(REGIONAL_INDICATOR_OFFSET + country_chars.next().unwrap() as u32)
-            .unwrap(),
-        std::char::from_u32(REGIONAL_INDICATOR_OFFSET + country_chars.next().unwrap() as u32)
-            .unwrap(),
-    ];
-    let country_name = CountryCode::for_alpha2(&country_code).unwrap().name();
+    for country_code_point in country_code_points.iter_mut() {
+        if let Some(char_code_point) = country_chars.next() {
+            if let Some(character) =
+                std::char::from_u32(REGIONAL_INDICATOR_OFFSET + char_code_point as u32)
+            {
+                *country_code_point = character;
+            }
+        }
+    }
+    let country_name = match CountryCode::for_alpha2(&country_code) {
+        Ok(country) => country.name(),
+        Err(_) => "Unknown country",
+    };
     let country_emoji = country_code_points.iter().cloned().collect::<String>();
     macro_rules! TABLE_CELL_FORMAT {
         () => {
@@ -160,5 +170,5 @@ pub fn filter_country(value: &Value, args: &HashMap<String, Value>) -> Result<Va
         },
         None => format!(TABLE_CELL_FORMAT!(), country_name, country_emoji),
     };
-    Ok(to_value(output).unwrap())
+    Ok(to_value(output).unwrap_or(Value::Null))
 }
