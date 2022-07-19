@@ -14,6 +14,7 @@ use std::sync::RwLock;
 // 1F1E6 is the unicode code point for the "REGIONAL INDICATOR SYMBOL
 // LETTER A" and 41 is the one for A in unicode and ASCII
 const REGIONAL_INDICATOR_OFFSET: u32 = 0x1F1E6 - 0x41;
+const CACHE_TIMEOUT: u64 = 300; // 5 minutes
 
 lazy_static! {
     static ref SLASHES_EXP: Regex = Regex::new(r"/{2,}").unwrap();
@@ -45,6 +46,21 @@ pub fn get_instances() -> SqlQuery {
             mozilla_observatory.percent DESC, attachments DESC, uptime DESC, url ASC \
             LIMIT 1000",
     )
+}
+
+pub fn is_cached(cache: &RwLock<HashMap<String, u64>>, key: &str) -> bool {
+    if let Ok(read_cache) = cache.read() {
+        if let Some(timestamp) = read_cache.get(key) {
+            if *timestamp < get_epoch() - CACHE_TIMEOUT {
+                if let Ok(mut write_cache) = cache.write() {
+                    write_cache.remove(key);
+                }
+            } else {
+                return true;
+            }
+        }
+    }
+    false
 }
 
 pub fn rating_to_percent(rating: &str) -> u8 {
@@ -82,6 +98,7 @@ pub fn rocket() -> Rocket<Build> {
         .manage(InstancesCache {
             timeout: AtomicU64::new(0),
             instances: RwLock::new(vec![]),
+            negative_lookups: RwLock::new(HashMap::new()),
         })
 }
 
@@ -96,15 +113,21 @@ pub async fn run_db_migrations(rocket: Rocket<Build>) -> Rocket<Build> {
     rocket
 }
 
+pub fn set_cached(cache: &RwLock<HashMap<String, u64>>, key: &str) {
+    if let Ok(mut write_cache) = cache.write() {
+        write_cache.insert(key.into(), get_epoch());
+    }
+}
+
 pub fn strip_url(url: String) -> String {
     let mut check_url = url;
     // remove query from URL
     if let Some(query_start) = check_url.find('?') {
-        check_url = check_url[..query_start].to_string();
+        check_url = check_url[..query_start].into();
     }
     // remove hash from URL
     if let Some(query_start) = check_url.find('#') {
-        check_url = check_url[..query_start].to_string();
+        check_url = check_url[..query_start].into();
     }
     // remove trailing slash, but only for web root, not for paths:
     // - https://example.com/ -> https://example.com
@@ -114,7 +137,7 @@ pub fn strip_url(url: String) -> String {
     let cleaned_uri = SLASHES_EXP.replace_all(uri, "/");
     check_url = format!("{schema}{cleaned_uri}");
     if check_url.matches('/').count() == 3 {
-        check_url = check_url.trim_end_matches('/').to_string();
+        check_url = check_url.trim_end_matches('/').into();
     }
     check_url
 }

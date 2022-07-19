@@ -11,6 +11,7 @@ use hyper::{Body, Method, StatusCode};
 use maxminddb::geoip2::Country;
 use regex::Regex;
 use rocket::serde::{json, Deserialize, Serialize};
+use std::collections::HashMap;
 use std::env::var;
 use std::io::BufRead; // provides the lines() trait
 use std::net::IpAddr;
@@ -78,9 +79,9 @@ impl Instance {
 
     pub fn format(flag: bool) -> String {
         if flag {
-            String::from("\u{2714}")
+            "\u{2714}".into() // Heavy Check Mark
         } else {
-            String::from("\u{2718}")
+            "\u{2718}".into() // Heavy Ballot X
         }
     }
 }
@@ -100,6 +101,7 @@ pub struct InstanceNew {
 pub struct InstancesCache {
     pub timeout: AtomicU64,
     pub instances: RwLock<Vec<Instance>>,
+    pub negative_lookups: RwLock<HashMap<String, u64>>,
 }
 
 #[derive(Deserialize)]
@@ -156,7 +158,7 @@ impl PrivateBin {
 
     // check country via geo IP database lookup
     async fn check_country(url: &str) -> Result<String, String> {
-        let mut country_code = "AQ".to_string();
+        let mut country_code = "AQ".into();
         if let Ok(parsed_url) = Url::parse(url) {
             let ip: IpAddr;
             if let Some(host) = parsed_url.domain() {
@@ -186,7 +188,7 @@ impl PrivateBin {
             }
             let reader = opener.unwrap();
             let country: Country = reader.lookup(ip).unwrap();
-            country_code = country.country.unwrap().iso_code.unwrap().to_string();
+            country_code = country.country.unwrap().iso_code.unwrap().into();
         }
         Ok(country_code)
     }
@@ -196,7 +198,7 @@ impl PrivateBin {
         let mut https = false;
         let mut https_redirect = false;
         let mut http_url = url.to_string();
-        let mut resulting_url = url.to_string();
+        let mut resulting_url = url.into();
 
         if url.starts_with("https://") {
             https = true;
@@ -223,7 +225,7 @@ impl PrivateBin {
                         if !https && https_redirect {
                             // if the given URL was HTTP, but we got redirected to https,
                             // check & store the HTTPS URL instead
-                            resulting_url = strip_url(location.to_string());
+                            resulting_url = strip_url(location.into());
                             https = true;
                         }
                     }
@@ -265,7 +267,7 @@ impl PrivateBin {
         let mut attachments = false;
         let body = match aggregate(res).await {
             Ok(body) => body,
-            Err(_) => return Err(String::from("Error reading the web server response.")),
+            Err(_) => return Err("Error reading the web server response.".to_owned()),
         };
         for line in body.reader().lines() {
             let line_str = line.unwrap();
@@ -281,7 +283,7 @@ impl PrivateBin {
                 continue;
             }
             if let Some(matches) = VERSION_EXP.captures(&line_str) {
-                version = matches[3].to_string();
+                version = matches[3].into();
             }
         }
         Ok((version, attachments, csp_header))
@@ -350,8 +352,8 @@ impl PrivateBin {
 
 #[tokio::test]
 async fn test_privatebin() {
-    let url = String::from("https://privatebin.net");
-    let test_url = url.clone();
+    let url = "https://privatebin.net".to_owned();
+    let test_url = url.to_owned();
     let privatebin = PrivateBin::new(test_url).await.unwrap();
     assert_eq!(privatebin.instance.url, url);
     assert_eq!(privatebin.instance.version, "1.4.0");
@@ -374,34 +376,29 @@ async fn test_url_rewrites() {
         let privatebin = PrivateBin::new(url).await.unwrap();
         assert_eq!(
             privatebin.instance.url,
-            String::from("https://privatebin.net")
+            "https://privatebin.net".to_string()
         );
     }
 }
 
 #[tokio::test]
 async fn test_non_privatebin() {
-    let url = String::from("https://privatebin.info");
-    let privatebin = PrivateBin::new(url).await;
+    let privatebin = PrivateBin::new("https://privatebin.info".into()).await;
     assert!(privatebin.is_err());
 }
 
 #[tokio::test]
 async fn test_robots_txt() {
-    let url = String::from("http://zerobin-test.dssr.ch");
-    let privatebin = PrivateBin::new(url).await;
+    let privatebin = PrivateBin::new("http://zerobin-test.dssr.ch".into()).await;
     assert!(privatebin.is_err());
 }
 
 #[tokio::test]
 async fn test_zerobin() {
-    let url = String::from("http://zerobin-legacy.dssr.ch/");
-    let test_url = url.clone();
-    let privatebin = PrivateBin::new(test_url).await.unwrap();
-    assert_eq!(
-        privatebin.instance.url,
-        url.trim_end_matches('/').to_string()
-    );
+    let url = "http://zerobin-legacy.dssr.ch/".to_string();
+    let test_url = url.trim_end_matches('/').to_owned();
+    let privatebin = PrivateBin::new(url).await.unwrap();
+    assert_eq!(privatebin.instance.url, test_url);
     assert_eq!(privatebin.instance.https, false);
     assert_eq!(privatebin.instance.https_redirect, false);
     assert_eq!(privatebin.instance.csp_header, true);
@@ -412,20 +409,18 @@ async fn test_zerobin() {
 
 #[tokio::test]
 async fn test_no_http() {
-    let url = String::from("https://pasta.lysergic.dev");
-    let test_url = url.clone();
-    let privatebin = PrivateBin::new(test_url).await.unwrap();
-    assert_eq!(privatebin.instance.url, url.to_string());
+    let url = "https://pasta.lysergic.dev".to_string();
+    let privatebin = PrivateBin::new(url.to_owned()).await.unwrap();
+    assert_eq!(privatebin.instance.url, url);
     assert_eq!(privatebin.instance.https, true);
     assert_eq!(privatebin.instance.https_redirect, true);
 }
 
 #[tokio::test]
 async fn test_idn() {
-    let url = String::from("https://тайны.миры-аномалии.рф");
-    let test_url = url.clone();
-    let privatebin = PrivateBin::new(test_url).await.unwrap();
-    assert_eq!(privatebin.instance.url, url.to_string());
+    let url = "https://тайны.миры-аномалии.рф".to_string();
+    let privatebin = PrivateBin::new(url.to_owned()).await.unwrap();
+    assert_eq!(privatebin.instance.url, url);
     assert_eq!(privatebin.instance.https, true);
     assert_eq!(privatebin.instance.https_redirect, true);
     assert_ne!(privatebin.instance.country_id, "AQ");
@@ -453,8 +448,8 @@ impl ScanNew {
     pub fn new(scanner: &str, rating: &str, instance_id: i32) -> ScanNew {
         let percent: i32 = rating_to_percent(rating).into();
         ScanNew {
-            scanner: scanner.to_string(),
-            rating: rating.to_string(),
+            scanner: scanner.into(),
+            rating: rating.into(),
             percent,
             instance_id,
         }
@@ -477,7 +472,7 @@ pub struct Page {
 impl Page {
     pub fn new(topic: String) -> Page {
         Page {
-            title: String::from(TITLE),
+            title: TITLE.into(),
             topic,
         }
     }
@@ -497,9 +492,9 @@ impl InstancePage {
     pub fn new(topic: String, instance: Option<Instance>, error: Option<String>) -> InstancePage {
         let error_string = error.unwrap_or_default();
         InstancePage {
-            title: String::from(TITLE),
+            title: TITLE.into(),
             topic,
-            csp_recommendation: CSP_RECOMMENDATION.to_string(),
+            csp_recommendation: CSP_RECOMMENDATION.into(),
             instance,
             error: error_string,
         }
@@ -520,7 +515,7 @@ impl StatusPage {
         let error_string = error.unwrap_or_default();
         let success_string = success.unwrap_or_default();
         StatusPage {
-            title: String::from(TITLE),
+            title: TITLE.into(),
             topic,
             error: error_string,
             success: success_string,
@@ -539,7 +534,7 @@ pub struct TablePage {
 impl TablePage {
     pub fn new(topic: String, tables: Vec<HtmlTable>) -> TablePage {
         TablePage {
-            title: String::from(TITLE),
+            title: TITLE.into(),
             topic,
             tables,
         }

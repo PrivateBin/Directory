@@ -44,7 +44,7 @@ pub async fn request(
     };
     let authority = match parsed_url.port() {
         Some(port) => format!("{}:{}", parsed_host, port),
-        None => String::from(parsed_host),
+        None => parsed_host.to_owned(),
     };
     let uri = match Uri::builder()
         .scheme(parsed_url.scheme())
@@ -65,7 +65,7 @@ pub async fn request(
         .expect("request");
     let result = match timeout(
         Duration::from_secs(15),
-        HTTP_CLIENT.clone().request(request),
+        HTTP_CLIENT.to_owned().request(request),
     )
     .await
     {

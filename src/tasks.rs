@@ -67,11 +67,11 @@ pub async fn check_full(rocket: Rocket<Build>) {
                                 .filter(scanner.eq(updated_scan.scanner)),
                         )
                         .set((
-                            rating.eq(updated_scan.rating.clone()),
+                            rating.eq(updated_scan.rating.to_owned()),
                             percent.eq(updated_scan.percent),
                         )),
                         result.scan_update_success,
-                        result.instance.url.clone(),
+                        result.instance.url.to_owned(),
                     ));
                 }
                 if let Some(updated_instance) = result.instance_update {
@@ -152,43 +152,43 @@ async fn check_instance(instance: Instance) -> InstanceCheckResult {
     let timer = Instant::now();
     let mut message = String::new();
     let mut instance_options = [
-        ("version", instance.version.clone(), String::new()),
+        ("version", instance.version.to_owned(), String::new()),
         (
             "https",
-            format!("{:?}", instance.https.clone()),
+            format!("{:?}", instance.https.to_owned()),
             String::new(),
         ),
         (
             "https_redirect",
-            format!("{:?}", instance.https_redirect.clone()),
+            format!("{:?}", instance.https_redirect.to_owned()),
             String::new(),
         ),
         (
             "csp_header",
-            format!("{:?}", instance.csp_header.clone()),
+            format!("{:?}", instance.csp_header.to_owned()),
             String::new(),
         ),
         (
             "attachments",
-            format!("{:?}", instance.attachments.clone()),
+            format!("{:?}", instance.attachments.to_owned()),
             String::new(),
         ),
-        ("country_id", instance.country_id.clone(), String::new()),
+        ("country_id", instance.country_id.to_owned(), String::new()),
     ];
     let mut scan: ScanNew;
     let mut instance_update = None;
     let mut instance_update_success = String::new();
     let mut scan_update = None;
     let mut scan_update_success = String::new();
-    let instance_url = instance.url.clone();
-    match PrivateBin::new(instance.url.clone()).await {
+    let instance_url = instance.url.to_owned();
+    match PrivateBin::new(instance.url.to_owned()).await {
         Ok(privatebin) => {
-            instance_options[0].2 = privatebin.instance.version.clone();
-            instance_options[1].2 = format!("{:?}", privatebin.instance.https.clone());
-            instance_options[2].2 = format!("{:?}", privatebin.instance.https_redirect.clone());
-            instance_options[3].2 = format!("{:?}", privatebin.instance.csp_header.clone());
-            instance_options[4].2 = format!("{:?}", privatebin.instance.attachments.clone());
-            instance_options[5].2 = privatebin.instance.country_id.clone();
+            instance_options[0].2 = privatebin.instance.version.to_owned();
+            instance_options[1].2 = format!("{:?}", privatebin.instance.https.to_owned());
+            instance_options[2].2 = format!("{:?}", privatebin.instance.https_redirect.to_owned());
+            instance_options[3].2 = format!("{:?}", privatebin.instance.csp_header.to_owned());
+            instance_options[4].2 = format!("{:?}", privatebin.instance.attachments.to_owned());
+            instance_options[5].2 = privatebin.instance.country_id.to_owned();
             let elapsed = timer.elapsed();
             let timer = Instant::now();
             if instance_options.iter().any(|x| x.1 != x.2) {
@@ -213,16 +213,16 @@ async fn check_instance(instance: Instance) -> InstanceCheckResult {
             }
 
             // retrieve latest scan
-            scan = privatebin.scans[0].clone();
+            scan = privatebin.scans[0].to_owned();
             // if missing, wait for the scan to conclude and poll again
-            let rating = scan.rating.clone();
+            let rating = scan.rating.to_owned();
             if rating == "-" {
                 sleep(Duration::from_secs(5)).await;
                 scan = PrivateBin::check_rating_mozilla_observatory(&instance_url).await;
             }
             let elapsed = timer.elapsed();
             if rating != "-" && rating != instance.rating_mozilla_observatory {
-                scan_update = Some(scan.clone());
+                scan_update = Some(scan.to_owned());
                 let _ = writeln!(
                     &mut scan_update_success,
                     "Instance {instance_url} rating updated to: {rating} ({elapsed:?})"
@@ -345,15 +345,13 @@ async fn add_update_and_delete() {
     // insert an instance
     let query =
         "INSERT INTO instances (id, url, version, https, https_redirect, country_id, attachments, csp_header) \
-        VALUES (1, 'https://privatebin.net', '1.4.0', 1, 1, 'CH', 0, 0)"
-            .to_string();
-    conn.execute(&query).expect("inserting instance ID 1");
+        VALUES (1, 'https://privatebin.net', '1.4.0', 1, 1, 'CH', 0, 0)";
+    conn.execute(query).expect("inserting instance ID 1");
 
     // insert scan
     let query = "INSERT INTO scans (scanner, rating, percent, instance_id) \
-        VALUES ('mozilla_observatory', '-', 0, 1)"
-        .to_string();
-    conn.execute(&query)
+        VALUES ('mozilla_observatory', '-', 0, 1)";
+    conn.execute(query)
         .expect("inserting scan for instance ID 1");
 
     // insert checks
@@ -387,15 +385,13 @@ async fn add_update_and_delete() {
     // insert another instance, subsequently to be deleted
     let query =
         "INSERT INTO instances (id, url, version, https, https_redirect, country_id, attachments, csp_header) \
-        VALUES (2, 'http://zerobin-legacy.dssr.ch', '0.20', 1, 0, 'CH', 0, 1)"
-            .to_string();
-    conn.execute(&query).expect("inserting instance ID 2");
+        VALUES (2, 'http://zerobin-legacy.dssr.ch', '0.20', 1, 0, 'CH', 0, 1)";
+    conn.execute(query).expect("inserting instance ID 2");
 
     // insert scan
     let query = "INSERT INTO scans (scanner, rating, percent, instance_id) \
-        VALUES ('mozilla_observatory', '-', 0, 2)"
-        .to_string();
-    conn.execute(&query)
+        VALUES ('mozilla_observatory', '-', 0, 2)";
+    conn.execute(query)
         .expect("inserting scan for instance ID 2");
 
     // insert checks
@@ -430,8 +426,8 @@ async fn add_update_and_delete() {
     assert_eq!(empty, deleted_instance);
 
     // check immediate removal of sites that are no longer PrivateBin instances
-    let query = "UPDATE instances SET url = 'https://privatebin.info' WHERE id = 1".to_string();
-    conn.execute(&query)
+    let query = "UPDATE instances SET url = 'https://privatebin.info' WHERE id = 1";
+    conn.execute(query)
         .expect("manipulating instance ID 1 to point to a non-PrivateBin URL");
     check_full(rocket()).await;
     let deleted_check: Vec<i32> = checks

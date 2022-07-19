@@ -42,15 +42,15 @@ async fn index(db: DirectoryDbConn, cache: &State<InstancesCache>) -> Template {
     update_instance_cache(db, cache).await;
 
     let header = [
-        String::from("Address"),
-        String::from("Version"),
-        String::from("HTTPS"),
-        String::from("HTTPS enforced"),
-        String::from("recommended CSP"),
-        String::from("Observatory Rating"),
-        String::from("File upload"),
-        String::from("Uptime"),
-        String::from("Country"),
+        "Address".into(),
+        "Version".into(),
+        "HTTPS".into(),
+        "HTTPS enforced".into(),
+        "recommended CSP".into(),
+        "Observatory Rating".into(),
+        "File upload".into(),
+        "Uptime".into(),
+        "Country".into(),
     ];
     let mut tables = vec![];
     let mut body = vec![];
@@ -74,9 +74,9 @@ async fn index(db: DirectoryDbConn, cache: &State<InstancesCache>) -> Template {
         } else if major != instance_major || minor != instance_minor {
             // close table
             tables.push(HtmlTable {
-                title: format!("Version {major}.{minor}").to_string(),
-                header: header.clone(),
-                body: body.clone(),
+                title: format!("Version {major}.{minor}"),
+                header: header.to_owned(),
+                body: body.to_owned(),
             });
             // start a new one
             major = instance_major;
@@ -87,15 +87,15 @@ async fn index(db: DirectoryDbConn, cache: &State<InstancesCache>) -> Template {
         // format current instance for table display
         body.push([
             format!("opacity{}", instance.uptime / 25),
-            instance.url.clone(),
-            instance.version.clone(),
+            instance.url.to_owned(),
+            instance.version.to_owned(),
             Instance::format(instance.https),
             Instance::format(instance.https_redirect),
             Instance::format(instance.csp_header),
-            instance.rating_mozilla_observatory.clone(),
+            instance.rating_mozilla_observatory.to_owned(),
             Instance::format(instance.attachments),
             format!("{}%", instance.uptime),
-            instance.country_id.clone(),
+            instance.country_id.to_owned(),
         ]);
     }
     tables.push(HtmlTable {
@@ -104,7 +104,7 @@ async fn index(db: DirectoryDbConn, cache: &State<InstancesCache>) -> Template {
         body,
     });
 
-    let page = TablePage::new(String::from("Welcome!"), tables);
+    let page = TablePage::new("Welcome!".into(), tables);
     Template::render("list", &page)
 }
 
@@ -112,15 +112,15 @@ async fn index(db: DirectoryDbConn, cache: &State<InstancesCache>) -> Template {
 fn about() -> Template {
     let page = StatusPage::new(
         format!("About the {TITLE}"),
-        Some(CSP_RECOMMENDATION.to_string()),
-        Some(env!("CARGO_PKG_VERSION").to_string()),
+        Some(CSP_RECOMMENDATION.into()),
+        Some(env!("CARGO_PKG_VERSION").into()),
     );
     Template::render("about", &page)
 }
 
 #[get("/add")]
 fn add() -> Template {
-    let page = StatusPage::new(String::from(ADD_TITLE), None, None);
+    let page = StatusPage::new(ADD_TITLE.into(), None, None);
     Template::render("form", &page)
 }
 
@@ -128,7 +128,23 @@ fn add() -> Template {
 async fn save(db: DirectoryDbConn, form: Form<AddForm>, cache: &State<InstancesCache>) -> Template {
     let form = form.into_inner();
     let add_url = form.url.trim();
-    let privatebin_result = PrivateBin::new(add_url.to_string()).await;
+
+    // check in negative lookup cache, prevent unnecessary lookups
+    if is_cached(&cache.negative_lookups, add_url) {
+        return Template::render(
+            "form",
+            &StatusPage::new(
+                ADD_TITLE.into(),
+                Some(format!(
+                    "Error adding URL {add_url}, due to a failed scan within the last 5 minutes."
+                )),
+                None,
+            ),
+        );
+    }
+
+    // scan the new instance
+    let privatebin_result = PrivateBin::new(add_url.into()).await;
     let (do_cache_flush, page) = match privatebin_result {
         Ok(privatebin) => {
             db.run(move |conn| {
@@ -141,7 +157,7 @@ async fn save(db: DirectoryDbConn, form: Form<AddForm>, cache: &State<InstancesC
                         // need to store at least one check and scan, or the JOIN in /index produces NULL
                         let instance_id: i32 = instances
                             .select(id)
-                            .filter(url.eq(privatebin.instance.url.clone()))
+                            .filter(url.eq(privatebin.instance.url.to_owned()))
                             .limit(1)
                             .first(&*conn)
                             .expect("selecting the just inserted the instance");
@@ -161,7 +177,7 @@ async fn save(db: DirectoryDbConn, form: Form<AddForm>, cache: &State<InstancesC
                         (
                             true,
                             StatusPage::new(
-                                String::from(ADD_TITLE),
+                                ADD_TITLE.into(),
                                 None,
                                 Some(format!("Successfully added URL: {add_url}")),
                             ),
@@ -172,7 +188,7 @@ async fn save(db: DirectoryDbConn, form: Form<AddForm>, cache: &State<InstancesC
                         (
                             false,
                             StatusPage::new(
-                                String::from(ADD_TITLE),
+                                ADD_TITLE.into(),
                                 Some(format!("Error adding URL {add_url}, due to: {e:?}")),
                                 None,
                             ),
@@ -182,10 +198,11 @@ async fn save(db: DirectoryDbConn, form: Form<AddForm>, cache: &State<InstancesC
             })
             .await
         }
-        Err(e) => (
-            false,
-            StatusPage::new(String::from(ADD_TITLE), Some(e), None),
-        ),
+        Err(e) => {
+            // don't query this site again, for another 5 minutes
+            set_cached(&cache.negative_lookups, add_url);
+            (false, StatusPage::new(ADD_TITLE.into(), Some(e), None))
+        }
     };
     if do_cache_flush {
         cache.timeout.store(0, Relaxed);
@@ -195,7 +212,7 @@ async fn save(db: DirectoryDbConn, form: Form<AddForm>, cache: &State<InstancesC
 
 #[get("/check")]
 fn check() -> Template {
-    let page = StatusPage::new(String::from(CHECK_TITLE), None, None);
+    let page = StatusPage::new(CHECK_TITLE.into(), None, None);
     Template::render("form", &page)
 }
 
@@ -207,9 +224,21 @@ async fn report(
 ) -> Template {
     let form = form.into_inner();
     let form_url = form.url.trim().to_string();
-    let check_url = strip_url(form_url.clone());
+    let check_url = strip_url(form_url.to_owned());
+    let lookup_url = check_url.to_owned();
     let check_success_title = format!("Results of checking {check_url}");
-    let existing_instance = db
+
+    // check in negative lookup cache, prevent unnecessary lookups
+    if is_cached(&cache.negative_lookups, &check_url) {
+        return Template::render("form", &StatusPage::new(
+            CHECK_TITLE.into(),
+            Some(format!("Error scanning URL {form_url}, due to a failed scan within the last 5 minutes.")),
+            None)
+        );
+    }
+
+    // check in database
+    let page = match db
         .run(move |conn| {
             use diesel::sql_types::{Integer, Text};
             use schema::instances::dsl::*;
@@ -228,13 +257,14 @@ async fn report(
                 ))
                 .inner_join(checks)
                 .inner_join(scans)
-                .filter(url.eq(check_url))
+                .filter(url.eq(lookup_url))
                 .first(&*conn)
         })
-        .await;
-    let page = match existing_instance {
+        .await
+    {
         Ok(instance) => InstancePage::new(check_success_title, Some(instance), None),
-        Err(_) => match PrivateBin::new(form_url.clone()).await {
+        Err(_) => match PrivateBin::new(form_url.to_owned()).await {
+            // scan unknown instance
             Ok(privatebin) => {
                 let instance = Instance {
                     id: 0,
@@ -251,15 +281,19 @@ async fn report(
                         .last()
                         .unwrap_or(&ScanNew::default())
                         .rating
-                        .clone(),
+                        .to_owned(),
                 };
                 InstancePage::new(check_success_title, Some(instance), None)
             }
-            Err(e) => InstancePage::new(
-                String::from(CHECK_TITLE),
-                None,
-                Some(format!("Error scanning URL {form_url}, due to: {e:?}")),
-            ),
+            Err(e) => {
+                // don't query this site again, for another 5 minutes
+                set_cached(&cache.negative_lookups, &check_url);
+                InstancePage::new(
+                    CHECK_TITLE.into(),
+                    None,
+                    Some(format!("Error scanning URL {form_url}, due to: {e:?}")),
+                )
+            }
         },
     };
     if page.error.is_empty() {
@@ -319,7 +353,7 @@ async fn api(
     }
 
     let is_min_rating_set = min_rating.is_some();
-    let min_rating = rating_to_percent(&min_rating.unwrap_or_else(|| "F".to_string()));
+    let min_rating = rating_to_percent(&min_rating.unwrap_or_else(|| "F".into()));
 
     // prepare list according to arguments
     for instance in &*cache.instances.read().unwrap() {
@@ -336,7 +370,7 @@ async fn api(
             continue;
         }
 
-        instance_list.push(instance.clone());
+        instance_list.push(instance.to_owned());
         top -= 1;
         if top == 0 {
             break;
