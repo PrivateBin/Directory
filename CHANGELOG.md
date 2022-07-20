@@ -1,5 +1,10 @@
 # Change Log
 
+# 0.9.3
+- handle unwrapped errors, instead of panicking
+- clarify use of casts, replacing `clone()` with `to_owned()` and `into()` over `String::from()` or `to_string()`, when types can be inferred
+- add negative lookup cache, to prevent unnecessary lookups, which could be abused to cause load on queried instances
+
 # 0.9.2
 - version bump unit tests
 - bump libraries
