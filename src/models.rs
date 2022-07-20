@@ -418,12 +418,8 @@ async fn test_no_http() {
 
 #[tokio::test]
 async fn test_idn() {
-    let url = "https://тайны.миры-аномалии.рф".to_string();
-    let privatebin = PrivateBin::new(url.to_owned()).await.unwrap();
-    assert_eq!(privatebin.instance.url, url);
-    assert_eq!(privatebin.instance.https, true);
-    assert_eq!(privatebin.instance.https_redirect, true);
-    assert_ne!(privatebin.instance.country_id, "AQ");
+    let privatebin = PrivateBin::new("https://zerobin-täst.dssr.ch".into()).await;
+    assert!(privatebin.is_err());
 }
 
 #[derive(Queryable)]
