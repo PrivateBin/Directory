@@ -1,5 +1,9 @@
 # Change Log
 
+# 0.9.4
+- add unit test for check page
+- fix deadlock upon evicting expired negative lookup cache
+
 # 0.9.3
 - handle unwrapped errors, instead of panicking
 - clarify use of casts, replacing `clone()` with `to_owned()` and `into()` over `String::from()` or `to_string()`, when types can be inferred

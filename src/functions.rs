@@ -14,7 +14,10 @@ use std::sync::RwLock;
 // 1F1E6 is the unicode code point for the "REGIONAL INDICATOR SYMBOL
 // LETTER A" and 41 is the one for A in unicode and ASCII
 const REGIONAL_INDICATOR_OFFSET: u32 = 0x1F1E6 - 0x41;
+#[cfg(not(test))]
 const CACHE_TIMEOUT: u64 = 300; // 5 minutes
+#[cfg(test)]
+const CACHE_TIMEOUT: u64 = 1; // 1 second, for unit tests
 
 lazy_static! {
     static ref SLASHES_EXP: Regex = Regex::new(r"/{2,}").unwrap();
@@ -52,6 +55,7 @@ pub fn is_cached(cache: &RwLock<HashMap<String, u64>>, key: &str) -> bool {
     if let Ok(read_cache) = cache.read() {
         if let Some(timestamp) = read_cache.get(key) {
             if *timestamp < get_epoch() - CACHE_TIMEOUT {
+                drop(read_cache); // drop read lock, before requesting a write one
                 if let Ok(mut write_cache) = cache.write() {
                     write_cache.remove(key);
                 }
