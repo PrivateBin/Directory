@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
     - name: Install Rust
       uses: actions-rs/toolchain@v1
       with:
@@ -17,7 +17,7 @@ jobs:
         components: rustfmt, clippy
     - name: Cache GeoIP database
       id: cache-geoip
-      uses: actions/cache@v1
+      uses: actions/cache@v3
       with:
         path: var
         key: static-geoip
@@ -25,12 +25,12 @@ jobs:
       if: steps.cache-geoip.outputs.cache-hit != 'true'
       run: curl -s https://download.db-ip.com/free/dbip-country-lite-$(date +%Y-%m).mmdb.gz | zcat > var/geoip-country.mmdb
     - name: Cache cargo registry
-      uses: actions/cache@v1
+      uses: actions/cache@v3
       with:
         path: ~/.cargo/registry
         key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
     - name: Cache cargo build
-      uses: actions/cache@v1
+      uses: actions/cache@v3
       with:
         path: target
         key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
