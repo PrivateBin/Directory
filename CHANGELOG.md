@@ -1,5 +1,11 @@
 # Change Log
 
+# 0.9.5
+- add check for content length returned by Mozilla observatory
+- scan at most 1024 lines
+- use read buffer wrapped iterator to protect from reading overly long lines
+- bump libraries
+
 # 0.9.4
 - add unit test for check page
 - fix deadlock upon evicting expired negative lookup cache

@@ -5,7 +5,7 @@ use super::schema::instances;
 use super::schema::scans;
 use diesel::SqliteConnection;
 use dns_lookup::lookup_host;
-use hyper::body::{aggregate, to_bytes, Buf}; // Buf provides the reader() trait
+use hyper::body::{aggregate, to_bytes, Buf, HttpBody}; // Buf provides the reader() trait, HttpBody provides size_hint()
 use hyper::header::{CONTENT_SECURITY_POLICY, LOCATION};
 use hyper::{Body, Method, StatusCode};
 use maxminddb::geoip2::Country;
@@ -13,8 +13,8 @@ use regex::Regex;
 use rocket::serde::{json, Deserialize, Serialize};
 use std::collections::HashMap;
 use std::env::var;
-use std::io::BufRead; // provides the lines() trait
 use std::net::IpAddr;
+use std::str::from_utf8;
 use std::sync::atomic::AtomicU64;
 use std::sync::RwLock;
 use url::Url;
@@ -26,6 +26,8 @@ pub const CSP_RECOMMENDATION: &str = "default-src 'none'; base-uri 'self'; \
     object-src blob:; sandbox allow-same-origin allow-scripts allow-forms \
     allow-popups allow-modals allow-downloads";
 const OBSERVATORY_API: &str = "https://http-observatory.security.mozilla.org/api/v1/analyze?host=";
+const OBSERVATORY_MAX_CONTENT_LENGTH: u64 = 10240;
+const MAX_LINE_COUNT: u16 = 1024;
 pub const TITLE: &str = "Instance Directory";
 
 lazy_static! {
@@ -102,6 +104,44 @@ pub struct InstancesCache {
     pub timeout: AtomicU64,
     pub instances: RwLock<Vec<Instance>>,
     pub negative_lookups: RwLock<HashMap<String, u64>>,
+}
+
+struct LineReader<R> {
+    reader: R,
+}
+
+impl<R: std::io::BufRead> Iterator for LineReader<R> {
+    type Item = Result<String, String>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let mut bytes_to_consume = 0;
+        let result = match self.reader.fill_buf() {
+            Ok(buffer) => {
+                if buffer.is_empty() {
+                    return None;
+                }
+                bytes_to_consume = match buffer.iter().position(|&c| c == b'\n') {
+                    Some(newline_position) => {
+                        let mut bytes = buffer.len();
+                        if newline_position < bytes {
+                            bytes = newline_position + 1;
+                        }
+                        bytes
+                    }
+                    None => buffer.len(),
+                };
+                match from_utf8(&buffer[..bytes_to_consume]) {
+                    Ok(string) => Some(Ok(string.to_owned())),
+                    Err(_) => Some(Err("Error reading the web server response. Invalid UTF-8 sequence detected in response body.".to_owned())),
+                }
+            }
+            Err(e) => Some(Err(format!("Error reading the web server response. {e:?}"))),
+        };
+        if bytes_to_consume > 0 {
+            self.reader.consume(bytes_to_consume);
+        }
+        result
+    }
 }
 
 #[derive(Deserialize)]
@@ -265,25 +305,36 @@ impl PrivateBin {
 
         let mut version = String::new();
         let mut attachments = false;
+        let mut line_count: u16 = 0;
         let body = match aggregate(res).await {
             Ok(body) => body,
             Err(_) => return Err("Error reading the web server response.".to_owned()),
         };
-        for line in body.reader().lines() {
-            let line_str = line.unwrap();
-            if line_str.contains(" id=\"attachment\" ") {
+        let reader = LineReader {
+            reader: body.reader(),
+        };
+        for line in reader {
+            let line_str = match line {
+                Ok(string) => string,
+                Err(e) => e,
+            };
+
+            if !attachments && line_str.contains(" id=\"attachment\" ") {
                 attachments = true;
                 if !version.is_empty() {
                     // we got both version and attachment, stop parsing
                     break;
                 }
             }
-            if !version.is_empty() {
-                // we got the version already, keep looking for the attachment
-                continue;
+            if version.is_empty() {
+                if let Some(matches) = VERSION_EXP.captures(&line_str) {
+                    version = matches[3].into();
+                }
+                // we can't break early, as we have to keep looking for a possible attachment ID
             }
-            if let Some(matches) = VERSION_EXP.captures(&line_str) {
-                version = matches[3].into();
+            line_count += 1;
+            if line_count == MAX_LINE_COUNT {
+                break;
             }
         }
         Ok((version, attachments, csp_header))
@@ -296,6 +347,13 @@ impl PrivateBin {
                 let observatory_url = format!("{OBSERVATORY_API}{host}");
                 if let Ok(res) = request_get(&observatory_url).await {
                     if res.status() == StatusCode::OK {
+                        let response_content_length = match res.body().size_hint().upper() {
+                            Some(length) => length,
+                            None => OBSERVATORY_MAX_CONTENT_LENGTH + 1, // protect from malicious response
+                        };
+                        if response_content_length >= OBSERVATORY_MAX_CONTENT_LENGTH {
+                            Default::default()
+                        }
                         let body_bytes = to_bytes(res.into_body()).await.unwrap();
                         let api_response = json::from_slice::<ObservatoryScan>(body_bytes.chunk());
                         if let Ok(api_response) = api_response {
@@ -318,7 +376,7 @@ impl PrivateBin {
         Default::default()
     }
 
-    // check robots.txt and bail if server doesn't want us to index the instance
+    // check robots.txt, if one exists, and bail if server doesn't want us to index the instance
     async fn check_robots(url: &str) -> Result<bool, String> {
         let robots_url = if url.ends_with('/') {
             format!("{url}robots.txt")
@@ -328,19 +386,32 @@ impl PrivateBin {
         if let Ok(res) = request_get(&robots_url).await {
             if res.status() == StatusCode::OK {
                 let mut rule_for_us = false;
-                let body = aggregate(res).await.unwrap();
-                for line in body.reader().lines() {
-                    let line_str = line.unwrap();
-                    if !rule_for_us && line_str.starts_with("User-agent: PrivateBinDirectoryBot") {
-                        rule_for_us = true;
-                        continue;
-                    }
+                let mut line_count: u16 = 0;
+                let body = match aggregate(res).await {
+                    Ok(body) => body,
+                    Err(_) => return Ok(true),
+                };
+                let reader = LineReader {
+                    reader: body.reader(),
+                };
+                for line in reader {
+                    let line_str = match line {
+                        Ok(string) => string,
+                        _ => break,
+                    };
+
                     if rule_for_us {
                         if line_str.starts_with("Disallow: /") {
                             return Err(format!(
                                 "Web server on URL {url} doesn't want to get added to the directory."
                             ));
                         }
+                        break;
+                    } else if line_str.starts_with("User-agent: PrivateBinDirectoryBot") {
+                        rule_for_us = true;
+                    }
+                    line_count += 1;
+                    if line_count == MAX_LINE_COUNT {
                         break;
                     }
                 }
@@ -356,7 +427,7 @@ async fn test_privatebin() {
     let test_url = url.to_owned();
     let privatebin = PrivateBin::new(test_url).await.unwrap();
     assert_eq!(privatebin.instance.url, url);
-    assert_eq!(privatebin.instance.version, "1.4.0");
+    assert_eq!(privatebin.instance.version, "1.5.1");
     assert_eq!(privatebin.instance.https, true);
     assert_eq!(privatebin.instance.https_redirect, true);
     assert_eq!(privatebin.instance.csp_header, true);

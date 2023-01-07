@@ -153,24 +153,20 @@ async fn check_instance(instance: Instance) -> InstanceCheckResult {
     let mut message = String::new();
     let mut instance_options = [
         ("version", instance.version.to_owned(), String::new()),
-        (
-            "https",
-            format!("{:?}", instance.https.to_owned()),
-            String::new(),
-        ),
+        ("https", format!("{:?}", instance.https), String::new()),
         (
             "https_redirect",
-            format!("{:?}", instance.https_redirect.to_owned()),
+            format!("{:?}", instance.https_redirect),
             String::new(),
         ),
         (
             "csp_header",
-            format!("{:?}", instance.csp_header.to_owned()),
+            format!("{:?}", instance.csp_header),
             String::new(),
         ),
         (
             "attachments",
-            format!("{:?}", instance.attachments.to_owned()),
+            format!("{:?}", instance.attachments),
             String::new(),
         ),
         ("country_id", instance.country_id.to_owned(), String::new()),
@@ -184,10 +180,10 @@ async fn check_instance(instance: Instance) -> InstanceCheckResult {
     match PrivateBin::new(instance.url.to_owned()).await {
         Ok(privatebin) => {
             instance_options[0].2 = privatebin.instance.version.to_owned();
-            instance_options[1].2 = format!("{:?}", privatebin.instance.https.to_owned());
-            instance_options[2].2 = format!("{:?}", privatebin.instance.https_redirect.to_owned());
-            instance_options[3].2 = format!("{:?}", privatebin.instance.csp_header.to_owned());
-            instance_options[4].2 = format!("{:?}", privatebin.instance.attachments.to_owned());
+            instance_options[1].2 = format!("{:?}", privatebin.instance.https);
+            instance_options[2].2 = format!("{:?}", privatebin.instance.https_redirect);
+            instance_options[3].2 = format!("{:?}", privatebin.instance.csp_header);
+            instance_options[4].2 = format!("{:?}", privatebin.instance.attachments);
             instance_options[5].2 = privatebin.instance.country_id.to_owned();
             let elapsed = timer.elapsed();
             let timer = Instant::now();

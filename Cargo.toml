@@ -1,6 +1,6 @@
 [package]
 name = "directory"
-version = "0.9.4"
+version = "0.9.5"
 authors = ["El RIDO <elrido@gmx.net>"]
 edition = "2021"
 license = "AGPL-3.0"
@@ -8,25 +8,25 @@ license = "AGPL-3.0"
 [dependencies]
 diesel_migrations = "1.4.0"
 dns-lookup = "1.0.8"
-futures = "0.3.19"
+futures = "0.3.25"
 isocountry = "0.3.2"
 lazy_static = "1.4.0"
 maxminddb = "0.23.0"
-rand = "0.8.4"
-regex = "1.5.5"
-tokio = "1.15.0"
-url = "2.2.2"
+rand = "0.8.5"
+regex = "1.7.0"
+tokio = "1.24.1"
+url = "2.3.1"
 
 [dependencies.diesel]
 version = "1.4.8"
 features = ["sqlite"]
 
 [dependencies.hyper]
-version = "0.14.16"
+version = "0.14.23"
 features = ["client"]
 
 [dependencies.hyper-rustls]
-version = "0.23.0"
+version = "0.23.2"
 default-features = false
 features = ["native-tokio", "http1", "http2", "tls12", "webpki-tokio"]
 
@@ -50,3 +50,4 @@ features = ["diesel_sqlite_pool"]
 opt-level = 'z'  # Optimize for size.
 lto = true
 codegen-units = 1
+strip = true

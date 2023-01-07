@@ -83,7 +83,7 @@ clean: $(DATABASE) ## Stops and removes the running container.
 	rm -f $(DATABASE)-*
 	git checkout $(DATABASE)
 	docker ps -q --filter "name=$(NAME)" | grep -q . && \
-	docker stop $(NAME)
+	docker stop $(NAME) || true
 
 help: ## Displays these usage instructions.
 	@echo "Usage: make <target(s)>"
