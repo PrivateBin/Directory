@@ -1,5 +1,9 @@
 # Change Log
 
+# 0.9.6
+- switch to rust 1.59 and to make use of it's build time strip
+- bump libraries
+
 # 0.9.5
 - add check for content length returned by Mozilla observatory
 - scan at most 1024 lines
