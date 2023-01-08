@@ -2,6 +2,7 @@
 
 # 0.9.6
 - switch to rust 1.59 and to make use of it's build time strip
+- strip index.php suffix from URL, if present
 - bump libraries & bootstrap css
 
 # 0.9.5

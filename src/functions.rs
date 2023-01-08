@@ -133,6 +133,10 @@ pub fn strip_url(url: String) -> String {
     if let Some(query_start) = check_url.find('#') {
         check_url = check_url[..query_start].into();
     }
+    // remove trailing index.php
+    if let Some(stripped_url) = check_url.strip_suffix("index.php") {
+        check_url = stripped_url.into();
+    }
     // remove trailing slash, but only for web root, not for paths:
     // - https://example.com/ -> https://example.com
     // - https://example.com// -> https://example.com

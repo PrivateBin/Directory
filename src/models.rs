@@ -438,7 +438,7 @@ async fn test_privatebin() {
 #[tokio::test]
 async fn test_url_rewrites() {
     let components = ["https", "http"].iter().flat_map(|schema| {
-        ["/", "/?foo", "/#foo", "//"]
+        ["/", "/?foo", "/#foo", "//", "/index.php"]
             .iter()
             .map(move |suffix| (schema, suffix))
     });
