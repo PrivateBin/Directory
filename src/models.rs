@@ -108,12 +108,17 @@ pub struct InstancesCache {
 
 struct LineReader<R> {
     reader: R,
+    line_count: u16,
 }
 
 impl<R: std::io::BufRead> Iterator for LineReader<R> {
     type Item = Result<String, String>;
 
     fn next(&mut self) -> Option<Self::Item> {
+        self.line_count += 1;
+        if self.line_count == MAX_LINE_COUNT {
+            return None;
+        }
         let mut bytes_to_consume = 0;
         let result = match self.reader.fill_buf() {
             Ok(buffer) => {
@@ -305,13 +310,13 @@ impl PrivateBin {
 
         let mut version = String::new();
         let mut attachments = false;
-        let mut line_count: u16 = 0;
         let body = match aggregate(res).await {
             Ok(body) => body,
             Err(_) => return Err("Error reading the web server response.".to_owned()),
         };
         let reader = LineReader {
             reader: body.reader(),
+            line_count: 0,
         };
         for line in reader {
             let line_str = match line {
@@ -330,11 +335,6 @@ impl PrivateBin {
                 if let Some(matches) = VERSION_EXP.captures(&line_str) {
                     version = matches[3].into();
                 }
-                // we can't break early, as we have to keep looking for a possible attachment ID
-            }
-            line_count += 1;
-            if line_count == MAX_LINE_COUNT {
-                break;
             }
         }
         Ok((version, attachments, csp_header))
@@ -386,13 +386,13 @@ impl PrivateBin {
         if let Ok(res) = request_get(&robots_url).await {
             if res.status() == StatusCode::OK {
                 let mut rule_for_us = false;
-                let mut line_count: u16 = 0;
                 let body = match aggregate(res).await {
                     Ok(body) => body,
                     Err(_) => return Ok(true),
                 };
                 let reader = LineReader {
                     reader: body.reader(),
+                    line_count: 0,
                 };
                 for line in reader {
                     let line_str = match line {
@@ -409,10 +409,6 @@ impl PrivateBin {
                         break;
                     } else if line_str.starts_with("User-agent: PrivateBinDirectoryBot") {
                         rule_for_us = true;
-                    }
-                    line_count += 1;
-                    if line_count == MAX_LINE_COUNT {
-                        break;
                     }
                 }
             }
