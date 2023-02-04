@@ -14,7 +14,7 @@ lazy_static = "1.4.0"
 maxminddb = "0.23.0"
 rand = "0.8.5"
 regex = "1.7.0"
-tokio = "1.24.1"
+tokio = "1.24.2"
 url = "2.3.1"
 
 [dependencies.diesel]
