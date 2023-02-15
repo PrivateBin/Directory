@@ -31,7 +31,7 @@ default-features = false
 features = ["native-tokio", "http1", "http2", "tls12", "webpki-tokio"]
 
 [dependencies.libsqlite3-sys] # included for the static binary to link it in
-version = "0.22.2" # this version needs to be compatible with diesel
+version = "0.25.1" # this version needs to be compatible with diesel
 features = ["bundled"]
 
 [dependencies.rocket]
