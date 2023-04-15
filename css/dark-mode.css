@@ -8,6 +8,7 @@
 }
 
 [data-theme="dark"] a,
+[data-theme="dark"] .form-check-label,
 [data-theme="dark"] .nav-link,
 [data-theme="dark"] .page-link {
 	color: #8bf;
