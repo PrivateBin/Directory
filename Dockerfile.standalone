@@ -2,14 +2,12 @@ FROM rust:1.65.0-alpine3.16
 RUN apk update && \
     apk add --no-cache \
         sqlite-dev \
-        musl-dev \
-        upx && \
-    adduser -s /bin/ash -D rust
+        musl-dev && \
+    adduser -D rust
 USER rust
 WORKDIR /home/rust
 RUN wget -qO - https://github.com/PrivateBin/Directory/archive/0.9.6.tar.gz | tar -xz --strip 1 && \
-    cargo build --release && \
-    upx --ultra-brute target/release/directory
+    cargo build --release
 
 
 
