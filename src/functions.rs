@@ -2,10 +2,10 @@ use super::{
     about, add, api, check, favicon, index, report, save, Build, DirectoryDbConn, Instance,
     InstancesCache, Relaxed, Rocket, State, Template, CRON_INTERVAL,
 };
-use diesel_migrations::MigrationHarness;
-use diesel_migrations::EmbeddedMigrations;
 use diesel::prelude::*;
 use diesel::query_builder::SqlQuery;
+use diesel_migrations::EmbeddedMigrations;
+use diesel_migrations::MigrationHarness;
 use regex::Regex;
 use rocket::fs::FileServer;
 use rocket_dyn_templates::tera::{to_value, try_get_value, Result, Value};
@@ -114,9 +114,10 @@ pub async fn run_db_migrations(rocket: Rocket<Build>) -> Rocket<Build> {
         .await
         .expect("database connection");
     db.run(|conn| {
-            conn.run_pending_migrations(MIGRATIONS).expect("diesel migrations");
-        })
-        .await;
+        conn.run_pending_migrations(MIGRATIONS)
+            .expect("diesel migrations");
+    })
+    .await;
     rocket
 }
 
@@ -156,10 +157,7 @@ pub fn strip_url(url: String) -> String {
 pub async fn update_instance_cache(db: DirectoryDbConn, cache: &State<InstancesCache>) {
     let now = get_epoch();
     if now >= cache.timeout.load(Relaxed) {
-        match db
-            .run(|conn| get_instances().load::<Instance>(conn))
-            .await
-        {
+        match db.run(|conn| get_instances().load::<Instance>(conn)).await {
             // flush cache
             Ok(instances_live) => {
                 cache.timeout.store(now + CRON_INTERVAL, Relaxed);

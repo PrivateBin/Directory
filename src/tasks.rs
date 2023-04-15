@@ -1,7 +1,13 @@
 use super::models::*;
 use super::schema::instances::dsl::*;
 use super::{get_epoch, get_instances, Build, Rocket};
-use diesel::{dsl::{sql, sql_query}, prelude::*, delete, insert_into, update, SqliteConnection};
+use diesel::{
+    delete,
+    dsl::{sql, sql_query},
+    insert_into,
+    prelude::*,
+    update, SqliteConnection,
+};
 use futures::future::select_all;
 use rocket_sync_db_pools::Config;
 use std::fmt::Write;
@@ -28,7 +34,9 @@ pub async fn check_full(rocket: Rocket<Build>) {
         Config::from("directory", &rocket).expect("configuration of directory database");
     let mut conn = SqliteConnection::establish(&directory_config.url)
         .expect("connection to directory database");
-    sql_query("PRAGMA foreign_keys = ON").execute(&mut conn).expect("enable foreign key constraints");
+    sql_query("PRAGMA foreign_keys = ON")
+        .execute(&mut conn)
+        .expect("enable foreign key constraints");
     let cached_instances = get_instances().load::<Instance>(&mut conn);
     match cached_instances {
         Ok(instance_list) => {
@@ -49,8 +57,7 @@ pub async fn check_full(rocket: Rocket<Build>) {
                 if message.ends_with("doesn't want to get added to the directory.\"\n")
                     || message.ends_with("doesn't seem to be a PrivateBin instance.\"\n")
                 {
-                    match delete(instances.filter(id.eq(result.instance.id))).execute(&mut conn)
-                    {
+                    match delete(instances.filter(id.eq(result.instance.id))).execute(&mut conn) {
                         Ok(_) => print!("    removed the instance, due to: {message}"),
                         Err(e) => {
                             println!("    error removing the instance: {e:?}");
@@ -295,9 +302,7 @@ pub async fn check_up(rocket: Rocket<Build>) {
                     // delete checks older then:
                     let cutoff = get_epoch() - ((CHECKS_TO_STORE - 1) * CRON_INTERVAL);
                     match delete(checks)
-                        .filter(updated.lt(sql(&format!(
-                            "datetime({cutoff}, 'unixepoch')"
-                        ))))
+                        .filter(updated.lt(sql(&format!("datetime({cutoff}, 'unixepoch')"))))
                         .execute(&mut conn)
                     {
                         Ok(_) => {
@@ -349,7 +354,10 @@ async fn add_update_and_delete() {
         attachments: false,
         csp_header: false,
     };
-    insert_into(instances).values(&instance).execute(&mut conn).expect("inserting instance ID 1");
+    insert_into(instances)
+        .values(&instance)
+        .execute(&mut conn)
+        .expect("inserting instance ID 1");
 
     // insert scan
     let scan = ScanNew {
@@ -358,24 +366,30 @@ async fn add_update_and_delete() {
         percent: 0,
         instance_id: 1,
     };
-    insert_into(scans::table).values(&scan).execute(&mut conn).expect("inserting scan for instance ID 1");
+    insert_into(scans::table)
+        .values(&scan)
+        .execute(&mut conn)
+        .expect("inserting scan for instance ID 1");
 
     // insert checks
     let mut instance_checks = vec![];
     for interval in 0..(CHECKS_TO_STORE + 1) {
         let interval_update = now - (interval * CRON_INTERVAL);
-        instance_checks.push((checks::updated.eq(sql(&format!(
-            "datetime({interval_update}, 'unixepoch')"
-        ))), checks::up.eq(true), checks::instance_id.eq(1)));
+        instance_checks.push((
+            updated.eq(sql(&format!("datetime({interval_update}, 'unixepoch')"))),
+            up.eq(true),
+            instance_id.eq(1),
+        ));
     }
-    insert_into(checks).values(&instance_checks).execute(&mut conn).expect("inserting test checks for instance ID 1");
+    insert_into(checks)
+        .values(&instance_checks)
+        .execute(&mut conn)
+        .expect("inserting test checks for instance ID 1");
 
     let oldest_update = now - (CHECKS_TO_STORE * CRON_INTERVAL);
     let oldest_check: Vec<i32> = checks
         .select(instance_id)
-        .filter(updated.eq(sql(&format!(
-            "datetime({oldest_update}, 'unixepoch')"
-        ))))
+        .filter(updated.eq(sql(&format!("datetime({oldest_update}, 'unixepoch')"))))
         .load(&mut conn)
         .expect("selecting oldest check");
     assert_eq!(vec![1], oldest_check);
@@ -399,7 +413,10 @@ async fn add_update_and_delete() {
         attachments: false,
         csp_header: true,
     };
-    insert_into(instances).values(&instance).execute(&mut conn).expect("inserting instance ID 2");
+    insert_into(instances)
+        .values(&instance)
+        .execute(&mut conn)
+        .expect("inserting instance ID 2");
 
     // insert scan
     let scan = ScanNew {
@@ -408,17 +425,25 @@ async fn add_update_and_delete() {
         percent: 0,
         instance_id: 2,
     };
-    insert_into(scans::table).values(&scan).execute(&mut conn).expect("inserting scan for instance ID 2");
+    insert_into(scans::table)
+        .values(&scan)
+        .execute(&mut conn)
+        .expect("inserting scan for instance ID 2");
 
     // insert checks
     let mut instance_checks = vec![];
     for interval in 0..MAX_FAILURES {
         let interval_update = now - (interval * CRON_INTERVAL);
-        instance_checks.push((updated.eq(sql(&format!(
-            "datetime({interval_update}, 'unixepoch')"
-        ))), up.eq(false), instance_id.eq(2)));
+        instance_checks.push((
+            updated.eq(sql(&format!("datetime({interval_update}, 'unixepoch')"))),
+            up.eq(false),
+            instance_id.eq(2),
+        ));
     }
-    insert_into(checks).values(&instance_checks).execute(&mut conn).expect("inserting test checks for instance ID 2");
+    insert_into(checks)
+        .values(&instance_checks)
+        .execute(&mut conn)
+        .expect("inserting test checks for instance ID 2");
 
     check_full(rocket()).await;
     let deleted_check: Vec<i32> = checks

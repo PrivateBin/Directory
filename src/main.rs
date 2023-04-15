@@ -11,7 +11,7 @@ extern crate rocket;
 #[macro_use]
 extern crate rocket_sync_db_pools;
 
-use diesel::{prelude::*, insert_into};
+use diesel::{insert_into, prelude::*};
 use rocket::fairing::AdHoc;
 use rocket::form::Form;
 use rocket::response::Redirect;
