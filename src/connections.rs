@@ -12,8 +12,7 @@ lazy_static! {
         let https_connector = HttpsConnectorBuilder::new()
             .with_webpki_roots()
             .https_or_http()
-            .enable_http1()
-            .enable_http2()
+            .enable_all_versions()
             .build();
         Client::builder().build(https_connector)
     });

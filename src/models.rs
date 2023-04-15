@@ -44,7 +44,7 @@ pub struct Check {
 }
 
 #[derive(Insertable)]
-#[table_name = "checks"]
+#[diesel(table_name = checks)]
 pub struct CheckNew {
     pub up: bool,
     pub instance_id: i32,
@@ -55,7 +55,7 @@ pub struct DirectoryDbConn(SqliteConnection);
 
 #[derive(Clone, QueryableByName, Queryable, Serialize)]
 #[serde(crate = "rocket::serde")]
-#[table_name = "instances"]
+#[diesel(table_name = instances)]
 pub struct Instance {
     pub id: i32,
     pub url: String,
@@ -65,9 +65,9 @@ pub struct Instance {
     pub country_id: String,
     pub attachments: bool,
     pub csp_header: bool,
-    #[sql_type = "diesel::sql_types::Integer"]
+    #[diesel(sql_type = diesel::sql_types::Integer)]
     pub uptime: i32,
-    #[sql_type = "diesel::sql_types::Text"]
+    #[diesel(sql_type = diesel::sql_types::Text)]
     pub rating_mozilla_observatory: String,
 }
 
@@ -89,8 +89,10 @@ impl Instance {
 }
 
 #[derive(Insertable)]
-#[table_name = "instances"]
+#[diesel(table_name = instances)]
 pub struct InstanceNew {
+    #[diesel(deserialize_as = i32)]
+    pub id: Option<i32>,
     pub url: String,
     pub version: String,
     pub https: bool,
@@ -185,6 +187,7 @@ impl PrivateBin {
         if !version.is_empty() {
             return Ok(PrivateBin {
                 instance: InstanceNew {
+                    id: None,
                     url: check_url,
                     version,
                     https,
@@ -499,7 +502,7 @@ pub struct Scan {
 }
 
 #[derive(Insertable, Clone)]
-#[table_name = "scans"]
+#[diesel(table_name = scans)]
 pub struct ScanNew {
     pub scanner: String,
     pub rating: String,

@@ -1,8 +1,7 @@
 use super::models::*;
 use super::schema::instances::dsl::*;
 use super::{get_epoch, get_instances, Build, Rocket};
-use diesel::prelude::*;
-use diesel::SqliteConnection;
+use diesel::{dsl::{sql, sql_query}, prelude::*, delete, insert_into, update, SqliteConnection};
 use futures::future::select_all;
 use rocket_sync_db_pools::Config;
 use std::fmt::Write;
@@ -27,9 +26,10 @@ pub async fn check_full(rocket: Rocket<Build>) {
 
     let directory_config =
         Config::from("directory", &rocket).expect("configuration of directory database");
-    let conn = SqliteConnection::establish(&directory_config.url)
+    let mut conn = SqliteConnection::establish(&directory_config.url)
         .expect("connection to directory database");
-    let cached_instances = get_instances().load::<Instance>(&conn);
+    sql_query("PRAGMA foreign_keys = ON").execute(&mut conn).expect("enable foreign key constraints");
+    let cached_instances = get_instances().load::<Instance>(&mut conn);
     match cached_instances {
         Ok(instance_list) => {
             let mut instance_update_queries = vec![];
@@ -49,7 +49,7 @@ pub async fn check_full(rocket: Rocket<Build>) {
                 if message.ends_with("doesn't want to get added to the directory.\"\n")
                     || message.ends_with("doesn't seem to be a PrivateBin instance.\"\n")
                 {
-                    match diesel::delete(instances.filter(id.eq(result.instance.id))).execute(&conn)
+                    match delete(instances.filter(id.eq(result.instance.id))).execute(&mut conn)
                     {
                         Ok(_) => print!("    removed the instance, due to: {message}"),
                         Err(e) => {
@@ -61,7 +61,7 @@ pub async fn check_full(rocket: Rocket<Build>) {
 
                 if let Some(updated_scan) = result.scan_update {
                     scan_update_queries.push((
-                        diesel::update(
+                        update(
                             scans
                                 .filter(instance_id.eq(result.instance.id))
                                 .filter(scanner.eq(updated_scan.scanner)),
@@ -76,7 +76,7 @@ pub async fn check_full(rocket: Rocket<Build>) {
                 }
                 if let Some(updated_instance) = result.instance_update {
                     instance_update_queries.push((
-                        diesel::update(instances.filter(id.eq(result.instance.id))).set((
+                        update(instances.filter(id.eq(result.instance.id))).set((
                             version.eq(updated_instance.version),
                             https.eq(updated_instance.https),
                             https_redirect.eq(updated_instance.https_redirect),
@@ -92,7 +92,7 @@ pub async fn check_full(rocket: Rocket<Build>) {
 
             let timer = Instant::now();
             for (query, query_success, instance_url) in instance_update_queries {
-                match query.execute(&conn) {
+                match query.execute(&mut conn) {
                     Ok(_) => {
                         print!("{query_success}");
                     }
@@ -108,7 +108,7 @@ pub async fn check_full(rocket: Rocket<Build>) {
 
             let timer = Instant::now();
             for (query, query_success, instance_url) in scan_update_queries {
-                match query.execute(&conn) {
+                match query.execute(&mut conn) {
                     Ok(_) => {
                         print!("{query_success}");
                     }
@@ -121,7 +121,7 @@ pub async fn check_full(rocket: Rocket<Build>) {
 
             // delete checks and instances that failed too many times
             let timer = Instant::now();
-            match diesel::dsl::sql_query(&format!(
+            match sql_query(&format!(
                 "DELETE FROM instances \
                 WHERE id in ( \
                     SELECT instance_id \
@@ -131,10 +131,10 @@ pub async fn check_full(rocket: Rocket<Build>) {
                     HAVING COUNT(up) >= {MAX_FAILURES} \
                 );"
             ))
-            .execute(&conn)
+            .execute(&mut conn)
             {
-                Ok(_) => println!(
-                    "removed instances that failed too many times ({:?})",
+                Ok(count) => println!(
+                    "removed {count} instances that failed too many times ({:?})",
                     timer.elapsed()
                 ),
                 Err(e) => {
@@ -263,9 +263,9 @@ pub async fn check_up(rocket: Rocket<Build>) {
 
     let directory_config =
         Config::from("directory", &rocket).expect("configuration of directory database");
-    let conn = SqliteConnection::establish(&directory_config.url)
+    let mut conn = SqliteConnection::establish(&directory_config.url)
         .expect("connection to directory database");
-    let cached_instances = get_instances().load::<Instance>(&conn);
+    let cached_instances = get_instances().load::<Instance>(&mut conn);
     match cached_instances {
         Ok(instance_list) => {
             let mut instance_checks = vec![];
@@ -284,9 +284,9 @@ pub async fn check_up(rocket: Rocket<Build>) {
 
             // store checks
             let timer = Instant::now();
-            match diesel::insert_into(checks)
+            match insert_into(checks)
                 .values(&instance_checks)
-                .execute(&conn)
+                .execute(&mut conn)
             {
                 Ok(_) => {
                     println!("stored uptime checks ({:?})", timer.elapsed());
@@ -294,11 +294,11 @@ pub async fn check_up(rocket: Rocket<Build>) {
 
                     // delete checks older then:
                     let cutoff = get_epoch() - ((CHECKS_TO_STORE - 1) * CRON_INTERVAL);
-                    match diesel::delete(checks)
-                        .filter(updated.lt(diesel::dsl::sql(&format!(
+                    match delete(checks)
+                        .filter(updated.lt(sql(&format!(
                             "datetime({cutoff}, 'unixepoch')"
                         ))))
-                        .execute(&conn)
+                        .execute(&mut conn)
                     {
                         Ok(_) => {
                             println!(
@@ -327,121 +327,142 @@ pub async fn check_up(rocket: Rocket<Build>) {
 #[tokio::test]
 async fn add_update_and_delete() {
     use super::schema::checks::dsl::*;
-    use super::schema::{instances, scans};
+    use super::schema::{checks, instances, scans};
     use super::{rocket, CHECKS_TO_STORE, CRON_INTERVAL, MAX_FAILURES};
     use diesel::prelude::*;
 
     let directory_config = rocket_sync_db_pools::Config::from("directory", &rocket())
         .expect("configuration of directory database");
-    let conn = SqliteConnection::establish(&directory_config.url)
+    let mut conn = SqliteConnection::establish(&directory_config.url)
         .expect("connection to directory database");
     let empty: Vec<i32> = vec![]; // needs an explicit type, as it can't be inferred from an immutable, empty vector
     let now = get_epoch();
 
     // insert an instance
-    let query =
-        "INSERT INTO instances (id, url, version, https, https_redirect, country_id, attachments, csp_header) \
-        VALUES (1, 'https://privatebin.net', '1.4.0', 1, 1, 'CH', 0, 0)";
-    conn.execute(query).expect("inserting instance ID 1");
+    let instance = InstanceNew {
+        id: Some(1),
+        url: "https://privatebin.net".into(),
+        version: "1.4.0".into(),
+        https: true,
+        https_redirect: true,
+        country_id: "CH".into(),
+        attachments: false,
+        csp_header: false,
+    };
+    insert_into(instances).values(&instance).execute(&mut conn).expect("inserting instance ID 1");
 
     // insert scan
-    let query = "INSERT INTO scans (scanner, rating, percent, instance_id) \
-        VALUES ('mozilla_observatory', '-', 0, 1)";
-    conn.execute(query)
-        .expect("inserting scan for instance ID 1");
+    let scan = ScanNew {
+        scanner: "mozilla_observatory".into(),
+        rating: "-".into(),
+        percent: 0,
+        instance_id: 1,
+    };
+    insert_into(scans::table).values(&scan).execute(&mut conn).expect("inserting scan for instance ID 1");
 
     // insert checks
-    let mut query = "INSERT INTO checks (updated, up, instance_id) VALUES (".to_string();
     let mut instance_checks = vec![];
     for interval in 0..(CHECKS_TO_STORE + 1) {
         let interval_update = now - (interval * CRON_INTERVAL);
-        instance_checks.push(format!("datetime({interval_update}, 'unixepoch'), 1, 1"));
+        instance_checks.push((checks::updated.eq(sql(&format!(
+            "datetime({interval_update}, 'unixepoch')"
+        ))), checks::up.eq(true), checks::instance_id.eq(1)));
     }
-    let _ = write!(&mut query, "{})", instance_checks.join("), ("));
-    conn.execute(&query)
-        .expect("inserting test checks for instance ID 1");
+    insert_into(checks).values(&instance_checks).execute(&mut conn).expect("inserting test checks for instance ID 1");
+
     let oldest_update = now - (CHECKS_TO_STORE * CRON_INTERVAL);
     let oldest_check: Vec<i32> = checks
         .select(instance_id)
-        .filter(updated.eq(diesel::dsl::sql(&format!(
+        .filter(updated.eq(sql(&format!(
             "datetime({oldest_update}, 'unixepoch')"
         ))))
-        .load(&conn)
+        .load(&mut conn)
         .expect("selecting oldest check");
     assert_eq!(vec![1], oldest_check);
 
     check_up(rocket()).await;
     let oldest_check: Vec<i32> = checks
         .select(instance_id)
-        .filter(updated.eq(diesel::dsl::sql(&format!("{oldest_update}"))))
-        .load(&conn)
+        .filter(updated.eq(&format!("{oldest_update}")))
+        .load(&mut conn)
         .expect("selecting oldest check, now deleted");
     assert_eq!(empty, oldest_check);
 
     // insert another instance, subsequently to be deleted
-    let query =
-        "INSERT INTO instances (id, url, version, https, https_redirect, country_id, attachments, csp_header) \
-        VALUES (2, 'http://zerobin-legacy.dssr.ch', '0.20', 1, 0, 'CH', 0, 1)";
-    conn.execute(query).expect("inserting instance ID 2");
+    let instance = InstanceNew {
+        id: Some(2),
+        url: "http://zerobin-legacy.dssr.ch".into(),
+        version: "0.20".into(),
+        https: true,
+        https_redirect: false,
+        country_id: "CH".into(),
+        attachments: false,
+        csp_header: true,
+    };
+    insert_into(instances).values(&instance).execute(&mut conn).expect("inserting instance ID 2");
 
     // insert scan
-    let query = "INSERT INTO scans (scanner, rating, percent, instance_id) \
-        VALUES ('mozilla_observatory', '-', 0, 2)";
-    conn.execute(query)
-        .expect("inserting scan for instance ID 2");
+    let scan = ScanNew {
+        scanner: "mozilla_observatory".into(),
+        rating: "-".into(),
+        percent: 0,
+        instance_id: 2,
+    };
+    insert_into(scans::table).values(&scan).execute(&mut conn).expect("inserting scan for instance ID 2");
 
     // insert checks
-    let mut query = "INSERT INTO checks (updated, up, instance_id) VALUES (".to_string();
     let mut instance_checks = vec![];
     for interval in 0..MAX_FAILURES {
         let interval_update = now - (interval * CRON_INTERVAL);
-        instance_checks.push(format!("datetime({interval_update}, 'unixepoch'), 0, 2"));
+        instance_checks.push((updated.eq(sql(&format!(
+            "datetime({interval_update}, 'unixepoch')"
+        ))), up.eq(false), instance_id.eq(2)));
     }
-    let _ = write!(&mut query, "{})", instance_checks.join("), ("));
-    conn.execute(&query)
-        .expect("inserting test checks for instance ID 2");
+    insert_into(checks).values(&instance_checks).execute(&mut conn).expect("inserting test checks for instance ID 2");
 
     check_full(rocket()).await;
     let deleted_check: Vec<i32> = checks
         .select(instance_id)
         .filter(instance_id.eq(2))
-        .load(&conn)
+        .load(&mut conn)
         .expect("selecting check for instance 2, now deleted");
     assert_eq!(empty, deleted_check);
     let deleted_scan: Vec<i32> = scans::table
         .select(scans::instance_id)
         .filter(scans::instance_id.eq(2))
-        .load(&conn)
+        .load(&mut conn)
         .expect("selecting scan for instance 2, now deleted");
     assert_eq!(empty, deleted_scan);
     let deleted_instance: Vec<i32> = instances::table
         .select(instances::id)
         .filter(instances::id.eq(2))
-        .load(&conn)
+        .load(&mut conn)
         .expect("selecting instance 2, now deleted");
     assert_eq!(empty, deleted_instance);
 
     // check immediate removal of sites that are no longer PrivateBin instances
-    let query = "UPDATE instances SET url = 'https://privatebin.info' WHERE id = 1";
-    conn.execute(query)
+    update(instances)
+        .filter(instances::id.eq(1))
+        .set(url.eq("https://privatebin.info".to_string()))
+        .execute(&mut conn)
         .expect("manipulating instance ID 1 to point to a non-PrivateBin URL");
     check_full(rocket()).await;
     let deleted_check: Vec<i32> = checks
         .select(instance_id)
         .filter(instance_id.eq(1))
-        .load(&conn)
+        .load(&mut conn)
         .expect("selecting check for instance 1, now deleted");
     assert_eq!(empty, deleted_check);
     let deleted_scan: Vec<i32> = scans::table
         .select(scans::instance_id)
         .filter(scans::instance_id.eq(1))
-        .load(&conn)
+        .load(&mut conn)
         .expect("selecting scan for instance 1, now deleted");
     assert_eq!(empty, deleted_scan);
     let deleted_instance: Vec<i32> = instances::table
         .select(instances::id)
         .filter(instances::id.eq(1))
-        .load(&conn)
+        .load(&mut conn)
         .expect("selecting instance 1, now deleted");
     assert_eq!(empty, deleted_instance);
 }

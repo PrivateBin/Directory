@@ -11,7 +11,7 @@ extern crate rocket;
 #[macro_use]
 extern crate rocket_sync_db_pools;
 
-use diesel::prelude::*;
+use diesel::{prelude::*, insert_into};
 use rocket::fairing::AdHoc;
 use rocket::form::Form;
 use rocket::response::Redirect;
@@ -149,7 +149,7 @@ async fn save(db: DirectoryDbConn, form: Form<AddForm>, cache: &State<InstancesC
         Ok(privatebin) => {
             db.run(move |conn| {
                 use schema::instances::dsl::*;
-                match diesel::insert_into(instances)
+                match insert_into(instances)
                     .values(&privatebin.instance)
                     .execute(conn)
                 {
@@ -159,18 +159,18 @@ async fn save(db: DirectoryDbConn, form: Form<AddForm>, cache: &State<InstancesC
                             .select(id)
                             .filter(url.eq(privatebin.instance.url.to_owned()))
                             .limit(1)
-                            .first(&*conn)
+                            .first(conn)
                             .expect("selecting the just inserted the instance");
-                        diesel::insert_into(checks)
+                        insert_into(checks)
                             .values(CheckNew {
                                 up: true,
                                 instance_id,
                             })
-                            .execute(&*conn)
+                            .execute(conn)
                             .expect("inserting first check on a newly created instance");
-                        diesel::insert_into(scans)
+                        insert_into(scans)
                             .values(ScanNew::new("mozilla_observatory", "-", instance_id))
-                            .execute(&*conn)
+                            .execute(conn)
                             .expect("inserting first scan on a newly created instance");
 
                         let add_url = privatebin.instance.url;
@@ -240,6 +240,7 @@ async fn report(
     // check in database
     let page = match db
         .run(move |conn| {
+            use diesel::dsl::sql;
             use diesel::sql_types::{Integer, Text};
             use schema::instances::dsl::*;
             instances
@@ -252,13 +253,13 @@ async fn report(
                     country_id,
                     attachments,
                     csp_header,
-                    diesel::dsl::sql::<Integer>("(100 * SUM(checks.up) / COUNT(checks.up))"),
-                    diesel::dsl::sql::<Text>("scans.rating"),
+                    sql::<Integer>("(100 * SUM(checks.up) / COUNT(checks.up))"),
+                    sql::<Text>("scans.rating"),
                 ))
                 .inner_join(checks)
                 .inner_join(scans)
                 .filter(url.eq(lookup_url))
-                .first(&*conn)
+                .first(conn)
         })
         .await
     {

@@ -2,6 +2,8 @@ use super::{
     about, add, api, check, favicon, index, report, save, Build, DirectoryDbConn, Instance,
     InstancesCache, Relaxed, Rocket, State, Template, CRON_INTERVAL,
 };
+use diesel_migrations::MigrationHarness;
+use diesel_migrations::EmbeddedMigrations;
 use diesel::prelude::*;
 use diesel::query_builder::SqlQuery;
 use regex::Regex;
@@ -107,13 +109,14 @@ pub fn rocket() -> Rocket<Build> {
 }
 
 pub async fn run_db_migrations(rocket: Rocket<Build>) -> Rocket<Build> {
-    embed_migrations!();
+    pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!();
     let db = DirectoryDbConn::get_one(&rocket)
         .await
         .expect("database connection");
-    db.run(|conn| embedded_migrations::run(conn))
-        .await
-        .expect("diesel migrations");
+    db.run(|conn| {
+            conn.run_pending_migrations(MIGRATIONS).expect("diesel migrations");
+        })
+        .await;
     rocket
 }
 
@@ -154,7 +157,7 @@ pub async fn update_instance_cache(db: DirectoryDbConn, cache: &State<InstancesC
     let now = get_epoch();
     if now >= cache.timeout.load(Relaxed) {
         match db
-            .run(|conn| get_instances().load::<Instance>(&*conn))
+            .run(|conn| get_instances().load::<Instance>(conn))
             .await
         {
             // flush cache
