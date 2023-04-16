@@ -4,7 +4,7 @@ LABEL org.opencontainers.image.authors=support@privatebin.org \
       org.opencontainers.image.documentation=https://github.com/PrivateBin/Directory/blob/master/README.md \
       org.opencontainers.image.source=https://github.com/PrivateBin/Directory \
       org.opencontainers.image.licenses=AGPL-3.0 \
-      org.opencontainers.image.version=0.9.6
+      org.opencontainers.image.version=0.10.0
 
 ARG GEOIP_MMDB
 ARG ROCKET_DATABASES

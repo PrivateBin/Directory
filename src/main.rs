@@ -358,13 +358,13 @@ async fn api(
 
     // prepare list according to arguments
     for instance in &*cache.instances.read().unwrap() {
-        if (is_attachments_set && instance.attachments != attachments)
-            || (is_country_set && instance.country_id != country)
-            || (is_csp_header_set && instance.csp_header != csp_header)
+        if (is_csp_header_set && instance.csp_header != csp_header)
             || (is_https_set && instance.https != https)
             || (is_https_redirect_set && instance.https_redirect != https_redirect)
-            || (is_version_set && !instance.version.starts_with(&version))
+            || (is_attachments_set && instance.attachments != attachments)
             || (instance.uptime < min_uptime)
+            || (is_version_set && !instance.version.starts_with(&version))
+            || (is_country_set && instance.country_id != country)
             || (is_min_rating_set
                 && rating_to_percent(&instance.rating_mozilla_observatory) < min_rating)
         {
@@ -380,6 +380,64 @@ async fn api(
     let mut rng = rand::thread_rng();
     instance_list.shuffle(&mut rng);
     Json(instance_list)
+}
+
+#[get("/forward-me?<attachments>&<country>&<version>")]
+async fn forward_me(
+    attachments: Option<bool>,
+    country: Option<String>,
+    version: Option<String>,
+    db: DirectoryDbConn,
+    cache: &State<InstancesCache>,
+) -> Redirect {
+    use rand::seq::SliceRandom;
+    let mut instance_list: Vec<Instance> = vec![];
+    update_instance_cache(db, cache).await;
+
+    // unwrap & validate arguments
+    let is_attachments_set = attachments.is_some();
+    let attachments = attachments.unwrap_or(false);
+
+    let is_country_set = country.is_some();
+    let country = country.unwrap_or_default();
+
+    let is_version_set = version.is_some();
+    let version = version.unwrap_or_default();
+
+    // prepare list according to arguments and hardcoded filter criteria
+    let mut instance_version = String::new();
+    for instance in &*cache.instances.read().unwrap() {
+        if !instance.csp_header
+            || !instance.https
+            || !instance.https_redirect
+            || instance.uptime < 100
+            || rating_to_percent(&instance.rating_mozilla_observatory) < 90
+            || (is_version_set && !instance.version.starts_with(&version))
+            || (is_attachments_set && instance.attachments != attachments)
+            || (is_country_set && instance.country_id != country)
+        {
+            continue;
+        }
+        // by default, we only consider the latest version - cached instances are sorted on these
+        if instance_version.is_empty() {
+            instance_version = instance.version.to_owned();
+        } else if instance.version != instance_version {
+            break;
+        }
+        instance_list.push(instance.to_owned());
+    }
+
+    let mut rng = rand::thread_rng();
+    instance_list.shuffle(&mut rng);
+    if instance_list.is_empty() {
+        // safe fallback - likely we have some connectivity issues (no instance
+        // with uptime of 100%) or work on an empty database, so redirect to
+        // demo instance running on the same host
+        return Redirect::to("https://privatebin.net");
+    }
+    // note the use of 303 See Other instead of 307 Temporary to ensure redirect
+    // is changed to a GET method, if necessary, to avoid leaking request details
+    Redirect::to(instance_list[0].url.to_owned())
 }
 
 #[get("/favicon.ico")]

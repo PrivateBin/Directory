@@ -140,3 +140,11 @@ fn check_post_success() {
     assert!(response.into_string().map_or(false, |s| s
         .contains(&"Results of checking https:&#x2F;&#x2F;privatebin.net")));
 }
+
+#[test]
+fn forward_me() {
+    let client = Client::untracked(rocket()).expect("valid rocket instance");
+    let response = client.get("/forward-me").dispatch();
+    assert_eq!(response.status(), Status::SeeOther);
+    assert!(response.headers().contains("Location"));
+}

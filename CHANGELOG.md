@@ -1,5 +1,8 @@
 # Change Log
 
+# 0.10.0
+- add a random redirect endpoint
+
 # 0.9.6
 - switch to rust 1.65 and to make use of it's build time strip
 - strip index.php suffix from URL, if present

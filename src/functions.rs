@@ -1,6 +1,6 @@
 use super::{
-    about, add, api, check, favicon, index, report, save, Build, DirectoryDbConn, Instance,
-    InstancesCache, Relaxed, Rocket, State, Template, CRON_INTERVAL,
+    about, add, api, check, favicon, forward_me, index, report, save, Build, DirectoryDbConn,
+    Instance, InstancesCache, Relaxed, Rocket, State, Template, CRON_INTERVAL,
 };
 use diesel::prelude::*;
 use diesel::query_builder::SqlQuery;
@@ -93,7 +93,7 @@ pub fn rocket() -> Rocket<Build> {
     rocket::build()
         .mount(
             "/",
-            routes![about, add, api, check, favicon, index, report, save],
+            routes![about, add, api, check, favicon, forward_me, index, report, save],
         )
         .mount("/img", FileServer::from("img"))
         .mount("/css", FileServer::from("css"))

@@ -35,8 +35,7 @@ build: .cargo/registry ## Build the binary for release.
 		$(BUILD_IMAGE) \
 		cargo build --release
 
-pack: ## Strips and compresses the binary to reduce it's size, only intended for the release.
-	strip target/x86_64-unknown-linux-musl/release/directory
+pack: ## Compresses the binary to reduce it's size, only intended for the release.
 	upx --ultra-brute target/x86_64-unknown-linux-musl/release/directory
 
 license: ## Generates the LICENSE.md file

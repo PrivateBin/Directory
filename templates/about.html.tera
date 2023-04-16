@@ -91,7 +91,7 @@ $ curl --header "Accept: application/json" https://privatebin.info/directory/api
 				<dt>https_redirect</dt>
 				<dd>Boolean (true or false), unset by default. Only return instances that enforce HTTPS, either by having HTTP disabled or redirected to HTTPS.</dd>
 				<dt>version</dt>
-				<dd>Version prefix, for example "1" or "1.3" or "1.3.5". Only return instances that start with that version string.</dd>
+				<dd>Version prefix, for example "1" or "1.5" or "1.5.1". Only return instances that start with that version string.</dd>
 				<dt>min_uptime</dt>
 				<dd>Number between 1 - 100, unset by default. Only return instances that have an uptime of that percentage or higher.</dd>
 				<dt>min_rating</dt>
@@ -100,5 +100,24 @@ $ curl --header "Accept: application/json" https://privatebin.info/directory/api
 			<p>For example, to retrieve the top 3 instances, randomized:</p>
 			<pre>
 $ curl --header "Accept: application/json" https://privatebin.info/directory/api?top=3
+			</pre>
+			<h4 id="faq-forward">Forwarding to a single, random instance</h3>
+			<p>A single random instance can be retrieved as a <code>Location</code> HTTP header by calling the <code>/forward-me</code> endpoint. Only instances that enforce HTTPS, use the currently recommend HTTP <code>Content-Security-Policy</code> (<a href="https://content-security-policy.com/">CSP</a>) header (see above), have a 100% uptime, a rating above or at A− and are of the latest version get returned.</p>
+			<pre>
+$ curl -v https://privatebin.info/directory/forward-me
+			</pre>
+			<p>Due to using standard HTTP headers, this will also work when accessed in browsers, hence the limited options. When you click on the following link, it will open a new random instance every time: <a href="https://privatebin.info/directory/forward-me" target="_blank">visit a random PrivateBin instance</a>.</p>
+			<p>Additionally, the following optional GET parameters can be sent, to adjust the selection:</p>
+			<dl>
+				<dt>attachments</dt>
+				<dd>Boolean (true or false), unset by default. Only return instances that offer attachment upload in their web UI - third party clients can always upload attachments.</dd>
+				<dt>country</dt>
+				<dd>ISO 3166-1 alpha-2 country code, unset by default. Only return instances of that country. Note the limitations of this type of lookup, as explained above.</dd>
+				<dt>version</dt>
+				<dd>Version prefix, for example "1" or "1.5" or "1.5.1". Only return instances that start with that version string.</dd>
+			</dl>
+			<p>For example, to retrieve an instance with attachments enabled:</p>
+			<pre>
+$ curl -v https://privatebin.info/directory/forward-me?attachments=true
 			</pre>
 {% endblock content %}
