@@ -30,10 +30,6 @@ version = "0.24.0"
 default-features = false
 features = ["http1", "http2", "tls12", "webpki-tokio"]
 
-[dependencies.libsqlite3-sys] # included for the static binary to link it in
-version = "0.25.2" # this version needs to be compatible with diesel
-features = ["bundled"]
-
 [dependencies.rocket]
 version = "0.5.0-rc.3"
 features = ["json"]

@@ -1,11 +1,16 @@
 FROM scratch
-LABEL maintainer="support@privatebin.org"
+LABEL org.opencontainers.image.authors=support@privatebin.org \
+      org.opencontainers.image.vendor=PrivateBin \
+      org.opencontainers.image.documentation=https://github.com/PrivateBin/Directory/blob/master/README.md \
+      org.opencontainers.image.source=https://github.com/PrivateBin/Directory \
+      org.opencontainers.image.licenses=AGPL-3.0 \
+      org.opencontainers.image.version=0.9.6
 
 ARG GEOIP_MMDB
-ENV GEOIP_MMDB $GEOIP_MMDB
-ENV ROCKET_ADDRESS "::"
 ARG ROCKET_DATABASES
-ENV ROCKET_DATABASES $ROCKET_DATABASES
+ENV GEOIP_MMDB=$GEOIP_MMDB \
+    ROCKET_ADDRESS="::" \
+    ROCKET_DATABASES=$ROCKET_DATABASES
 ARG PORT
 EXPOSE $PORT
 USER 1000:1000

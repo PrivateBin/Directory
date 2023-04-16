@@ -4,6 +4,7 @@
 - switch to rust 1.65 and to make use of it's build time strip
 - strip index.php suffix from URL, if present
 - bump libraries & bootstrap css
+- cleaned up docker image build, switching to a still maintained build image
 
 # 0.9.5
 - add check for content length returned by Mozilla observatory

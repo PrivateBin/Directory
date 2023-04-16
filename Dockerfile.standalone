@@ -1,22 +1,32 @@
-FROM rust:1.65.0-alpine3.16
-RUN apk update && \
+FROM rust:1.66.1-alpine3.17
+RUN apk --no-cache update && \
     apk add --no-cache \
-        sqlite-dev \
-        musl-dev && \
+        musl-dev \
+        sqlite-static \
+        upx && \
     adduser -D rust
 USER rust
 WORKDIR /home/rust
+# these avoid the overhead of compiling our own static library
+ENV SQLITE3_STATIC=1 \
+    SQLITE3_LIB_DIR=/usr/lib
 RUN wget -qO - https://github.com/PrivateBin/Directory/archive/0.9.6.tar.gz | tar -xz --strip 1 && \
-    cargo build --release
+    cargo build --release && \
+    upx --ultra-brute target/release/directory
 
 
 
 FROM scratch
-LABEL maintainer="support@privatebin.org"
+LABEL org.opencontainers.image.authors=support@privatebin.org \
+      org.opencontainers.image.vendor=PrivateBin \
+      org.opencontainers.image.documentation=https://github.com/PrivateBin/Directory/blob/master/README.md \
+      org.opencontainers.image.source=https://github.com/PrivateBin/Directory \
+      org.opencontainers.image.licenses=AGPL-3.0 \
+      org.opencontainers.image.version=0.9.6
 
-ENV GEOIP_MMDB /var/geoip-country.mmdb
-ENV ROCKET_ADDRESS "::"
-ENV ROCKET_DATABASES {directory={url="/var/directory.sqlite"}}
+ENV GEOIP_MMDB=/var/geoip-country.mmdb \
+    ROCKET_ADDRESS="::" \
+    ROCKET_DATABASES={directory={url="/var/directory.sqlite"}}
 EXPOSE 8000
 USER 1000:1000
 WORKDIR /

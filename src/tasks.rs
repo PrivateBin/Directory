@@ -332,7 +332,7 @@ pub async fn check_up(rocket: Rocket<Build>) {
 #[tokio::test]
 async fn add_update_and_delete() {
     use super::schema::checks::dsl::*;
-    use super::schema::{checks, instances, scans};
+    use super::schema::{instances, scans};
     use super::{rocket, CHECKS_TO_STORE, CRON_INTERVAL, MAX_FAILURES};
     use diesel::prelude::*;
 
