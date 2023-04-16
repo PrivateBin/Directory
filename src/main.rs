@@ -407,9 +407,9 @@ async fn forward_me(
     // prepare list according to arguments and hardcoded filter criteria
     let mut instance_version = String::new();
     for instance in &*cache.instances.read().unwrap() {
-        if !instance.csp_header
-            || !instance.https
+        if !instance.https
             || !instance.https_redirect
+            || (!instance.csp_header && !is_version_set) // don't enforce CSP for older versions, most wont have it
             || instance.uptime < 100
             || rating_to_percent(&instance.rating_mozilla_observatory) < 90
             || (is_version_set && !instance.version.starts_with(&version))
