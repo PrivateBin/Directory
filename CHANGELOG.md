@@ -2,6 +2,7 @@
 
 # 0.10.0
 - add a random redirect endpoint
+- reverting enable_all_versions() use, it doesnt seem to enable HTTP 1.x
 
 # 0.9.6
 - switch to rust 1.65 and to make use of it's build time strip
