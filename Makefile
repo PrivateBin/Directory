@@ -3,7 +3,6 @@
 NAME = directory
 IMAGE = privatebin/$(NAME)
 PORT = 8000
-BUILD_IMAGE = ekidd/rust-musl-builder:stable-sqlite
 DATABASE = var/directory.sqlite
 ROCKET_DATABASES = "{directory={url=\"$(DATABASE)\"}}"
 GEOIP_MMDB = var/geoip-country.mmdb
@@ -16,24 +15,16 @@ release: test build pack license image run check clean ## Equivalent to "make te
 test: .cargo/registry $(DATABASE) ## Build and run the unit tests.
 	rm -f $(DATABASE)-*
 	git checkout $(DATABASE)
-	docker run --rm -t --init \
-		-e GEOIP_MMDB="$(GEOIP_MMDB)" \
-		-e ROCKET_DATABASES=$(ROCKET_DATABASES) \
-		-e RUST_BACKTRACE=1 \
-		-v "$(CURDIR)":/home/rust/src \
-		-v "$(CURDIR)"/.cargo/registry:/home/rust/.cargo/registry \
-		$(BUILD_IMAGE) \
-		cargo test --release -- --test-threads=1 #$(NPROC) --nocapture
+	GEOIP_MMDB="$(GEOIP_MMDB)" \
+	ROCKET_DATABASES=$(ROCKET_DATABASES) \
+	RUST_BACKTRACE=1 \
+	cargo test --release -- --test-threads=1
 	git checkout $(DATABASE)
 
 build: .cargo/registry ## Build the binary for release.
 	rm -f $(DATABASE)-*
 	git checkout $(DATABASE)
-	docker run --rm -t --init \
-		-v "$(CURDIR)":/home/rust/src \
-		-v "$(CURDIR)"/.cargo/registry:/home/rust/.cargo/registry \
-		$(BUILD_IMAGE) \
-		cargo build --release
+	cargo build --release
 
 pack: ## Compresses the binary to reduce it's size, only intended for the release.
 	upx --ultra-brute target/x86_64-unknown-linux-musl/release/directory
