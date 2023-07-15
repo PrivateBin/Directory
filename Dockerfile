@@ -1,10 +1,11 @@
 FROM scratch
+ARG RELEASE=0.10.0
 LABEL org.opencontainers.image.authors=support@privatebin.org \
       org.opencontainers.image.vendor=PrivateBin \
       org.opencontainers.image.documentation=https://github.com/PrivateBin/Directory/blob/master/README.md \
       org.opencontainers.image.source=https://github.com/PrivateBin/Directory \
       org.opencontainers.image.licenses=AGPL-3.0 \
-      org.opencontainers.image.version=0.10.0
+      org.opencontainers.image.version=${RELEASE}
 
 ARG GEOIP_MMDB
 ARG ROCKET_DATABASES

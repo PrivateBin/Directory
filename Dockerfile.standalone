@@ -1,4 +1,5 @@
 FROM rust:1.66.1-alpine3.17
+ARG RELEASE=0.10.0
 RUN apk --no-cache update && \
     apk add --no-cache \
         musl-dev \
@@ -10,7 +11,7 @@ WORKDIR /home/rust
 # these avoid the overhead of compiling our own static library
 ENV SQLITE3_STATIC=1 \
     SQLITE3_LIB_DIR=/usr/lib
-RUN wget -qO - https://github.com/PrivateBin/Directory/archive/0.10.0.tar.gz | tar -xz --strip 1 && \
+RUN wget -qO - https://github.com/PrivateBin/Directory/archive/${RELEASE}.tar.gz | tar -xz --strip 1 && \
     cargo build --release && \
     upx --ultra-brute target/release/directory
 
@@ -22,7 +23,7 @@ LABEL org.opencontainers.image.authors=support@privatebin.org \
       org.opencontainers.image.documentation=https://github.com/PrivateBin/Directory/blob/master/README.md \
       org.opencontainers.image.source=https://github.com/PrivateBin/Directory \
       org.opencontainers.image.licenses=AGPL-3.0 \
-      org.opencontainers.image.version=0.10.0
+      org.opencontainers.image.version=${RELEASE}
 
 ENV GEOIP_MMDB=/var/geoip-country.mmdb \
     ROCKET_ADDRESS="::" \
