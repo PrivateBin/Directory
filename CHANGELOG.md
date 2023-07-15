@@ -1,5 +1,8 @@
 # Change Log
 
+# 0.10.1
+- bump libraries
+
 # 0.10.0
 - add a random redirect endpoint
 - reverting enable_all_versions() use, it doesnt seem to enable HTTP 1.x

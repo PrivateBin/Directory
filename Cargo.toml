@@ -1,6 +1,6 @@
 [package]
 name = "directory"
-version = "0.10.0"
+version = "0.10.1"
 authors = ["El RIDO <elrido@gmx.net>"]
 edition = "2021"
 license = "AGPL-3.0"
@@ -9,21 +9,21 @@ rust-version = "1.66"
 [dependencies]
 diesel_migrations = "2.1.0"
 dns-lookup = "2.0.2"
-futures = "0.3.25"
+futures = "0.3.28"
 isocountry = "0.3.2"
 lazy_static = "1.4.0"
 maxminddb = "0.23.0"
 rand = "0.8.5"
-regex = "1.7.0"
-tokio = "1.24.2"
-url = "2.3.1"
+regex = "1.9.1"
+tokio = "1.29.1"
+url = "2.4.0"
 
 [dependencies.diesel]
 version = "2.1.0"
 features = ["sqlite"]
 
 [dependencies.hyper]
-version = "0.14.23"
+version = "0.14.27"
 features = ["client"]
 
 [dependencies.hyper-rustls]
