@@ -10,11 +10,9 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
     - name: Install Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: 1.65.0
-        override: true
-        components: rustfmt, clippy
+      run: |
+        rustup toolchain install 1.65.0 --profile minimal --no-self-update --component rustfmt clippy
+        rustup default 1.65.0
     - name: Cache GeoIP database
       id: cache-geoip
       uses: actions/cache@v3
@@ -35,21 +33,13 @@ jobs:
         path: target
         key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
     - name: Execute all unit and integration tests and build examples
-      uses: actions-rs/cargo@v1
+      run: cargo test -- --test-threads=1
       env:
         GEOIP_MMDB: var/geoip-country.mmdb
         ROCKET_DATABASES: '{directory={url="var/directory.sqlite"}}'
-      with:
-        command: test
-        args: -- --test-threads=1
     - name: Check formatting of code and suggest improvements
-      uses: actions-rs/cargo@v1
-      with:
-        command: fmt
-        args: -- --check
+      run: cargo fmt -- --check
     - name: Check for common mistakes and code improvements
-      uses: actions-rs/clippy-check@v1
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
+      run: cargo clippy --all-targets --all-features -- -D warnings
     - name: Remove SQLite database, to prevent it getting cached
       run: rm var/directory.sqlite
