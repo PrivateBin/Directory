@@ -4,9 +4,10 @@ version = "0.10.0"
 authors = ["El RIDO <elrido@gmx.net>"]
 edition = "2021"
 license = "AGPL-3.0"
+rust-version = "1.66"
 
 [dependencies]
-diesel_migrations = "2.0.0"
+diesel_migrations = "2.1.0"
 dns-lookup = "1.0.8"
 futures = "0.3.25"
 isocountry = "0.3.2"
@@ -18,7 +19,7 @@ tokio = "1.24.2"
 url = "2.3.1"
 
 [dependencies.diesel]
-version = "2.0.4"
+version = "2.1.0"
 features = ["sqlite"]
 
 [dependencies.hyper]
