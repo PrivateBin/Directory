@@ -426,10 +426,10 @@ async fn test_privatebin() {
     let test_url = url.to_owned();
     let privatebin = PrivateBin::new(test_url).await.unwrap();
     assert_eq!(privatebin.instance.url, url);
-    assert_eq!(privatebin.instance.https, true);
-    assert_eq!(privatebin.instance.https_redirect, true);
-    assert_eq!(privatebin.instance.csp_header, true);
-    assert_eq!(privatebin.instance.attachments, true);
+    assert!(privatebin.instance.https);
+    assert!(privatebin.instance.https_redirect);
+    assert!(privatebin.instance.csp_header);
+    assert!(privatebin.instance.attachments);
     assert_eq!(privatebin.instance.country_id, "CH");
 }
 
@@ -468,11 +468,11 @@ async fn test_zerobin() {
     let test_url = url.trim_end_matches('/').to_owned();
     let privatebin = PrivateBin::new(url).await.unwrap();
     assert_eq!(privatebin.instance.url, test_url);
-    assert_eq!(privatebin.instance.https, false);
-    assert_eq!(privatebin.instance.https_redirect, false);
-    assert_eq!(privatebin.instance.csp_header, true);
+    assert!(!privatebin.instance.https);
+    assert!(!privatebin.instance.https_redirect);
+    assert!(privatebin.instance.csp_header);
     assert_eq!(privatebin.instance.version, "0.20");
-    assert_eq!(privatebin.instance.attachments, false);
+    assert!(!privatebin.instance.attachments);
     assert_eq!(privatebin.instance.country_id, "CH");
 }
 
@@ -481,8 +481,8 @@ async fn test_no_http() {
     let url = "https://pasta.lysergic.dev".to_string();
     let privatebin = PrivateBin::new(url.to_owned()).await.unwrap();
     assert_eq!(privatebin.instance.url, url);
-    assert_eq!(privatebin.instance.https, true);
-    assert_eq!(privatebin.instance.https_redirect, true);
+    assert!(privatebin.instance.https);
+    assert!(privatebin.instance.https_redirect);
 }
 
 #[tokio::test]

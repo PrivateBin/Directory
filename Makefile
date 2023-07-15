@@ -6,7 +6,6 @@ PORT = 8000
 DATABASE = var/directory.sqlite
 ROCKET_DATABASES = "{directory={url=\"$(DATABASE)\"}}"
 GEOIP_MMDB = var/geoip-country.mmdb
-NPROC = $(shell nproc)
 
 all: test build image run check clean ## Equivalent to "make test build image run check clean" (default).
 
@@ -59,7 +58,7 @@ check: ## Launch tests to verify that the service works as expected, requires a 
 
 lint: ## Run fmt & clippy on the code to come up with improvements.
 	cargo fmt
-	cargo clippy
+	cargo clippy --all-targets --all-features -- -D warnings
 	git checkout $(DATABASE)
 
 coverage: ## Run tarpaulin on the code to report on the tests code coverage.

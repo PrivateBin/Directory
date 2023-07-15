@@ -128,7 +128,7 @@ pub async fn check_full(rocket: Rocket<Build>) {
 
             // delete checks and instances that failed too many times
             let timer = Instant::now();
-            match sql_query(&format!(
+            match sql_query(format!(
                 "DELETE FROM instances \
                 WHERE id in ( \
                     SELECT instance_id \

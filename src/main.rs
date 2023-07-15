@@ -65,7 +65,7 @@ async fn index(db: DirectoryDbConn, cache: &State<InstancesCache>) -> Template {
         if mmp.is_empty() {
             continue;
         }
-        let (instance_major, instance_minor) = (mmp[0] as u16, mmp[1] as u16);
+        let (instance_major, instance_minor) = (mmp[0], mmp[1]);
 
         if minor == 0 {
             // this is the first instance in the list
@@ -104,24 +104,24 @@ async fn index(db: DirectoryDbConn, cache: &State<InstancesCache>) -> Template {
         body,
     });
 
-    let page = TablePage::new("Welcome!".into(), tables);
-    Template::render("list", &page)
+    Template::render("list", TablePage::new("Welcome!".into(), tables))
 }
 
 #[get("/about")]
 fn about() -> Template {
-    let page = StatusPage::new(
-        format!("About the {TITLE}"),
-        Some(CSP_RECOMMENDATION.into()),
-        Some(env!("CARGO_PKG_VERSION").into()),
-    );
-    Template::render("about", &page)
+    Template::render(
+        "about",
+        StatusPage::new(
+            format!("About the {TITLE}"),
+            Some(CSP_RECOMMENDATION.into()),
+            Some(env!("CARGO_PKG_VERSION").into()),
+        ),
+    )
 }
 
 #[get("/add")]
 fn add() -> Template {
-    let page = StatusPage::new(ADD_TITLE.into(), None, None);
-    Template::render("form", &page)
+    Template::render("form", StatusPage::new(ADD_TITLE.into(), None, None))
 }
 
 #[post("/add", data = "<form>")]
@@ -133,7 +133,7 @@ async fn save(db: DirectoryDbConn, form: Form<AddForm>, cache: &State<InstancesC
     if is_cached(&cache.negative_lookups, add_url) {
         return Template::render(
             "form",
-            &StatusPage::new(
+            StatusPage::new(
                 ADD_TITLE.into(),
                 Some(format!(
                     "Error adding URL {add_url}, due to a failed scan within the last 5 minutes."
@@ -207,13 +207,12 @@ async fn save(db: DirectoryDbConn, form: Form<AddForm>, cache: &State<InstancesC
     if do_cache_flush {
         cache.timeout.store(0, Relaxed);
     }
-    Template::render("form", &page)
+    Template::render("form", page)
 }
 
 #[get("/check")]
 fn check() -> Template {
-    let page = StatusPage::new(CHECK_TITLE.into(), None, None);
-    Template::render("form", &page)
+    Template::render("form", StatusPage::new(CHECK_TITLE.into(), None, None))
 }
 
 #[post("/check", data = "<form>")]
@@ -230,7 +229,7 @@ async fn report(
 
     // check in negative lookup cache, prevent unnecessary lookups
     if is_cached(&cache.negative_lookups, &check_url) {
-        return Template::render("form", &StatusPage::new(
+        return Template::render("form", StatusPage::new(
             CHECK_TITLE.into(),
             Some(format!("Error scanning URL {form_url}, due to a failed scan within the last 5 minutes.")),
             None)
@@ -298,11 +297,12 @@ async fn report(
         },
     };
     if page.error.is_empty() {
-        return Template::render("check", &page);
+        return Template::render("check", page);
     }
-    Template::render("form", &StatusPage::new(page.topic, Some(page.error), None))
+    Template::render("form", StatusPage::new(page.topic, Some(page.error), None))
 }
 
+#[allow(clippy::too_many_arguments)]
 #[get(
     "/api?<top>&<attachments>&<country>&<csp_header>&<https>&<https_redirect>&<version>&<min_uptime>&<min_rating>",
     format = "json"

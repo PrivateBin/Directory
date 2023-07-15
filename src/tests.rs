@@ -12,7 +12,7 @@ fn index() {
     assert_eq!(response.status(), Status::Ok);
     assert!(response
         .into_string()
-        .map_or(false, |s| s.contains(&"Welcome!")));
+        .map_or(false, |s| s.contains("Welcome!")));
 }
 
 #[test]
@@ -22,7 +22,7 @@ fn about() {
     assert_eq!(response.status(), Status::Ok);
     assert!(response
         .into_string()
-        .map_or(false, |s| s.contains(&"About")));
+        .map_or(false, |s| s.contains("About")));
 }
 
 #[test]
@@ -32,7 +32,7 @@ fn add_get() {
     assert_eq!(response.status(), Status::Ok);
     assert!(response
         .into_string()
-        .map_or(false, |s| s.contains(&"Add instance")));
+        .map_or(false, |s| s.contains("Add instance")));
 }
 
 #[test]
@@ -46,7 +46,7 @@ fn add_post_error() {
     assert_eq!(response.status(), Status::Ok);
     assert!(response
         .into_string()
-        .map_or(false, |s| s.contains(&"Not a valid URL: privatebin.info")));
+        .map_or(false, |s| s.contains("Not a valid URL: privatebin.info")));
 
     let response = client
         .post("/add")
@@ -55,7 +55,7 @@ fn add_post_error() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     assert!(response.into_string().map_or(false, |s| s.contains(
-        &"Error adding URL privatebin.info, due to a failed scan within the last 5 minutes."
+        "Error adding URL privatebin.info, due to a failed scan within the last 5 minutes."
     )));
 
     sleep(Duration::from_secs(2));
@@ -67,7 +67,7 @@ fn add_post_error() {
     assert_eq!(response.status(), Status::Ok);
     assert!(response
         .into_string()
-        .map_or(false, |s| s.contains(&"Not a valid URL: privatebin.info")));
+        .map_or(false, |s| s.contains("Not a valid URL: privatebin.info")));
 }
 
 #[test]
@@ -80,7 +80,7 @@ fn add_post_success() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     assert!(response.into_string().map_or(false, |s| s
-        .contains(&"Successfully added URL: https:&#x2F;&#x2F;privatebin.net")));
+        .contains("Successfully added URL: https:&#x2F;&#x2F;privatebin.net")));
 }
 
 #[test]
@@ -90,7 +90,7 @@ fn check_get() {
     assert_eq!(response.status(), Status::Ok);
     assert!(response
         .into_string()
-        .map_or(false, |s| s.contains(&"Check instance")));
+        .map_or(false, |s| s.contains("Check instance")));
 }
 
 #[test]
@@ -104,7 +104,7 @@ fn check_post_error() {
     assert_eq!(response.status(), Status::Ok);
     assert!(response
         .into_string()
-        .map_or(false, |s| s.contains(&"Not a valid URL: privatebin.info")));
+        .map_or(false, |s| s.contains("Not a valid URL: privatebin.info")));
 
     let response = client
         .post("/check")
@@ -113,7 +113,7 @@ fn check_post_error() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     assert!(response.into_string().map_or(false, |s| s.contains(
-        &"Error scanning URL privatebin.info, due to a failed scan within the last 5 minutes."
+        "Error scanning URL privatebin.info, due to a failed scan within the last 5 minutes."
     )));
 
     sleep(Duration::from_secs(2));
@@ -125,7 +125,7 @@ fn check_post_error() {
     assert_eq!(response.status(), Status::Ok);
     assert!(response
         .into_string()
-        .map_or(false, |s| s.contains(&"Not a valid URL: privatebin.info")));
+        .map_or(false, |s| s.contains("Not a valid URL: privatebin.info")));
 }
 
 #[test]
@@ -138,7 +138,7 @@ fn check_post_success() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     assert!(response.into_string().map_or(false, |s| s
-        .contains(&"Results of checking https:&#x2F;&#x2F;privatebin.net")));
+        .contains("Results of checking https:&#x2F;&#x2F;privatebin.net")));
 }
 
 #[test]
