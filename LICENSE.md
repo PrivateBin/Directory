@@ -7,7 +7,7 @@ This document lists the licenses of the projects used in the instance directory.
 - [Apache License 2.0](#Apache-2.0) (39)
 - [MIT License](#MIT) (37)
 - [ISC License](#ISC) (8)
-- [BSD 3-Clause &quot;New&quot; or &quot;Revised&quot; License](#BSD-3-Clause) (4)
+- [BSD 3-Clause &quot;New&quot; or &quot;Revised&quot; License](#BSD-3-Clause) (3)
 - [GNU Affero General Public License v3.0](#AGPL-3.0) (1)
 - [Creative Commons Zero v1.0 Universal](#CC0-1.0) (1)
 - [Mozilla Public License 2.0](#MPL-2.0) (1)
@@ -21,7 +21,7 @@ This document lists the licenses of the projects used in the instance directory.
 
 #### Used by
 
-- [directory](https://crates.io/crates/directory) 0.10.1
+- [directory](https://crates.io/crates/directory) 0.10.2
 
 ```
 GNU AFFERO GENERAL PUBLIC LICENSE
@@ -266,7 +266,7 @@ You should also get your employer (if you work as a programmer) or school, if an
 #### Used by
 
 - [miniz_oxide](https://github.com/Frommi/miniz_oxide/tree/master/miniz_oxide) 0.7.1
-- [pin-project-lite](https://github.com/taiki-e/pin-project-lite) 0.2.10
+- [pin-project-lite](https://github.com/taiki-e/pin-project-lite) 0.2.12
 
 ```
 
@@ -2758,23 +2758,23 @@ limitations under the License.
 
 #### Used by
 
-- [async-trait](https://github.com/dtolnay/async-trait) 0.1.71
+- [async-trait](https://github.com/dtolnay/async-trait) 0.1.73
 - [figment](https://github.com/SergioBenitez/Figment) 0.10.10
-- [itoa](https://github.com/dtolnay/itoa) 1.0.8
+- [itoa](https://github.com/dtolnay/itoa) 1.0.9
 - [libc](https://github.com/rust-lang/libc) 0.2.147
-- [proc-macro2](https://github.com/dtolnay/proc-macro2) 1.0.64
+- [proc-macro2](https://github.com/dtolnay/proc-macro2) 1.0.66
 - [proc-macro2-diagnostics](https://github.com/SergioBenitez/proc-macro2-diagnostics) 0.10.1
-- [quote](https://github.com/dtolnay/quote) 1.0.29
-- [ref-cast](https://github.com/dtolnay/ref-cast) 1.0.18
-- [ref-cast-impl](https://github.com/dtolnay/ref-cast) 1.0.18
-- [rustversion](https://github.com/dtolnay/rustversion) 1.0.13
-- [ryu](https://github.com/dtolnay/ryu) 1.0.14
-- [serde](https://github.com/serde-rs/serde) 1.0.171
-- [serde_derive](https://github.com/serde-rs/serde) 1.0.171
-- [serde_json](https://github.com/serde-rs/json) 1.0.102
-- [syn](https://github.com/dtolnay/syn) 2.0.26
-- [thiserror](https://github.com/dtolnay/thiserror) 1.0.43
-- [thiserror-impl](https://github.com/dtolnay/thiserror) 1.0.43
+- [quote](https://github.com/dtolnay/quote) 1.0.32
+- [ref-cast](https://github.com/dtolnay/ref-cast) 1.0.19
+- [ref-cast-impl](https://github.com/dtolnay/ref-cast) 1.0.19
+- [rustversion](https://github.com/dtolnay/rustversion) 1.0.14
+- [ryu](https://github.com/dtolnay/ryu) 1.0.15
+- [serde](https://github.com/serde-rs/serde) 1.0.183
+- [serde_derive](https://github.com/serde-rs/serde) 1.0.183
+- [serde_json](https://github.com/serde-rs/json) 1.0.104
+- [syn](https://github.com/dtolnay/syn) 2.0.28
+- [thiserror](https://github.com/dtolnay/thiserror) 1.0.44
+- [thiserror-impl](https://github.com/dtolnay/thiserror) 1.0.44
 - [ubyte](https://github.com/SergioBenitez/ubyte) 0.10.3
 - [uncased](https://github.com/SergioBenitez/uncased) 0.9.9
 - [unicode-ident](https://github.com/dtolnay/unicode-ident) 1.0.11
@@ -3390,7 +3390,7 @@ limitations under the License.
 
 #### Used by
 
-- [yansi](https://github.com/SergioBenitez/yansi) 1.0.0-rc
+- [yansi](https://github.com/SergioBenitez/yansi) 1.0.0-rc.1
 
 ```
                               Apache License
@@ -4867,18 +4867,18 @@ limitations under the License.
 - [autocfg](https://github.com/cuviper/autocfg) 1.1.0
 - [backtrace](https://github.com/rust-lang/backtrace-rs) 0.3.68
 - [bitflags](https://github.com/bitflags/bitflags) 1.3.2
-- [bitflags](https://github.com/bitflags/bitflags) 2.3.3
+- [bitflags](https://github.com/bitflags/bitflags) 2.4.0
 - [bstr](https://github.com/BurntSushi/bstr) 1.6.0
 - [bumpalo](https://github.com/fitzgen/bumpalo) 3.13.0
-- [cc](https://github.com/rust-lang/cc-rs) 1.0.79
+- [cc](https://github.com/rust-lang/cc-rs) 1.0.82
 - [cfg-if](https://github.com/alexcrichton/cfg-if) 1.0.0
 - [core-foundation-sys](https://github.com/servo/core-foundation-rs) 0.8.4
 - [crossbeam-channel](https://github.com/crossbeam-rs/crossbeam) 0.5.8
 - [crossbeam-utils](https://github.com/crossbeam-rs/crossbeam) 0.8.16
-- [either](https://github.com/bluss/either) 1.8.1
+- [either](https://github.com/bluss/either) 1.9.0
 - [equivalent](https://github.com/cuviper/equivalent) 1.0.1
-- [fastrand](https://github.com/smol-rs/fastrand) 1.9.0
-- [filetime](https://github.com/alexcrichton/filetime) 0.2.21
+- [fastrand](https://github.com/smol-rs/fastrand) 2.0.0
+- [filetime](https://github.com/alexcrichton/filetime) 0.2.22
 - [fnv](https://github.com/servo/rust-fnv) 1.0.7
 - [form_urlencoded](https://github.com/servo/rust-url) 1.2.0
 - [gimli](https://github.com/gimli-rs/gimli) 0.27.3
@@ -4892,37 +4892,34 @@ limitations under the License.
 - [indexmap](https://github.com/bluss/indexmap) 1.9.3
 - [indexmap](https://github.com/bluss/indexmap) 2.0.0
 - [inlinable_string](https://github.com/fitzgen/inlinable_string) 0.1.15
-- [io-lifetimes](https://github.com/sunfishcode/io-lifetimes) 1.0.11
 - [js-sys](https://github.com/rustwasm/wasm-bindgen/tree/master/crates/js-sys) 0.3.64
 - [lazy_static](https://github.com/rust-lang-nursery/lazy-static.rs) 1.4.0
 - [libm](https://github.com/rust-lang/libm) 0.2.7
-- [linux-raw-sys](https://github.com/sunfishcode/linux-raw-sys) 0.3.8
-- [linux-raw-sys](https://github.com/sunfishcode/linux-raw-sys) 0.4.3
+- [linux-raw-sys](https://github.com/sunfishcode/linux-raw-sys) 0.4.5
 - [lock_api](https://github.com/Amanieu/parking_lot) 0.4.10
 - [log](https://github.com/rust-lang/log) 0.4.19
 - [mime](https://github.com/hyperium/mime) 0.3.17
-- [num-traits](https://github.com/rust-num/num-traits) 0.2.15
+- [num-traits](https://github.com/rust-num/num-traits) 0.2.16
 - [num_cpus](https://github.com/seanmonstar/num_cpus) 1.16.0
 - [object](https://github.com/gimli-rs/object) 0.31.1
 - [once_cell](https://github.com/matklad/once_cell) 1.18.0
 - [parking_lot](https://github.com/Amanieu/parking_lot) 0.12.1
 - [parking_lot_core](https://github.com/Amanieu/parking_lot) 0.9.8
 - [percent-encoding](https://github.com/servo/rust-url/) 2.3.0
-- [pest](https://github.com/pest-parser/pest) 2.7.0
-- [pest_derive](https://github.com/pest-parser/pest) 2.7.0
-- [pest_generator](https://github.com/pest-parser/pest) 2.7.0
-- [pest_meta](https://github.com/pest-parser/pest) 2.7.0
+- [pest](https://github.com/pest-parser/pest) 2.7.2
+- [pest_derive](https://github.com/pest-parser/pest) 2.7.2
+- [pest_generator](https://github.com/pest-parser/pest) 2.7.2
+- [pest_meta](https://github.com/pest-parser/pest) 2.7.2
 - [pkg-config](https://github.com/rust-lang/pkg-config-rs) 0.3.27
-- [regex](https://github.com/rust-lang/regex) 1.9.1
-- [regex-automata](https://github.com/rust-lang/regex/tree/master/regex-automata) 0.3.3
+- [regex](https://github.com/rust-lang/regex) 1.9.3
+- [regex-automata](https://github.com/rust-lang/regex/tree/master/regex-automata) 0.3.6
 - [regex-syntax](https://github.com/rust-lang/regex) 0.6.29
 - [regex-syntax](https://github.com/rust-lang/regex/tree/master/regex-syntax) 0.7.4
 - [rustc-demangle](https://github.com/alexcrichton/rustc-demangle) 0.1.23
-- [rustix](https://github.com/bytecodealliance/rustix) 0.37.23
-- [rustix](https://github.com/bytecodealliance/rustix) 0.38.4
-- [rustls](https://github.com/rustls/rustls) 0.21.5
+- [rustix](https://github.com/bytecodealliance/rustix) 0.38.8
+- [rustls](https://github.com/rustls/rustls) 0.21.6
 - [scoped-tls](https://github.com/alexcrichton/scoped-tls) 1.0.1
-- [scopeguard](https://github.com/bluss/scopeguard) 1.1.0
+- [scopeguard](https://github.com/bluss/scopeguard) 1.2.0
 - [sct](https://github.com/ctz/sct.rs) 0.7.0
 - [serde_spanned](https://github.com/toml-rs/toml) 0.6.3
 - [signal-hook-registry](https://github.com/vorner/signal-hook) 1.4.1
@@ -4932,7 +4929,7 @@ limitations under the License.
 - [socket2](https://github.com/rust-lang/socket2) 0.5.3
 - [state](https://github.com/SergioBenitez/state) 0.5.3
 - [state](https://github.com/SergioBenitez/state) 0.5.3
-- [tempfile](https://github.com/Stebalien/tempfile) 3.6.0
+- [tempfile](https://github.com/Stebalien/tempfile) 3.7.1
 - [thread_local](https://github.com/Amanieu/thread_local-rs) 1.1.4
 - [toml](https://github.com/toml-rs/toml) 0.7.6
 - [toml_datetime](https://github.com/toml-rs/toml) 0.6.3
@@ -7491,56 +7488,35 @@ limitations under the License.
 
 #### Used by
 
-- [instant](https://github.com/sebcrozet/instant) 0.1.12
+- [deunicode](https://github.com/kornelski/deunicode/) 0.4.4
 
 ```
-Copyright (c) 2019, Sébastien Crozet
-All rights reserved.
+Copyright (c) 2015, Amit Chowdhury
+Copyright (c) 2018-2021, Kornel Lesinski
+Copyright (c) 2020-2021, Hunter WB &lt;hunterwb.com&gt;
 
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
 
-1. Redistributions of source code must retain the above copyright notice, this
+ * Redistributions of source code must retain the above copyright notice, this
    list of conditions and the following disclaimer.
-
-2. Redistributions in binary form must reproduce the above copyright notice,
+ * Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
    and/or other materials provided with the distribution.
-
-3. Neither the name of the author nor the names of its contributors may be used
-   to endorse or promote products derived from this software without specific
-   prior written permission.
+ * The names of this software&#x27;s contributors may not be used to endorse or
+   promote products derived from this software without specific prior written
+   permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot; AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-```
-### <a id="BSD-3-Clause"></a>BSD 3-Clause &quot;New&quot; or &quot;Revised&quot; License
-
-#### Used by
-
-- [deunicode](https://github.com/kornelski/deunicode/) 0.4.3
-
-```
-Copyright (c) &lt;year&gt; &lt;owner&gt;. 
-
-Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
-
-1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-
-2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
-
-3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ```
 ### <a id="BSD-3-Clause"></a>BSD 3-Clause &quot;New&quot; or &quot;Revised&quot; License
@@ -7777,7 +7753,7 @@ express Statement of Purpose.
 
 #### Used by
 
-- [rustls-webpki](https://github.com/rustls/webpki) 0.101.1
+- [rustls-webpki](https://github.com/rustls/webpki) 0.101.3
 
 ```
 // Copyright 2021 Brian Smith.
@@ -8005,8 +7981,8 @@ SOFTWARE.
 
 #### Used by
 
-- [kqueue](https://gitlab.com/rust-kqueue/rust-kqueue) 1.0.7
-- [kqueue-sys](https://gitlab.com/worr/rust-kqueue-sys) 1.0.3
+- [kqueue](https://gitlab.com/rust-kqueue/rust-kqueue) 1.0.8
+- [kqueue-sys](https://gitlab.com/rust-kqueue/rust-kqueue-sys) 1.0.4
 
 ```
 Copyright (c) 2016 William Orr &lt;will@worrbase.com&gt;
@@ -8091,7 +8067,6 @@ SOFTWARE.
 
 #### Used by
 
-- [redox_syscall](https://gitlab.redox-os.org/redox-os/syscall) 0.2.16
 - [redox_syscall](https://gitlab.redox-os.org/redox-os/syscall) 0.3.5
 
 ```
@@ -8508,7 +8483,7 @@ DEALINGS IN THE SOFTWARE.
 
 #### Used by
 
-- [tokio](https://github.com/tokio-rs/tokio) 1.29.1
+- [tokio](https://github.com/tokio-rs/tokio) 1.30.0
 - [tokio-stream](https://github.com/tokio-rs/tokio) 0.1.14
 - [tokio-util](https://github.com/tokio-rs/tokio) 0.7.8
 
@@ -8773,7 +8748,7 @@ DEALINGS IN THE SOFTWARE.
 
 #### Used by
 
-- [winnow](https://github.com/winnow-rs/winnow) 0.5.0
+- [winnow](https://github.com/winnow-rs/winnow) 0.5.10
 
 ```
 Permission is hereby granted, free of charge, to any person obtaining
@@ -8891,8 +8866,8 @@ SOFTWARE.
 
 #### Used by
 
-- [aho-corasick](https://github.com/BurntSushi/aho-corasick) 1.0.2
-- [globset](https://github.com/BurntSushi/ripgrep/tree/master/crates/globset) 0.4.11
+- [aho-corasick](https://github.com/BurntSushi/aho-corasick) 1.0.3
+- [globset](https://github.com/BurntSushi/ripgrep/tree/master/crates/globset) 0.4.13
 - [ignore](https://github.com/BurntSushi/ripgrep/tree/master/crates/ignore) 0.4.20
 - [memchr](https://github.com/BurntSushi/memchr) 2.5.0
 - [regex-automata](https://github.com/BurntSushi/regex-automata) 0.1.10
@@ -9048,7 +9023,7 @@ SOFTWARE.
 
 #### Used by
 
-- [aho-corasick](https://github.com/BurntSushi/aho-corasick) 1.0.2
+- [aho-corasick](https://github.com/BurntSushi/aho-corasick) 1.0.3
 - [ignore](https://github.com/BurntSushi/ripgrep/tree/master/crates/ignore) 0.4.20
 - [memchr](https://github.com/BurntSushi/memchr) 2.5.0
 - [regex-automata](https://github.com/BurntSushi/regex-automata) 0.1.10
@@ -9171,50 +9146,26 @@ one at http://mozilla.org/MPL/2.0/.
 ```
 UNICODE, INC. LICENSE AGREEMENT - DATA FILES AND SOFTWARE
 
-See Terms of Use &lt;https://www.unicode.org/copyright.html&gt;
-for definitions of Unicode Inc.’s Data Files and Software.
+Unicode Data Files include all data files under the directories http://www.unicode.org/Public/, http://www.unicode.org/reports/, http://www.unicode.org/cldr/data/, http://source.icu-project.org/repos/icu/, and http://www.unicode.org/utility/trac/browser/.
 
-NOTICE TO USER: Carefully read the following legal agreement.
-BY DOWNLOADING, INSTALLING, COPYING OR OTHERWISE USING UNICODE INC.&#x27;S
-DATA FILES (&quot;DATA FILES&quot;), AND/OR SOFTWARE (&quot;SOFTWARE&quot;),
-YOU UNEQUIVOCALLY ACCEPT, AND AGREE TO BE BOUND BY, ALL OF THE
-TERMS AND CONDITIONS OF THIS AGREEMENT.
-IF YOU DO NOT AGREE, DO NOT DOWNLOAD, INSTALL, COPY, DISTRIBUTE OR USE
-THE DATA FILES OR SOFTWARE.
+Unicode Data Files do not include PDF online code charts under the directory http://www.unicode.org/Public/.
+
+Software includes any source code published in the Unicode Standard or under the directories http://www.unicode.org/Public/, http://www.unicode.org/reports/, http://www.unicode.org/cldr/data/, http://source.icu-project.org/repos/icu/, and http://www.unicode.org/utility/trac/browser/.
+
+NOTICE TO USER: Carefully read the following legal agreement. BY DOWNLOADING, INSTALLING, COPYING OR OTHERWISE USING UNICODE INC.&#x27;S DATA FILES (&quot;DATA FILES&quot;), AND/OR SOFTWARE (&quot;SOFTWARE&quot;), YOU UNEQUIVOCALLY ACCEPT, AND AGREE TO BE BOUND BY, ALL OF THE TERMS AND CONDITIONS OF THIS AGREEMENT. IF YOU DO NOT AGREE, DO NOT DOWNLOAD, INSTALL, COPY, DISTRIBUTE OR USE THE DATA FILES OR SOFTWARE.
 
 COPYRIGHT AND PERMISSION NOTICE
 
-Copyright © 1991-2022 Unicode, Inc. All rights reserved.
-Distributed under the Terms of Use in https://www.unicode.org/copyright.html.
+Copyright © 1991-2016 Unicode, Inc. All rights reserved. Distributed under the Terms of Use in http://www.unicode.org/copyright.html.
 
-Permission is hereby granted, free of charge, to any person obtaining
-a copy of the Unicode data files and any associated documentation
-(the &quot;Data Files&quot;) or Unicode software and any associated documentation
-(the &quot;Software&quot;) to deal in the Data Files or Software
-without restriction, including without limitation the rights to use,
-copy, modify, merge, publish, distribute, and/or sell copies of
-the Data Files or Software, and to permit persons to whom the Data Files
-or Software are furnished to do so, provided that either
-(a) this copyright and permission notice appear with all copies
-of the Data Files or Software, or
-(b) this copyright and permission notice appear in associated
-Documentation.
+Permission is hereby granted, free of charge, to any person obtaining a copy of the Unicode data files and any associated documentation (the &quot;Data Files&quot;) or Unicode software and any associated documentation (the &quot;Software&quot;) to deal in the Data Files or Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, and/or sell copies of the Data Files or Software, and to permit persons to whom the Data Files or Software are furnished to do so, provided that either
 
-THE DATA FILES AND SOFTWARE ARE PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
-WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-NONINFRINGEMENT OF THIRD PARTY RIGHTS.
-IN NO EVENT SHALL THE COPYRIGHT HOLDER OR HOLDERS INCLUDED IN THIS
-NOTICE BE LIABLE FOR ANY CLAIM, OR ANY SPECIAL INDIRECT OR CONSEQUENTIAL
-DAMAGES, OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,
-DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
-TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
-PERFORMANCE OF THE DATA FILES OR SOFTWARE.
+     (a) this copyright and permission notice appear with all copies of the Data Files or Software, or
+     (b) this copyright and permission notice appear in associated Documentation.
 
-Except as contained in this notice, the name of a copyright holder
-shall not be used in advertising or otherwise to promote the sale,
-use or other dealings in these Data Files or Software without prior
-written authorization of the copyright holder.
+THE DATA FILES AND SOFTWARE ARE PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT OF THIRD PARTY RIGHTS. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR HOLDERS INCLUDED IN THIS NOTICE BE LIABLE FOR ANY CLAIM, OR ANY SPECIAL INDIRECT OR CONSEQUENTIAL DAMAGES, OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THE DATA FILES OR SOFTWARE.
+
+Except as contained in this notice, the name of a copyright holder shall not be used in advertising or otherwise to promote the sale, use or other dealings in these Data Files or Software without prior written authorization of the copyright holder.
 
 ```
 
