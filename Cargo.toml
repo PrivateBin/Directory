@@ -1,6 +1,6 @@
 [package]
 name = "directory"
-version = "0.10.2"
+version = "0.10.3"
 authors = ["El RIDO <elrido@gmx.net>"]
 edition = "2021"
 license = "AGPL-3.0"
@@ -14,9 +14,9 @@ isocountry = "0.3.2"
 lazy_static = "1.4.0"
 maxminddb = "0.23.0"
 rand = "0.8.5"
-regex = "1.9.3"
+regex = "1.9.4"
 tokio = "1.32.0"
-url = "2.4.0"
+url = "2.4.1"
 
 [dependencies.diesel]
 version = "2.1.1"
