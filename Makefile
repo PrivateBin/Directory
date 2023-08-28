@@ -30,7 +30,7 @@ pack: ## Compresses the binary to reduce it's size, only intended for the releas
 
 license: ## Generates the LICENSE.md file
 	cargo about init
-	cargo about generate about.hbs > LICENSE.md
+	cargo about generate --fail about.hbs > LICENSE.md
 
 LICENSE.md: license
 

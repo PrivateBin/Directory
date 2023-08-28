@@ -7,11 +7,12 @@ accepted = [
     "ISC",
     "MIT",
     "MPL-2.0",
-    "NOASSERTION",
     "OpenSSL",
     "Unicode-DFS-2016",
     "Zlib"
 ]
+
+no-clearly-defined = true
 
 workarounds = [
     "ring"
