@@ -14,7 +14,7 @@ isocountry = "0.3.2"
 lazy_static = "1.4.0"
 maxminddb = "0.23.0"
 rand = "0.8.5"
-regex = "1.9.4"
+regex = "1.9.5"
 tokio = "1.32.0"
 url = "2.4.1"
 
