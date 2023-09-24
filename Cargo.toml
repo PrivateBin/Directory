@@ -1,6 +1,6 @@
 [package]
 name = "directory"
-version = "0.10.3"
+version = "0.10.4"
 authors = ["El RIDO <elrido@gmx.net>"]
 edition = "2021"
 license = "AGPL-3.0"
@@ -8,7 +8,6 @@ rust-version = "1.66"
 
 [dependencies]
 diesel_migrations = "2.1.0"
-dns-lookup = "2.0.3"
 futures = "0.3.28"
 isocountry = "0.3.2"
 lazy_static = "1.4.0"

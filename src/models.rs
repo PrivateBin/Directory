@@ -4,7 +4,6 @@ use super::schema::checks;
 use super::schema::instances;
 use super::schema::scans;
 use diesel::SqliteConnection;
-use dns_lookup::lookup_host;
 use hyper::body::{aggregate, to_bytes, Buf, HttpBody}; // Buf provides the reader() trait, HttpBody provides size_hint()
 use hyper::header::{CONTENT_SECURITY_POLICY, LOCATION};
 use hyper::{Body, Method, StatusCode};
@@ -13,7 +12,7 @@ use regex::Regex;
 use rocket::serde::{json, Deserialize, Serialize};
 use std::collections::HashMap;
 use std::env::var;
-use std::net::IpAddr;
+use std::net::{IpAddr, ToSocketAddrs}; // ToSocketAddrs provides the to_socket_addrs() trait
 use std::str::from_utf8;
 use std::sync::atomic::AtomicU64;
 use std::sync::RwLock;
@@ -210,11 +209,15 @@ impl PrivateBin {
         if let Ok(parsed_url) = Url::parse(url) {
             let ip: IpAddr;
             if let Some(host) = parsed_url.domain() {
-                let ips = lookup_host(host);
-                if ips.is_err() {
+                let sockets = (host, 0).to_socket_addrs();
+                if sockets.is_err() {
                     return Err(format!("Host or domain of URL {url} is not supported."));
                 }
-                ip = ips.unwrap()[0]
+                let socket = sockets.unwrap().next();
+                if socket.is_none() {
+                    return Err(format!("Host or domain of URL {url} is not supported."));
+                }
+                ip = socket.unwrap().ip();
             } else if let Some(host) = parsed_url.host_str() {
                 match host.parse() {
                     Ok(parsed_ip) => ip = parsed_ip,

@@ -349,11 +349,10 @@ dependencies = [
 
 [[package]]
 name = "directory"
-version = "0.10.3"
+version = "0.10.4"
 dependencies = [
  "diesel",
  "diesel_migrations",
- "dns-lookup",
  "futures",
  "hyper",
  "hyper-rustls",
@@ -367,18 +366,6 @@ dependencies = [
  "rocket_sync_db_pools",
  "tokio",
  "url",
-]
-
-[[package]]
-name = "dns-lookup"
-version = "2.0.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8d0fa3cd8dc96ada974e126a940d37d4079bbbe6a24aca15b1113c2f362441c5"
-dependencies = [
- "cfg-if",
- "libc",
- "socket2 0.5.3",
- "windows-sys 0.48.0",
 ]
 
 [[package]]
