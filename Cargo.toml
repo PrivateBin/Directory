@@ -26,7 +26,7 @@ version = "0.14.27"
 features = ["client"]
 
 [dependencies.hyper-rustls]
-version = "0.24.1"
+version = "0.24.2"
 default-features = false
 features = ["http1", "http2", "tls12", "webpki-tokio"]
 
