@@ -8,7 +8,7 @@ rust-version = "1.66"
 
 [dependencies]
 diesel_migrations = "2.1.0"
-futures = "0.3.28"
+futures = "0.3.29"
 isocountry = "0.3.2"
 lazy_static = "1.4.0"
 maxminddb = "0.23.0"
