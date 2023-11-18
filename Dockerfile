@@ -1,5 +1,5 @@
 FROM scratch
-ARG RELEASE=0.10.4
+ARG RELEASE=0.10.5
 LABEL org.opencontainers.image.authors=support@privatebin.org \
       org.opencontainers.image.vendor=PrivateBin \
       org.opencontainers.image.documentation=https://github.com/PrivateBin/Directory/blob/master/README.md \

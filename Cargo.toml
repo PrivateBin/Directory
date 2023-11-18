@@ -1,6 +1,6 @@
 [package]
 name = "directory"
-version = "0.10.4"
+version = "0.10.5"
 authors = ["El RIDO <elrido@gmx.net>"]
 edition = "2021"
 license = "AGPL-3.0"
@@ -31,15 +31,15 @@ default-features = false
 features = ["http1", "http2", "tls12", "webpki-tokio"]
 
 [dependencies.rocket]
-version = "0.5.0-rc.4"
+version = "0.5.0"
 features = ["json"]
 
 [dependencies.rocket_dyn_templates]
-version = "0.1.0-rc.4"
+version = "0.1.0"
 features = ["tera"]
 
 [dependencies.rocket_sync_db_pools]
-version = "0.1.0-rc.4"
+version = "0.1.0"
 features = ["diesel_sqlite_pool"]
 
 [profile.release]

@@ -1,5 +1,8 @@
 # Change Log
 
+# 0.10.5
+- bump libraries
+
 # 0.10.4
 - drop dns-lookup library in favor of stdlib usage
 

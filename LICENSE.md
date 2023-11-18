@@ -20,7 +20,7 @@ This document lists the licenses of the projects used in the instance directory.
 
 #### Used by
 
-- [directory](https://crates.io/crates/directory) 0.10.4
+- [directory](https://crates.io/crates/directory) 0.10.5
 
 ```
 GNU AFFERO GENERAL PUBLIC LICENSE
@@ -2129,7 +2129,7 @@ You should also get your employer (if you work as a programmer) or school, if an
 
 #### Used by
 
-- [diesel](https://github.com/diesel-rs/diesel) 2.1.3
+- [diesel](https://github.com/diesel-rs/diesel) 2.1.4
 - [diesel_derives](https://github.com/diesel-rs/diesel/tree/master/diesel_derives) 2.1.2
 - [diesel_migrations](https://crates.io/crates/diesel_migrations) 2.1.0
 - [diesel_table_macro_syntax](https://github.com/diesel-rs/diesel/tree/master/diesel_table_macro_syntax) 0.1.0
@@ -3806,7 +3806,7 @@ limitations under the License.
 
 #### Used by
 
-- [http](https://github.com/hyperium/http) 0.2.9
+- [http](https://github.com/hyperium/http) 0.2.11
 
 ```
                               Apache License
@@ -4864,7 +4864,7 @@ limitations under the License.
 - [backtrace](https://github.com/rust-lang/backtrace-rs) 0.3.69
 - [bitflags](https://github.com/bitflags/bitflags) 1.3.2
 - [bitflags](https://github.com/bitflags/bitflags) 2.4.1
-- [bstr](https://github.com/BurntSushi/bstr) 1.7.0
+- [bstr](https://github.com/BurntSushi/bstr) 1.8.0
 - [bumpalo](https://github.com/fitzgen/bumpalo) 3.14.0
 - [cc](https://github.com/rust-lang/cc-rs) 1.0.83
 - [cfg-if](https://github.com/alexcrichton/cfg-if) 1.0.0
@@ -4879,19 +4879,17 @@ limitations under the License.
 - [form_urlencoded](https://github.com/servo/rust-url) 1.2.0
 - [gimli](https://github.com/gimli-rs/gimli) 0.28.0
 - [glob](https://github.com/rust-lang/glob) 0.3.1
-- [hashbrown](https://github.com/rust-lang/hashbrown) 0.12.3
 - [hashbrown](https://github.com/rust-lang/hashbrown) 0.14.2
 - [hermit-abi](https://github.com/hermitcore/hermit-rs) 0.3.3
 - [httparse](https://github.com/seanmonstar/httparse) 1.8.0
 - [hyper-rustls](https://github.com/rustls/hyper-rustls) 0.24.2
 - [idna](https://github.com/servo/rust-url/) 0.4.0
-- [indexmap](https://github.com/bluss/indexmap) 1.9.3
 - [indexmap](https://github.com/bluss/indexmap) 2.1.0
 - [inlinable_string](https://github.com/fitzgen/inlinable_string) 0.1.15
 - [js-sys](https://github.com/rustwasm/wasm-bindgen/tree/master/crates/js-sys) 0.3.65
 - [lazy_static](https://github.com/rust-lang-nursery/lazy-static.rs) 1.4.0
 - [libm](https://github.com/rust-lang/libm) 0.2.8
-- [linux-raw-sys](https://github.com/sunfishcode/linux-raw-sys) 0.4.10
+- [linux-raw-sys](https://github.com/sunfishcode/linux-raw-sys) 0.4.11
 - [lock_api](https://github.com/Amanieu/parking_lot) 0.4.11
 - [log](https://github.com/rust-lang/log) 0.4.20
 - [mime](https://github.com/hyperium/mime) 0.3.17
@@ -4912,15 +4910,15 @@ limitations under the License.
 - [regex-syntax](https://github.com/rust-lang/regex) 0.6.29
 - [regex-syntax](https://github.com/rust-lang/regex/tree/master/regex-syntax) 0.8.2
 - [rustc-demangle](https://github.com/alexcrichton/rustc-demangle) 0.1.23
-- [rustix](https://github.com/bytecodealliance/rustix) 0.38.21
-- [rustls](https://github.com/rustls/rustls) 0.21.8
+- [rustix](https://github.com/bytecodealliance/rustix) 0.38.24
+- [rustls](https://github.com/rustls/rustls) 0.21.9
 - [scoped-tls](https://github.com/alexcrichton/scoped-tls) 1.0.1
 - [scopeguard](https://github.com/bluss/scopeguard) 1.2.0
 - [sct](https://github.com/rustls/sct.rs) 0.7.1
 - [serde_spanned](https://github.com/toml-rs/toml) 0.6.3
 - [signal-hook-registry](https://github.com/vorner/signal-hook) 1.4.1
 - [slug](https://github.com/Stebalien/slug-rs) 0.1.5
-- [smallvec](https://github.com/servo/rust-smallvec) 1.11.1
+- [smallvec](https://github.com/servo/rust-smallvec) 1.11.2
 - [socket2](https://github.com/rust-lang/socket2) 0.4.10
 - [socket2](https://github.com/rust-lang/socket2) 0.5.5
 - [state](https://github.com/SergioBenitez/state) 0.6.0
@@ -5743,7 +5741,7 @@ APPENDIX: How to apply the Apache License to your work.
 
 #### Used by
 
-- [getrandom](https://github.com/rust-random/getrandom) 0.2.10
+- [getrandom](https://github.com/rust-random/getrandom) 0.2.11
 - [rand_chacha](https://github.com/rust-random/rand) 0.3.1
 
 ```
@@ -6800,12 +6798,12 @@ limitations under the License.
 - [devise_core](https://github.com/SergioBenitez/Devise) 0.4.1
 - [pear](https://crates.io/crates/pear) 0.2.7
 - [pear_codegen](https://crates.io/crates/pear_codegen) 0.2.7
-- [rocket](https://github.com/SergioBenitez/Rocket) 0.5.0-rc.4
-- [rocket_codegen](https://github.com/SergioBenitez/Rocket) 0.5.0-rc.4
-- [rocket_dyn_templates](https://github.com/SergioBenitez/Rocket/tree/master/contrib/dyn_templates) 0.1.0-rc.4
-- [rocket_http](https://github.com/SergioBenitez/Rocket) 0.5.0-rc.4
-- [rocket_sync_db_pools](https://github.com/SergioBenitez/Rocket/tree/v0.5-rc/contrib/sync_db_pools) 0.1.0-rc.4
-- [rocket_sync_db_pools_codegen](https://github.com/SergioBenitez/Rocket/contrib/sync_db_pools) 0.1.0-rc.4
+- [rocket](https://github.com/SergioBenitez/Rocket) 0.5.0
+- [rocket_codegen](https://github.com/SergioBenitez/Rocket) 0.5.0
+- [rocket_dyn_templates](https://github.com/SergioBenitez/Rocket/tree/master/contrib/dyn_templates) 0.1.0
+- [rocket_http](https://github.com/SergioBenitez/Rocket) 0.5.0
+- [rocket_sync_db_pools](https://github.com/SergioBenitez/Rocket/tree/v0.5/contrib/sync_db_pools) 0.1.0
+- [rocket_sync_db_pools_codegen](https://github.com/SergioBenitez/Rocket/contrib/sync_db_pools) 0.1.0
 - [siphasher](https://github.com/jedisct1/rust-siphash) 0.3.11
 - [stable-pattern](https://github.com/SergioBenitez/stable-pattern) 0.1.0
 - [unic-char-property](https://github.com/open-i18n/rust-unic/) 0.9.0
@@ -7780,7 +7778,7 @@ THE SOFTWARE.
 
 #### Used by
 
-- [libsqlite3-sys](https://github.com/rusqlite/rusqlite) 0.26.0
+- [libsqlite3-sys](https://github.com/rusqlite/rusqlite) 0.27.0
 
 ```
 Copyright (c) 2014-2021 The rusqlite developers
@@ -7926,7 +7924,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #### Used by
 
-- [h2](https://github.com/hyperium/h2) 0.3.21
+- [h2](https://github.com/hyperium/h2) 0.3.22
 
 ```
 Copyright (c) 2017 h2 authors
@@ -8181,8 +8179,8 @@ DEALINGS IN THE SOFTWARE.
 - [tracing](https://github.com/tokio-rs/tracing) 0.1.40
 - [tracing-attributes](https://github.com/tokio-rs/tracing) 0.1.27
 - [tracing-core](https://github.com/tokio-rs/tracing) 0.1.32
-- [tracing-log](https://github.com/tokio-rs/tracing) 0.1.4
-- [tracing-subscriber](https://github.com/tokio-rs/tracing) 0.3.17
+- [tracing-log](https://github.com/tokio-rs/tracing) 0.2.0
+- [tracing-subscriber](https://github.com/tokio-rs/tracing) 0.3.18
 
 ```
 Copyright (c) 2019 Tokio Contributors
@@ -8250,7 +8248,7 @@ DEALINGS IN THE SOFTWARE.
 
 #### Used by
 
-- [tokio](https://github.com/tokio-rs/tokio) 1.33.0
+- [tokio](https://github.com/tokio-rs/tokio) 1.34.0
 - [tokio-stream](https://github.com/tokio-rs/tokio) 0.1.14
 - [tokio-util](https://github.com/tokio-rs/tokio) 0.7.10
 
@@ -8348,7 +8346,7 @@ SOFTWARE.
 
 - [async-stream](https://github.com/tokio-rs/async-stream) 0.3.5
 - [async-stream-impl](https://github.com/tokio-rs/async-stream) 0.3.5
-- [tokio-macros](https://github.com/tokio-rs/tokio) 2.1.0
+- [tokio-macros](https://github.com/tokio-rs/tokio) 2.2.0
 - [valuable](https://github.com/tokio-rs/valuable) 0.1.0
 
 ```
