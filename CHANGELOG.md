@@ -1,5 +1,8 @@
 # Change Log
 
+# 0.10.6
+- bump libraries
+
 # 0.10.5
 - bump libraries
 
