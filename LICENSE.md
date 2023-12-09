@@ -20,7 +20,7 @@ This document lists the licenses of the projects used in the instance directory.
 
 #### Used by
 
-- [directory](https://crates.io/crates/directory) 0.10.5
+- [directory](https://crates.io/crates/directory) 0.10.6
 
 ```
 GNU AFFERO GENERAL PUBLIC LICENSE
@@ -4876,14 +4876,14 @@ limitations under the License.
 - [fastrand](https://github.com/smol-rs/fastrand) 2.0.1
 - [filetime](https://github.com/alexcrichton/filetime) 0.2.22
 - [fnv](https://github.com/servo/rust-fnv) 1.0.7
-- [form_urlencoded](https://github.com/servo/rust-url) 1.2.0
+- [form_urlencoded](https://github.com/servo/rust-url) 1.2.1
 - [gimli](https://github.com/gimli-rs/gimli) 0.28.0
 - [glob](https://github.com/rust-lang/glob) 0.3.1
 - [hashbrown](https://github.com/rust-lang/hashbrown) 0.14.2
 - [hermit-abi](https://github.com/hermitcore/hermit-rs) 0.3.3
 - [httparse](https://github.com/seanmonstar/httparse) 1.8.0
 - [hyper-rustls](https://github.com/rustls/hyper-rustls) 0.24.2
-- [idna](https://github.com/servo/rust-url/) 0.4.0
+- [idna](https://github.com/servo/rust-url/) 0.5.0
 - [indexmap](https://github.com/bluss/indexmap) 2.1.0
 - [inlinable_string](https://github.com/fitzgen/inlinable_string) 0.1.15
 - [js-sys](https://github.com/rustwasm/wasm-bindgen/tree/master/crates/js-sys) 0.3.65
@@ -4899,7 +4899,7 @@ limitations under the License.
 - [once_cell](https://github.com/matklad/once_cell) 1.18.0
 - [parking_lot](https://github.com/Amanieu/parking_lot) 0.12.1
 - [parking_lot_core](https://github.com/Amanieu/parking_lot) 0.9.9
-- [percent-encoding](https://github.com/servo/rust-url/) 2.3.0
+- [percent-encoding](https://github.com/servo/rust-url/) 2.3.1
 - [pest](https://github.com/pest-parser/pest) 2.7.5
 - [pest_derive](https://github.com/pest-parser/pest) 2.7.5
 - [pest_generator](https://github.com/pest-parser/pest) 2.7.5
@@ -4929,7 +4929,7 @@ limitations under the License.
 - [unicode-bidi](https://github.com/servo/unicode-bidi) 0.3.13
 - [unicode-normalization](https://github.com/unicode-rs/unicode-normalization) 0.1.22
 - [unicode-xid](https://github.com/unicode-rs/unicode-xid) 0.2.4
-- [url](https://github.com/servo/rust-url) 2.4.1
+- [url](https://github.com/servo/rust-url) 2.5.0
 - [version_check](https://github.com/SergioBenitez/version_check) 0.9.4
 - [wasi](https://github.com/bytecodealliance/wasi) 0.11.0+wasi-snapshot-preview1
 - [wasm-bindgen](https://github.com/rustwasm/wasm-bindgen) 0.2.88
@@ -8248,7 +8248,7 @@ DEALINGS IN THE SOFTWARE.
 
 #### Used by
 
-- [tokio](https://github.com/tokio-rs/tokio) 1.34.0
+- [tokio](https://github.com/tokio-rs/tokio) 1.35.0
 - [tokio-stream](https://github.com/tokio-rs/tokio) 0.1.14
 - [tokio-util](https://github.com/tokio-rs/tokio) 0.7.10
 
