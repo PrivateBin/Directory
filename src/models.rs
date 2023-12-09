@@ -479,6 +479,8 @@ async fn test_zerobin() {
     assert_eq!(privatebin.instance.country_id, "CH");
 }
 
+/* disabled test, instance no longer exists and I couldn't find another one configured like this:
+$ curl --header "Accept: application/json" "https://privatebin.info/directory/api?https_redirect=true&https=true&top=100" | jq -r .[].url | sed 's#https://#http://#' | xargs curl -sv -o/dev/null 2>&1 | grep "Failed to connect"
 #[tokio::test]
 async fn test_no_http() {
     let url = "https://pasta.lysergic.dev".to_string();
@@ -486,7 +488,7 @@ async fn test_no_http() {
     assert_eq!(privatebin.instance.url, url);
     assert!(privatebin.instance.https);
     assert!(privatebin.instance.https_redirect);
-}
+} */
 
 #[tokio::test]
 async fn test_idn() {
