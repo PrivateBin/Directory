@@ -26,9 +26,9 @@ version = "0.14.27"
 features = ["client"]
 
 [dependencies.hyper-rustls]
-version = "0.24.2"
+version = "0.25.0"
 default-features = false
-features = ["http1", "http2", "tls12", "webpki-tokio"]
+features = ["http1", "http2", "tls12", "ring", "webpki-tokio"]
 
 [dependencies.rocket]
 version = "0.5.0"
