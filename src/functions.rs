@@ -11,6 +11,7 @@ use rocket::fs::FileServer;
 use rocket_dyn_templates::tera::{to_value, try_get_value, Result, Value};
 use std::collections::HashMap;
 use std::sync::atomic::AtomicU64;
+use std::sync::OnceLock;
 use std::sync::RwLock;
 
 // 1F1E6 is the unicode code point for the "REGIONAL INDICATOR SYMBOL
@@ -20,10 +21,7 @@ const REGIONAL_INDICATOR_OFFSET: u32 = 0x1F1E6 - 0x41;
 const CACHE_TIMEOUT: u64 = 300; // 5 minutes
 #[cfg(test)]
 const CACHE_TIMEOUT: u64 = 1; // 1 second, for unit tests
-
-lazy_static! {
-    static ref SLASHES_EXP: Regex = Regex::new(r"/{2,}").unwrap();
-}
+static SLASHES_EXP: OnceLock<Regex> = OnceLock::new();
 
 pub fn get_epoch() -> u64 {
     use std::time::SystemTime;
@@ -146,7 +144,9 @@ pub fn strip_url(url: String) -> String {
     // - https://example.com// -> https://example.com
     // - but https://example.com/path/ remains unchanged
     let (schema, uri) = check_url.split_at(7);
-    let cleaned_uri = SLASHES_EXP.replace_all(uri, "/");
+    let cleaned_uri = SLASHES_EXP
+        .get_or_init(|| Regex::new(r"/{2,}").unwrap())
+        .replace_all(uri, "/");
     check_url = format!("{schema}{cleaned_uri}");
     if check_url.matches('/').count() == 3 {
         check_url = check_url.trim_end_matches('/').into();
