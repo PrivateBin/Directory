@@ -20,7 +20,7 @@ This document lists the licenses of the projects used in the instance directory.
 
 #### Used by
 
-- [directory](https://crates.io/crates/directory) 0.10.6
+- [directory](https://crates.io/crates/directory) 0.10.7
 
 ```
 GNU AFFERO GENERAL PUBLIC LICENSE
@@ -1926,7 +1926,7 @@ You should also get your employer (if you work as a programmer) or school, if an
 
 #### Used by
 
-- [ipnetwork](https://github.com/achanda/ipnetwork) 0.18.0
+- [ipnetwork](https://github.com/achanda/ipnetwork) 0.20.0
 - [winapi](https://github.com/retep998/winapi-rs) 0.3.9
 
 ```
@@ -8170,7 +8170,7 @@ THIS SOFTWARE.
 
 #### Used by
 
-- [maxminddb](https://github.com/oschwald/maxminddb-rust) 0.23.0
+- [maxminddb](https://github.com/oschwald/maxminddb-rust) 0.24.0
 
 ```
 ISC License
