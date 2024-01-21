@@ -1,4 +1,4 @@
-FROM rust:1.66.1-alpine3.17
+FROM rust:1.70-alpine3.18
 ARG RELEASE=0.10.6
 RUN apk --no-cache update && \
     apk add --no-cache \

@@ -4,9 +4,10 @@ use super::schema::checks;
 use super::schema::instances;
 use super::schema::scans;
 use diesel::SqliteConnection;
-use hyper::body::{aggregate, to_bytes, Buf, HttpBody}; // Buf provides the reader() trait, HttpBody provides size_hint()
+use http_body_util::BodyExt; // BodyExt provides the Iterator trait
+use hyper::body::{Body, Buf, Bytes}; // Body provides the size_hint() trait, Buf provides the reader() trait
 use hyper::header::{CONTENT_SECURITY_POLICY, LOCATION};
-use hyper::{Body, Method, StatusCode};
+use hyper::{Method, StatusCode};
 use maxminddb::geoip2::Country;
 use regex::Regex;
 use rocket::serde::{json, Deserialize, Serialize};
@@ -15,6 +16,7 @@ use std::env::var;
 use std::net::{IpAddr, ToSocketAddrs}; // ToSocketAddrs provides the to_socket_addrs() trait
 use std::str::from_utf8;
 use std::sync::atomic::AtomicU64;
+use std::sync::OnceLock;
 use std::sync::RwLock;
 use url::Url;
 
@@ -28,11 +30,7 @@ const OBSERVATORY_API: &str = "https://http-observatory.security.mozilla.org/api
 const OBSERVATORY_MAX_CONTENT_LENGTH: u64 = 10240;
 const MAX_LINE_COUNT: u16 = 1024;
 pub const TITLE: &str = "Instance Directory";
-
-lazy_static! {
-    static ref VERSION_EXP: Regex =
-        Regex::new(r"js/(privatebin|zerobin).js\?(Alpha%20)?(\d+\.\d+\.*\d*)").unwrap();
-}
+static VERSION_EXP: OnceLock<Regex> = OnceLock::new();
 
 #[derive(Queryable)]
 pub struct Check {
@@ -298,8 +296,7 @@ impl PrivateBin {
     // check version of privatebin / zerobin JS library, attachment support & CSP header
     async fn check_properties(url: &str) -> Result<(String, bool, bool), String> {
         let mut csp_header = false;
-        let result = request(url, Method::GET, &CLOSE, Body::empty()).await;
-        let res = result?;
+        let res = request(url, Method::GET, &CLOSE, Bytes::new()).await?;
         let status = res.status();
         if status != StatusCode::OK {
             return Err(format!("Web server responded with status code {status}."));
@@ -316,12 +313,12 @@ impl PrivateBin {
 
         let mut version = String::new();
         let mut attachments = false;
-        let body = match aggregate(res).await {
+        let body = match res.collect().await {
             Ok(body) => body,
             Err(_) => return Err("Error reading the web server response.".to_owned()),
         };
         let reader = LineReader {
-            reader: body.reader(),
+            reader: body.aggregate().reader(),
             line_count: 0,
         };
         for line in reader {
@@ -338,7 +335,13 @@ impl PrivateBin {
                 }
             }
             if version.is_empty() {
-                if let Some(matches) = VERSION_EXP.captures(&line_str) {
+                if let Some(matches) = VERSION_EXP
+                    .get_or_init(|| {
+                        Regex::new(r"js/(privatebin|zerobin).js\?(Alpha%20)?(\d+\.\d+\.*\d*)")
+                            .unwrap()
+                    })
+                    .captures(&line_str)
+                {
                     version = matches[3].into();
                 }
             }
@@ -360,7 +363,7 @@ impl PrivateBin {
                         if response_content_length >= OBSERVATORY_MAX_CONTENT_LENGTH {
                             Default::default()
                         }
-                        let body_bytes = to_bytes(res.into_body()).await.unwrap();
+                        let body_bytes = res.collect().await.unwrap().aggregate();
                         let api_response = json::from_slice::<ObservatoryScan>(body_bytes.chunk());
                         if let Ok(api_response) = api_response {
                             if "FINISHED" == api_response.state {
@@ -372,7 +375,7 @@ impl PrivateBin {
                             &observatory_url,
                             Method::POST,
                             &KEEPALIVE,
-                            Body::from("hidden=true"),
+                            Bytes::from_static(b"hidden=true"),
                         )
                         .await;
                     }
@@ -392,12 +395,12 @@ impl PrivateBin {
         if let Ok(res) = request_get(&robots_url).await {
             if res.status() == StatusCode::OK {
                 let mut rule_for_us = false;
-                let body = match aggregate(res).await {
+                let body = match res.collect().await {
                     Ok(body) => body,
                     Err(_) => return Ok(true),
                 };
                 let reader = LineReader {
-                    reader: body.reader(),
+                    reader: body.aggregate().reader(),
                     line_count: 0,
                 };
                 for line in reader {
