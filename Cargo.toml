@@ -23,7 +23,7 @@ version = "2.1.4"
 features = ["sqlite"]
 
 [dependencies.hyper]
-version = "1.1.0"
+version = "1.2.0"
 features = ["client"]
 
 [dependencies.hyper-rustls]
