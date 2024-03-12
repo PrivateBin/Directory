@@ -4,6 +4,15 @@ use super::schema::checks;
 use super::schema::instances;
 use super::schema::scans;
 use diesel::SqliteConnection;
+use diesel::{
+    backend::Backend,
+    deserialize::{self, FromSql},
+    dsl::AsExprOf,
+    expression::{AsExpression},
+    serialize::{self, Output, ToSql},
+    sql_types::*,
+    *,
+};
 use http_body_util::BodyExt; // BodyExt provides the Iterator trait
 use hyper::body::{Body, Buf, Bytes}; // Body provides the size_hint() trait, Buf provides the reader() trait
 use hyper::header::{CONTENT_SECURITY_POLICY, LOCATION};
@@ -69,6 +78,174 @@ pub struct Instance {
 }
 
 impl Instance {
+    // check country via geo IP database lookup
+    pub async fn check_country(url: &str) -> Result<String, String> {
+        let mut country_code = "AQ".into();
+        if let Ok(parsed_url) = Url::parse(url) {
+            let ip: IpAddr;
+            if let Some(host) = parsed_url.domain() {
+                let sockets = (host, 0).to_socket_addrs();
+                if sockets.is_err() {
+                    return Err(format!("Host or domain of URL {url} is not supported."));
+                }
+                let socket = sockets.unwrap().next();
+                if socket.is_none() {
+                    return Err(format!("Host or domain of URL {url} is not supported."));
+                }
+                ip = socket.unwrap().ip();
+            } else if let Some(host) = parsed_url.host_str() {
+                match host.parse() {
+                    Ok(parsed_ip) => ip = parsed_ip,
+                    Err(_) => return Ok(country_code),
+                }
+            } else {
+                return Ok(country_code);
+            }
+
+            let geoip_mmdb =
+                var("GEOIP_MMDB").expect("environment variable GEOIP_MMDB needs to be set");
+            let opener = maxminddb::Reader::open_readfile(&geoip_mmdb);
+            if opener.is_err() {
+                return Err(
+                    format!(
+                        "Error opening geo IP database {geoip_mmdb} (defined in environment variable GEOIP_MMDB)."
+                    )
+                );
+            }
+            let reader = opener.unwrap();
+            let country: Country = reader.lookup(ip).unwrap();
+            country_code = country.country.unwrap().iso_code.unwrap().into();
+        }
+        Ok(country_code)
+    }
+
+    // check for HTTP to HTTPS redirect
+    pub async fn check_http(url: &str) -> Result<(bool, bool, String), String> {
+        let mut https = false;
+        let mut https_redirect = false;
+        let mut http_url = url.to_string();
+        let mut resulting_url = url.into();
+
+        if url.starts_with("https://") {
+            https = true;
+            http_url.replace_range(..5, "http");
+        }
+        match request_head(&http_url).await {
+            Ok(res) => {
+                let redirection_codes = [
+                    StatusCode::MULTIPLE_CHOICES,
+                    StatusCode::MOVED_PERMANENTLY,
+                    StatusCode::FOUND,
+                    StatusCode::SEE_OTHER,
+                    StatusCode::NOT_MODIFIED,
+                    StatusCode::TEMPORARY_REDIRECT,
+                    StatusCode::PERMANENT_REDIRECT,
+                ];
+                if redirection_codes.contains(&res.status()) && res.headers().contains_key(LOCATION)
+                {
+                    // check Location header
+                    if let Ok(location) = res.headers()[LOCATION].to_str() {
+                        if location.starts_with("https://") {
+                            https_redirect = true;
+                        }
+                        if !https && https_redirect {
+                            // if the given URL was HTTP, but we got redirected to https,
+                            // check & store the HTTPS URL instead
+                            resulting_url = strip_url(location.into());
+                            https = true;
+                        }
+                    }
+                }
+            }
+            Err(message) => {
+                // only emit an error if this server is reported as HTTP,
+                // HTTPS-only webservers, though uncommon, do enforce HTTPS
+                if url.starts_with("http://") {
+                    return Err(message);
+                } else {
+                    https_redirect = true;
+                }
+            }
+        }
+        Ok((https, https_redirect, resulting_url))
+    }
+
+    // check rating at mozilla observatory
+    pub async fn check_rating_mozilla_observatory(url: &str) -> ScanNew {
+        if let Ok(parsed_url) = Url::parse(url) {
+            if let Some(host) = parsed_url.host_str() {
+                let observatory_url = format!("{OBSERVATORY_API}{host}");
+                if let Ok(res) = request_get(&observatory_url).await {
+                    if res.status() == StatusCode::OK {
+                        let response_content_length = match res.body().size_hint().upper() {
+                            Some(length) => length,
+                            None => OBSERVATORY_MAX_CONTENT_LENGTH + 1, // protect from malicious response
+                        };
+                        if response_content_length >= OBSERVATORY_MAX_CONTENT_LENGTH {
+                            Default::default()
+                        }
+                        let body_bytes = res.collect().await.unwrap().aggregate();
+                        let api_response = json::from_slice::<ObservatoryScan>(body_bytes.chunk());
+                        if let Ok(api_response) = api_response {
+                            if "FINISHED" == api_response.state {
+                                return ScanNew::new("mozilla_observatory", api_response.grade, 0);
+                            }
+                        }
+                        // initiate a rescan
+                        let _ = request(
+                            &observatory_url,
+                            Method::POST,
+                            &KEEPALIVE,
+                            Bytes::from_static(b"hidden=true"),
+                        )
+                        .await;
+                    }
+                }
+            }
+        }
+        Default::default()
+    }
+
+    // check robots.txt, if one exists, and bail if server doesn't want us to index the instance
+    pub async fn check_robots(url: &str) -> Result<bool, String> {
+        let robots_url = if url.ends_with('/') {
+            format!("{url}robots.txt")
+        } else {
+            format!("{url}/robots.txt")
+        };
+        if let Ok(res) = request_get(&robots_url).await {
+            if res.status() == StatusCode::OK {
+                let mut rule_for_us = false;
+                let body = match res.collect().await {
+                    Ok(body) => body,
+                    Err(_) => return Ok(true),
+                };
+                let reader = LineReader {
+                    reader: body.aggregate().reader(),
+                    line_count: 0,
+                };
+                for line in reader {
+                    let line_str = match line {
+                        Ok(string) => string,
+                        _ => break,
+                    };
+
+                    if rule_for_us {
+                        if line_str.starts_with("Disallow: /") {
+                            return Err(format!(
+                                "Web server on URL {url} doesn't want to get added to the directory."
+                            ));
+                        }
+                        break;
+                    } else if line_str.starts_with("User-agent: PrivateBinDirectoryBot") {
+                        rule_for_us = true;
+                    }
+                }
+            }
+        }
+        Ok(true)
+    }
+
     pub async fn check_up(&self) -> bool {
         match request_head(&self.url).await {
             Ok(res) => res.status() == StatusCode::OK,
@@ -97,6 +274,47 @@ pub struct InstanceNew {
     pub country_id: String,
     pub attachments: bool,
     pub csp_header: bool,
+    pub variant: InstanceVariant,
+}
+
+// sorted alphabetically for readability, values set by historical order
+#[repr(i16)]
+#[derive(PartialEq, FromSqlRow)]
+pub enum InstanceVariant {
+    Jitsi = 1,
+    PrivateBin = 0,
+}
+
+impl<DB> ToSql<SmallInt, DB> for InstanceVariant
+where
+    DB: Backend,
+    i16: ToSql<SmallInt, DB>,
+{
+    fn to_sql(&self, out: &mut Output<DB>) -> serialize::Result {
+        (*self as i16).to_sql(out)
+    }
+}
+
+impl AsExpression<SmallInt> for InstanceVariant {
+    type Expression = AsExprOf<i16, SmallInt>;
+
+    fn as_expression(self) -> Self::Expression {
+        <i16 as AsExpression<SmallInt>>::as_expression(self as i16)
+    }
+}
+
+impl<DB> FromSql<SmallInt, DB> for InstanceVariant
+where
+    DB: Backend,
+    i16: FromSql<SmallInt, DB>,
+{
+    fn from_sql(bytes: DB::RawValue<'_>) -> deserialize::Result<Self> {
+        match i16::from_sql(bytes)? {
+            0 => Ok(InstanceVariant::PrivateBin),
+            1 => Ok(InstanceVariant::Jitsi),
+            int => Err(format!("Invalid variant {}", int).into()),
+        }
+    }
 }
 
 pub struct InstancesCache {
@@ -148,6 +366,111 @@ impl<R: std::io::BufRead> Iterator for LineReader<R> {
     }
 }
 
+pub struct Jitsi {
+    pub instance: InstanceNew,
+    pub scans: Vec<ScanNew>,
+}
+
+impl Jitsi {
+    pub async fn new(url: String) -> Result<Jitsi, String> {
+        if !url.starts_with("http://") && !url.starts_with("https://") {
+            return Err(format!("Not a valid URL: {url}"));
+        }
+
+        let check_url = strip_url(url);
+        let (https, https_redirect, check_url) = Instance::check_http(&check_url).await?;
+        // don't proceed if the robots.txt tells us not to index the instance
+        Instance::check_robots(&check_url).await?;
+
+        // remaining checks may run in parallel
+        let check_properties = Self::check_properties(&check_url);
+        let check_country = Instance::check_country(&check_url);
+        let check_rating = Instance::check_rating_mozilla_observatory(&check_url);
+
+        // collect results of async checks
+        let version = check_properties.await?;
+        let country_code = check_country.await?;
+        let scans = vec![check_rating.await];
+
+        if !version.is_empty() {
+            return Ok(Jitsi {
+                instance: InstanceNew {
+                    id: None,
+                    url: check_url,
+                    version,
+                    https,
+                    https_redirect,
+                    country_id: country_code,
+                    attachments: false,
+                    csp_header: false,
+                    variant: InstanceVariant::Jitsi,
+                },
+                scans,
+            });
+        }
+        Err(format!(
+            "The URL {check_url} doesn't seem to be a Jitsi instance."
+        ))
+    }
+
+    // check version of jitsi meet JS library
+    async fn check_properties(url: &str) -> Result<String, String> {
+        let res = request(url, Method::GET, &CLOSE, Bytes::new()).await?;
+        let status = res.status();
+        if status != StatusCode::OK {
+            return Err(format!("Web server responded with status code {status}."));
+        }
+
+        let mut version = String::new();
+        let body = match res.collect().await {
+            Ok(body) => body,
+            Err(_) => return Err("Error reading the web server response.".to_owned()),
+        };
+        let reader = LineReader {
+            reader: body.aggregate().reader(),
+            line_count: 0,
+        };
+        for line in reader {
+            let line_str = match line {
+                Ok(string) => string,
+                Err(e) => e,
+            };
+
+            if version.is_empty() {
+                if let Some(matches) = VERSION_EXP
+                    .get_or_init(|| {
+                        Regex::new(r"libs/lib-jitsi-meet.min.js\?v=(\d+\.*\d*)")
+                            .unwrap()
+                    })
+                    .captures(&line_str)
+                {
+                    version = matches[3].into();
+                }
+            }
+        }
+        Ok(version)
+    }
+}
+
+#[tokio::test]
+async fn test_jitsi() {
+    let url = "https://meet.dssr.ch".to_owned();
+    let test_url = url.to_owned();
+    let jitsi: = Jitsi::new(test_url).await.unwrap();
+    assert_eq!(jitsi.instance.url, url);
+    assert!(jitsi.instance.https);
+    assert!(jitsi.instance.https_redirect);
+    assert_eq!(jitsi.instance.country_id, "CH");
+}
+
+#[tokio::test]
+async fn test_non_jitsi() {
+    let jitsi: Result<Jitsi, String> = Jitsi::new("https://directory.rs".into()).await;
+    assert!(jitsi.is_err());
+    let jitsi: Result<Jitsi, String> = Jitsi::new("https://privatebin.net".into()).await;
+    assert!(jitsi.is_err());
+}
+
 #[derive(Deserialize)]
 #[serde(crate = "rocket::serde")]
 struct ObservatoryScan<'r> {
@@ -167,14 +490,14 @@ impl PrivateBin {
         }
 
         let check_url = strip_url(url);
-        let (https, https_redirect, check_url) = Self::check_http(&check_url).await?;
+        let (https, https_redirect, check_url) = Instance::check_http(&check_url).await?;
         // don't proceed if the robots.txt tells us not to index the instance
-        Self::check_robots(&check_url).await?;
+        Instance::check_robots(&check_url).await?;
 
         // remaining checks may run in parallel
         let check_properties = Self::check_properties(&check_url);
-        let check_country = Self::check_country(&check_url);
-        let check_rating = Self::check_rating_mozilla_observatory(&check_url);
+        let check_country = Instance::check_country(&check_url);
+        let check_rating = Instance::check_rating_mozilla_observatory(&check_url);
 
         // collect results of async checks
         let (version, attachments, csp_header) = check_properties.await?;
@@ -192,6 +515,7 @@ impl PrivateBin {
                     country_id: country_code,
                     attachments,
                     csp_header,
+                    variant: InstanceVariant::PrivateBin,
                 },
                 scans,
             });
@@ -199,98 +523,6 @@ impl PrivateBin {
         Err(format!(
             "The URL {check_url} doesn't seem to be a PrivateBin instance."
         ))
-    }
-
-    // check country via geo IP database lookup
-    async fn check_country(url: &str) -> Result<String, String> {
-        let mut country_code = "AQ".into();
-        if let Ok(parsed_url) = Url::parse(url) {
-            let ip: IpAddr;
-            if let Some(host) = parsed_url.domain() {
-                let sockets = (host, 0).to_socket_addrs();
-                if sockets.is_err() {
-                    return Err(format!("Host or domain of URL {url} is not supported."));
-                }
-                let socket = sockets.unwrap().next();
-                if socket.is_none() {
-                    return Err(format!("Host or domain of URL {url} is not supported."));
-                }
-                ip = socket.unwrap().ip();
-            } else if let Some(host) = parsed_url.host_str() {
-                match host.parse() {
-                    Ok(parsed_ip) => ip = parsed_ip,
-                    Err(_) => return Ok(country_code),
-                }
-            } else {
-                return Ok(country_code);
-            }
-
-            let geoip_mmdb =
-                var("GEOIP_MMDB").expect("environment variable GEOIP_MMDB needs to be set");
-            let opener = maxminddb::Reader::open_readfile(&geoip_mmdb);
-            if opener.is_err() {
-                return Err(
-                    format!(
-                        "Error opening geo IP database {geoip_mmdb} (defined in environment variable GEOIP_MMDB)."
-                    )
-                );
-            }
-            let reader = opener.unwrap();
-            let country: Country = reader.lookup(ip).unwrap();
-            country_code = country.country.unwrap().iso_code.unwrap().into();
-        }
-        Ok(country_code)
-    }
-
-    // check for HTTP to HTTPS redirect
-    async fn check_http(url: &str) -> Result<(bool, bool, String), String> {
-        let mut https = false;
-        let mut https_redirect = false;
-        let mut http_url = url.to_string();
-        let mut resulting_url = url.into();
-
-        if url.starts_with("https://") {
-            https = true;
-            http_url.replace_range(..5, "http");
-        }
-        match request_head(&http_url).await {
-            Ok(res) => {
-                let redirection_codes = [
-                    StatusCode::MULTIPLE_CHOICES,
-                    StatusCode::MOVED_PERMANENTLY,
-                    StatusCode::FOUND,
-                    StatusCode::SEE_OTHER,
-                    StatusCode::NOT_MODIFIED,
-                    StatusCode::TEMPORARY_REDIRECT,
-                    StatusCode::PERMANENT_REDIRECT,
-                ];
-                if redirection_codes.contains(&res.status()) && res.headers().contains_key(LOCATION)
-                {
-                    // check Location header
-                    if let Ok(location) = res.headers()[LOCATION].to_str() {
-                        if location.starts_with("https://") {
-                            https_redirect = true;
-                        }
-                        if !https && https_redirect {
-                            // if the given URL was HTTP, but we got redirected to https,
-                            // check & store the HTTPS URL instead
-                            resulting_url = strip_url(location.into());
-                            https = true;
-                        }
-                    }
-                }
-            }
-            Err(message) => {
-                // only emit an error if this server is reported as HTTP,
-                // HTTPS-only webservers, though uncommon, do enforce HTTPS
-                if url.starts_with("http://") {
-                    return Err(message);
-                } else {
-                    https_redirect = true;
-                }
-            }
-        }
-        Ok((https, https_redirect, resulting_url))
     }
 
     // check version of privatebin / zerobin JS library, attachment support & CSP header
@@ -348,82 +580,6 @@ impl PrivateBin {
         }
         Ok((version, attachments, csp_header))
     }
-
-    // check rating at mozilla observatory
-    pub async fn check_rating_mozilla_observatory(url: &str) -> ScanNew {
-        if let Ok(parsed_url) = Url::parse(url) {
-            if let Some(host) = parsed_url.host_str() {
-                let observatory_url = format!("{OBSERVATORY_API}{host}");
-                if let Ok(res) = request_get(&observatory_url).await {
-                    if res.status() == StatusCode::OK {
-                        let response_content_length = match res.body().size_hint().upper() {
-                            Some(length) => length,
-                            None => OBSERVATORY_MAX_CONTENT_LENGTH + 1, // protect from malicious response
-                        };
-                        if response_content_length >= OBSERVATORY_MAX_CONTENT_LENGTH {
-                            Default::default()
-                        }
-                        let body_bytes = res.collect().await.unwrap().aggregate();
-                        let api_response = json::from_slice::<ObservatoryScan>(body_bytes.chunk());
-                        if let Ok(api_response) = api_response {
-                            if "FINISHED" == api_response.state {
-                                return ScanNew::new("mozilla_observatory", api_response.grade, 0);
-                            }
-                        }
-                        // initiate a rescan
-                        let _ = request(
-                            &observatory_url,
-                            Method::POST,
-                            &KEEPALIVE,
-                            Bytes::from_static(b"hidden=true"),
-                        )
-                        .await;
-                    }
-                }
-            }
-        }
-        Default::default()
-    }
-
-    // check robots.txt, if one exists, and bail if server doesn't want us to index the instance
-    async fn check_robots(url: &str) -> Result<bool, String> {
-        let robots_url = if url.ends_with('/') {
-            format!("{url}robots.txt")
-        } else {
-            format!("{url}/robots.txt")
-        };
-        if let Ok(res) = request_get(&robots_url).await {
-            if res.status() == StatusCode::OK {
-                let mut rule_for_us = false;
-                let body = match res.collect().await {
-                    Ok(body) => body,
-                    Err(_) => return Ok(true),
-                };
-                let reader = LineReader {
-                    reader: body.aggregate().reader(),
-                    line_count: 0,
-                };
-                for line in reader {
-                    let line_str = match line {
-                        Ok(string) => string,
-                        _ => break,
-                    };
-
-                    if rule_for_us {
-                        if line_str.starts_with("Disallow: /") {
-                            return Err(format!(
-                                "Web server on URL {url} doesn't want to get added to the directory."
-                            ));
-                        }
-                        break;
-                    } else if line_str.starts_with("User-agent: PrivateBinDirectoryBot") {
-                        rule_for_us = true;
-                    }
-                }
-            }
-        }
-        Ok(true)
-    }
 }
 
 #[tokio::test]
@@ -458,7 +614,9 @@ async fn test_url_rewrites() {
 
 #[tokio::test]
 async fn test_non_privatebin() {
-    let privatebin = PrivateBin::new("https://privatebin.info".into()).await;
+    let privatebin = PrivateBin::new("https://directory.rs".into()).await;
+    assert!(privatebin.is_err());
+    let privatebin = PrivateBin::new("https://meet.dssr.ch".into()).await;
     assert!(privatebin.is_err());
 }
 

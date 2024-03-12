@@ -1,4 +1,6 @@
-table! {
+// @generated automatically by Diesel CLI.
+
+diesel::table! {
     checks (id) {
         id -> Integer,
         updated -> Timestamp,
@@ -7,7 +9,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     instances (id) {
         id -> Integer,
         url -> Text,
@@ -17,10 +19,11 @@ table! {
         country_id -> Text,
         attachments -> Bool,
         csp_header -> Bool,
+        variant -> SmallInt,
     }
 }
 
-table! {
+diesel::table! {
     scans (id) {
         id -> Integer,
         scanner -> Text,
@@ -30,7 +33,11 @@ table! {
     }
 }
 
-joinable!(checks -> instances (instance_id));
-joinable!(scans -> instances (instance_id));
+diesel::joinable!(checks -> instances (instance_id));
+diesel::joinable!(scans -> instances (instance_id));
 
-allow_tables_to_appear_in_same_query!(checks, instances, scans,);
+diesel::allow_tables_to_appear_in_same_query!(
+    checks,
+    instances,
+    scans,
+);

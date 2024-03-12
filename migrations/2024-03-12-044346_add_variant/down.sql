@@ -7,11 +7,12 @@ CREATE TABLE instances (
     https BOOLEAN NOT NULL DEFAULT 0,
     https_redirect BOOLEAN NOT NULL DEFAULT 0,
     country_id CHARACTER(2) NOT NULL DEFAULT "AQ",
-    attachments BOOLEAN NOT NULL DEFAULT 0
+    attachments BOOLEAN NOT NULL DEFAULT 0,
+    csp_header BOOLEAN NOT NULL DEFAULT 0
 );
 
-INSERT INTO instances (id, url, version, https, https_redirect, country_id, attachments)
-SELECT id, url, version, https, https_redirect, country_id, attachments
+INSERT INTO instances (id, url, version, https, https_redirect, country_id, attachments, csp_header)
+SELECT id, url, version, https, https_redirect, country_id, attachments, csp_header
 FROM _instances;
 
 DROP TABLE _instances;

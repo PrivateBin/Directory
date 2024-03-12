@@ -221,7 +221,7 @@ async fn check_instance(instance: Instance) -> InstanceCheckResult {
             let rating = scan.rating.to_owned();
             if rating == "-" {
                 sleep(Duration::from_secs(5)).await;
-                scan = PrivateBin::check_rating_mozilla_observatory(&instance_url).await;
+                scan = Instance::check_rating_mozilla_observatory(&instance_url).await;
             }
             let elapsed = timer.elapsed();
             if rating != "-" && rating != instance.rating_mozilla_observatory {
@@ -353,6 +353,7 @@ async fn add_update_and_delete() {
         country_id: "CH".into(),
         attachments: false,
         csp_header: false,
+        variant: InstanceVariant::PrivateBin,
     };
     insert_into(instances)
         .values(&instance)
@@ -412,6 +413,7 @@ async fn add_update_and_delete() {
         country_id: "CH".into(),
         attachments: false,
         csp_header: true,
+        variant: InstanceVariant::PrivateBin,
     };
     insert_into(instances)
         .values(&instance)

@@ -44,6 +44,7 @@ pub fn get_instances() -> SqlQuery {
                 SELECT rating, percent, instance_id \
                 FROM scans WHERE scanner = \"mozilla_observatory\" \
             ) AS mozilla_observatory ON instances.id = mozilla_observatory.instance_id \
+            WHERE instances.variant = 0 \
             GROUP BY instances.id \
             ORDER BY version DESC, https DESC, https_redirect DESC, csp_header DESC, \
             mozilla_observatory.percent DESC, attachments DESC, uptime DESC, url ASC \
