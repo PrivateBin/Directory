@@ -19,7 +19,7 @@ tokio = "1.36.0"
 url = "2.5.0"
 
 [dependencies.diesel]
-version = "2.1.4"
+version = "2.1.5"
 features = ["sqlite"]
 
 [dependencies.hyper]
