@@ -388,7 +388,7 @@ dependencies = [
 
 [[package]]
 name = "directory"
-version = "0.10.7"
+version = "0.10.8"
 dependencies = [
  "diesel",
  "diesel_migrations",

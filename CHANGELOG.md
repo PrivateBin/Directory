@@ -1,5 +1,8 @@
 # Change Log
 
+# 0.10.8
+- bump libraries
+
 # 0.10.7
 - HTTP(S) client now uses hyper 1.1
 - switch to rust 1.70 to drop lazy_static in favor of OnceLock

@@ -20,7 +20,7 @@ This document lists the licenses of the projects used in the instance directory.
 
 #### Used by
 
-- [directory](https://crates.io/crates/directory) 0.10.7
+- [directory](https://crates.io/crates/directory) 0.10.8
 
 ```
 GNU AFFERO GENERAL PUBLIC LICENSE
@@ -2355,7 +2355,7 @@ You should also get your employer (if you work as a programmer) or school, if an
 
 #### Used by
 
-- [diesel](https://github.com/diesel-rs/diesel) 2.1.4
+- [diesel](https://github.com/diesel-rs/diesel) 2.1.5
 - [diesel_derives](https://github.com/diesel-rs/diesel/tree/master/diesel_derives) 2.1.2
 - [diesel_migrations](https://crates.io/crates/diesel_migrations) 2.1.0
 - [diesel_table_macro_syntax](https://github.com/diesel-rs/diesel/tree/master/diesel_table_macro_syntax) 0.1.0
@@ -4243,7 +4243,7 @@ limitations under the License.
 
 #### Used by
 
-- [tokio-rustls](https://github.com/rustls/tokio-rustls) 0.25.0
+- [tokio-rustls](https://github.com/rustls/tokio-rustls) 0.26.0
 
 ```
                               Apache License
@@ -5084,7 +5084,7 @@ limitations under the License.
 
 #### Used by
 
-- [rustls-pki-types](https://github.com/rustls/pki-types) 1.1.0
+- [rustls-pki-types](https://github.com/rustls/pki-types) 1.4.1
 
 ```
                               Apache License
@@ -5321,7 +5321,7 @@ limitations under the License.
 - [hashbrown](https://github.com/rust-lang/hashbrown) 0.14.3
 - [hermit-abi](https://github.com/hermitcore/hermit-rs) 0.3.4
 - [httparse](https://github.com/seanmonstar/httparse) 1.8.0
-- [hyper-rustls](https://github.com/rustls/hyper-rustls) 0.26.0
+- [hyper-rustls](https://github.com/rustls/hyper-rustls) 0.27.1
 - [idna](https://github.com/servo/rust-url/) 0.5.0
 - [indexmap](https://github.com/bluss/indexmap) 2.1.0
 - [inlinable_string](https://github.com/fitzgen/inlinable_string) 0.1.15
@@ -5344,13 +5344,13 @@ limitations under the License.
 - [pest_generator](https://github.com/pest-parser/pest) 2.7.6
 - [pest_meta](https://github.com/pest-parser/pest) 2.7.6
 - [pkg-config](https://github.com/rust-lang/pkg-config-rs) 0.3.29
-- [regex](https://github.com/rust-lang/regex) 1.10.2
-- [regex-automata](https://github.com/rust-lang/regex/tree/master/regex-automata) 0.4.3
+- [regex](https://github.com/rust-lang/regex) 1.10.4
+- [regex-automata](https://github.com/rust-lang/regex/tree/master/regex-automata) 0.4.5
 - [regex-syntax](https://github.com/rust-lang/regex) 0.6.29
 - [regex-syntax](https://github.com/rust-lang/regex/tree/master/regex-syntax) 0.8.2
 - [rustc-demangle](https://github.com/alexcrichton/rustc-demangle) 0.1.23
 - [rustix](https://github.com/bytecodealliance/rustix) 0.38.30
-- [rustls](https://github.com/rustls/rustls) 0.22.2
+- [rustls](https://github.com/rustls/rustls) 0.23.4
 - [scoped-tls](https://github.com/alexcrichton/scoped-tls) 1.0.1
 - [scopeguard](https://github.com/bluss/scopeguard) 1.2.0
 - [signal-hook-registry](https://github.com/vorner/signal-hook) 1.4.1
@@ -8096,7 +8096,7 @@ typedef uint8_t poly1305_state[512];
 
 #### Used by
 
-- [rustls-webpki](https://github.com/rustls/webpki) 0.102.1
+- [rustls-webpki](https://github.com/rustls/webpki) 0.102.2
 
 ```
 // Copyright 2022 Rafael Fernández López.
@@ -8194,7 +8194,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 #### Used by
 
-- [mio](https://github.com/tokio-rs/mio) 0.8.10
+- [mio](https://github.com/tokio-rs/mio) 0.8.11
 
 ```
 Copyright (c) 2014 Carl Lerche and other MIO contributors
@@ -8223,7 +8223,7 @@ THE SOFTWARE.
 #### Used by
 
 - [hyper](https://github.com/hyperium/hyper) 0.14.28
-- [hyper](https://github.com/hyperium/hyper) 1.1.0
+- [hyper](https://github.com/hyperium/hyper) 1.2.0
 
 ```
 Copyright (c) 2014-2021 Sean McArthur
@@ -8396,7 +8396,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #### Used by
 
-- [h2](https://github.com/hyperium/h2) 0.3.24
+- [h2](https://github.com/hyperium/h2) 0.3.26
 - [h2](https://github.com/hyperium/h2) 0.4.2
 
 ```
@@ -8723,7 +8723,7 @@ DEALINGS IN THE SOFTWARE.
 
 #### Used by
 
-- [hyper-util](https://github.com/hyperium/hyper-util) 0.1.2
+- [hyper-util](https://github.com/hyperium/hyper-util) 0.1.3
 
 ```
 Copyright (c) 2023 Sean McArthur
@@ -8751,7 +8751,7 @@ THE SOFTWARE.
 
 #### Used by
 
-- [tokio](https://github.com/tokio-rs/tokio) 1.35.1
+- [tokio](https://github.com/tokio-rs/tokio) 1.37.0
 - [tokio-stream](https://github.com/tokio-rs/tokio) 0.1.14
 - [tokio-util](https://github.com/tokio-rs/tokio) 0.7.10
 
@@ -8850,7 +8850,7 @@ SOFTWARE.
 - [async-stream](https://github.com/tokio-rs/async-stream) 0.3.5
 - [async-stream-impl](https://github.com/tokio-rs/async-stream) 0.3.5
 - [http-body](https://github.com/hyperium/http-body) 1.0.0
-- [http-body-util](https://github.com/hyperium/http-body) 0.1.0
+- [http-body-util](https://github.com/hyperium/http-body) 0.1.1
 - [tokio-macros](https://github.com/tokio-rs/tokio) 2.2.0
 - [valuable](https://github.com/tokio-rs/valuable) 0.1.0
 
