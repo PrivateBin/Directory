@@ -32,7 +32,7 @@ default-features = false
 features = ["http1", "http2", "tls12", "ring", "webpki-tokio"]
 
 [dependencies.rocket]
-version = "0.5.0"
+version = "0.5.1"
 features = ["json"]
 
 [dependencies.rocket_dyn_templates]
