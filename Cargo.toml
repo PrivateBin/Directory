@@ -15,7 +15,7 @@ isocountry = "0.3.2"
 maxminddb = "0.24.0"
 rand = "0.8.5"
 regex = "1.10.4"
-tokio = "1.37.0"
+tokio = "1.38.0"
 url = "2.5.0"
 
 [dependencies.diesel]
