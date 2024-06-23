@@ -69,15 +69,7 @@ pub async fn request(
     match timeout(
         Duration::from_secs(15),
         HTTP_CLIENT
-            .get_or_init(|| {
-                let https_connector = HttpsConnectorBuilder::new()
-                    .with_webpki_roots()
-                    .https_or_http()
-                    .enable_http1()
-                    .enable_http2()
-                    .build();
-                Client::builder(TokioExecutor::new()).build(https_connector)
-            })
+            .get_or_init(init_connection)
             .clone()
             .request(request),
     )
@@ -99,4 +91,14 @@ pub async fn request_get(url: &str) -> Result<Response<Incoming>, String> {
 
 pub async fn request_head(url: &str) -> Result<Response<Incoming>, String> {
     request(url, Method::HEAD, &KEEPALIVE, Bytes::new()).await
+}
+
+pub fn init_connection() -> Client<HttpsConnector<HttpConnector>, Full<Bytes>> {
+    let https_connector = HttpsConnectorBuilder::new()
+        .with_webpki_roots()
+        .https_or_http()
+        .enable_http1()
+        .enable_http2()
+        .build();
+    Client::builder(TokioExecutor::new()).build(https_connector)
 }

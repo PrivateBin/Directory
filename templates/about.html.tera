@@ -8,7 +8,7 @@
 					<li class="page-item"><a href="#faq-remove-instance" class="page-link">Removing an instance</a></li>
 					<li class="page-item"><a href="#faq-how" class="page-link">How the instances get tested</a></li>
 					<li class="page-item"><a href="#faq-when" class="page-link">When do the instances get updated</a></li>
-					<li class="page-item"><a href="#faq-api" class="page-link">Using the instance list programmtically</a></li>
+					<li class="page-item"><a href="#faq-api" class="page-link">Using the instance list programmatically</a></li>
 				</ol>
 			</nav>
 			<h3 id="faq-remove-instance">Removing an instance</h3>
@@ -59,19 +59,19 @@ HTTP/2 403
 				<dt>HTTPS enforced</dt>
 				<dd>The instance URL is accessed over HTTP and a 30x redirection status code is received with an HTTP <code>Location</code> header, that points to a matching HTTPS URL or there is no HTTP access offered on port 80.</dd>
 				<dt>recommended CSP</dt>
-				<dd>If the instance responds with the currently recommend HTTP <code>Content-Security-Policy</code> (<a href="https://content-security-policy.com/">CSP</a>) header. This policy disables browser functions that PrivateBin doesn't use and can, among other things, mitigate execution of scripts that bypass other security mechanisms while viewing a paste that contains such. We currently recommed the following policy: <code>{{ error }}</code></dd>
+				<dd>If the instance responds with the currently recommend HTTP <code>Content-Security-Policy</code> (<a href="https://content-security-policy.com/">CSP</a>) header. This policy disables browser functions that PrivateBin doesn't use and can, among other things, mitigate execution of scripts that bypass other security mechanisms while viewing a paste that contains such. We currently recommend the following policy: <code>{{ error }}</code></dd>
 				<dt>Observatory Rating</dt>
 				<dd>The <a href="https://github.com/mozilla/http-observatory/blob/master/httpobs/docs/scoring.md#http-observatory-scoring-methodology">score</a> of an instance as per the <a href="https://observatory.mozilla.org/">Mozilla 🐲 Observatory</a>.</dd>
 				<dt>File upload</dt>
 				<dd>If the instance has the <a href="https://github.com/PrivateBin/PrivateBin/wiki/Configuration#fileupload"><code>fileupload</code> option</a> enabled, you can upload attachments along side your texts.</dd>
 				<dt>Uptime</dt>
-				<dd>The instances are checked for availability every 15 minutes, using an HTTP(S) <code>HEAD</code> request to reduce transmitted data. Only the last 100 results (25h) are kept and the percentage is calculated based on this. Basically this percentage is an indication if an instance expirienced any prolonged downtime during the last day.</dd>
+				<dd>The instances are checked for availability every 15 minutes, using an HTTP(S) <code>HEAD</code> request to reduce transmitted data. Only the last 100 results (25h) are kept and the percentage is calculated based on this. Basically this percentage is an indication if an instance experienced any prolonged downtime during the last day.</dd>
 				<dt>Country</dt>
 				<dd>The IP assigned to the domain of the instance URL is checked against a GeoIP database. The precision of these databases is limited, but can serve as an indication in which country the instance is hosted. This may serve to select an instance that is close by or avoid instances located in undesirable jurisdictions.</dd>
 			</dl>
 			<h3 id="faq-when">When do the instances get updated</h3>
 			<p>The uptime checks via HTTP(S) HEAD request are performed every 15 minutes. Once a day all the other properties get re-evaluated and the list updated.</p>
-			<h3 id="faq-api">Using the instance list programmtically</h3>
+			<h3 id="faq-api">Using the instance list programmatically</h3>
 			<p>The instance list can be retrieved as a JSON encoded data structure by calling the <code>/api</code> endpoint with the HTTP header <code>Accept: application/json</code> set. The list order is randomized every time to spread the load to the instances.</p>
 			<pre>
 $ curl --header "Accept: application/json" https://privatebin.info/directory/api
