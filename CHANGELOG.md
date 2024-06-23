@@ -3,6 +3,7 @@
 # 0.11.0
 - adding version- and template based CSP checks #89
 - addressed typos in the about page
+- bump libraries
 
 # 0.10.8
 - bump libraries
