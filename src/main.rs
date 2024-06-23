@@ -235,7 +235,7 @@ async fn report(
     }
 
     // check in database
-    let page = match db
+    let instance_in_db = db
         .run(move |conn| {
             use diesel::dsl::sql;
             use diesel::sql_types::{Integer, Text};
@@ -258,8 +258,8 @@ async fn report(
                 .filter(url.eq(lookup_url))
                 .first(conn)
         })
-        .await
-    {
+        .await;
+    let page = match instance_in_db {
         Ok(instance) => InstancePage::new(check_success_title, Some(instance), None),
         Err(_) => match PrivateBin::new(form_url.to_owned()).await {
             // scan unknown instance
@@ -418,7 +418,7 @@ async fn forward_me(
         }
         // by default, we only consider the latest version - cached instances are sorted on these
         if instance_version.is_empty() {
-            instance_version = instance.version.to_owned();
+            instance.version.clone_into(&mut instance_version);
         } else if instance.version != instance_version {
             break;
         }
