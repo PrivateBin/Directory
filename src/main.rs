@@ -23,6 +23,7 @@ pub mod functions;
 use functions::*;
 pub mod models;
 use models::*;
+use models::privatebin::{CSP_RECOMMENDATION, PrivateBin};
 pub mod schema;
 use schema::checks::dsl::checks;
 use schema::scans::dsl::scans;
