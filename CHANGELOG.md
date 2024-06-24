@@ -1,5 +1,8 @@
 # Change Log
 
+# 0.12.0
+- adding support for Jitsi Meet instances
+
 # 0.11.0
 - adding version- and template based CSP checks #89
 - addressed typos in the about page
