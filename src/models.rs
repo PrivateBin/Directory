@@ -7,8 +7,7 @@ use diesel::SqliteConnection;
 use diesel::{
     backend::Backend,
     deserialize::{self, FromSql},
-    dsl::AsExprOf,
-    expression::{AsExpression},
+    expression::AsExpression,
     serialize::{self, Output, ToSql},
     sql_types::*,
     *,
@@ -89,8 +88,9 @@ const OBSERVATORY_API: &str = "https://http-observatory.security.mozilla.org/api
 const OBSERVATORY_MAX_CONTENT_LENGTH: u64 = 10240;
 const MAX_LINE_COUNT: u16 = 1024;
 pub const TITLE: &str = "Instance Directory";
-static TEMPLATE_EXP: OnceLock<Regex> = OnceLock::new();
-static VERSION_EXP: OnceLock<Regex> = OnceLock::new();
+static PRIVATEBIN_TEMPLATE_EXP: OnceLock<Regex> = OnceLock::new();
+static JITSI_VERSION_EXP: OnceLock<Regex> = OnceLock::new();
+static PRIVATEBIN_VERSION_EXP: OnceLock<Regex> = OnceLock::new();
 
 #[derive(Queryable)]
 pub struct Check {
@@ -329,38 +329,34 @@ pub struct InstanceNew {
 }
 
 // sorted alphabetically for readability, values set by historical order
-#[repr(i16)]
-#[derive(PartialEq, FromSqlRow)]
+#[repr(i32)]
+#[derive(AsExpression, Debug, PartialEq, FromSqlRow)]
+#[diesel(sql_type = Integer)]
 pub enum InstanceVariant {
     Jitsi = 1,
     PrivateBin = 0,
 }
 
-impl<DB> ToSql<SmallInt, DB> for InstanceVariant
+impl<DB> ToSql<Integer, DB> for InstanceVariant
 where
     DB: Backend,
-    i16: ToSql<SmallInt, DB>,
+    i32: ToSql<Integer, DB>,
 {
     fn to_sql(&self, out: &mut Output<DB>) -> serialize::Result {
-        (*self as i16).to_sql(out)
+        match self {
+            InstanceVariant::Jitsi => 1.to_sql(out),
+            InstanceVariant::PrivateBin => 0.to_sql(out),
+        }
     }
 }
 
-impl AsExpression<SmallInt> for InstanceVariant {
-    type Expression = AsExprOf<i16, SmallInt>;
-
-    fn as_expression(self) -> Self::Expression {
-        <i16 as AsExpression<SmallInt>>::as_expression(self as i16)
-    }
-}
-
-impl<DB> FromSql<SmallInt, DB> for InstanceVariant
+impl<DB> FromSql<Integer, DB> for InstanceVariant
 where
     DB: Backend,
-    i16: FromSql<SmallInt, DB>,
+    i32: FromSql<Integer, DB>,
 {
     fn from_sql(bytes: DB::RawValue<'_>) -> deserialize::Result<Self> {
-        match i16::from_sql(bytes)? {
+        match i32::from_sql(bytes)? {
             0 => Ok(InstanceVariant::PrivateBin),
             1 => Ok(InstanceVariant::Jitsi),
             int => Err(format!("Invalid variant {}", int).into()),
@@ -488,14 +484,14 @@ impl Jitsi {
             };
 
             if version.is_empty() {
-                if let Some(matches) = VERSION_EXP
+                if let Some(matches) = JITSI_VERSION_EXP
                     .get_or_init(|| {
                         Regex::new(r"libs/lib-jitsi-meet.min.js\?v=(\d+\.*\d*)")
                             .unwrap()
                     })
                     .captures(&line_str)
                 {
-                    version = matches[3].into();
+                    version = matches[1].into();
                 }
             }
         }
@@ -507,11 +503,12 @@ impl Jitsi {
 async fn test_jitsi() {
     let url = "https://meet.dssr.ch".to_owned();
     let test_url = url.to_owned();
-    let jitsi: = Jitsi::new(test_url).await.unwrap();
+    let jitsi = Jitsi::new(test_url).await.unwrap();
     assert_eq!(jitsi.instance.url, url);
     assert!(jitsi.instance.https);
     assert!(jitsi.instance.https_redirect);
     assert_eq!(jitsi.instance.country_id, "CH");
+    assert_eq!(jitsi.instance.variant, InstanceVariant::Jitsi);
 }
 
 #[tokio::test]
@@ -618,7 +615,7 @@ impl PrivateBin {
                 }
             }
             if template == PrivateBinTemplate::Unknown {
-                if let Some(matches) = TEMPLATE_EXP
+                if let Some(matches) = PRIVATEBIN_TEMPLATE_EXP
                     .get_or_init(|| Regex::new(r"css/bootstrap(\d*)/").unwrap())
                     .captures(&line_str)
                 {
@@ -630,7 +627,7 @@ impl PrivateBin {
                 }
             }
             if version.is_empty() {
-                if let Some(matches) = VERSION_EXP
+                if let Some(matches) = PRIVATEBIN_VERSION_EXP
                     .get_or_init(|| {
                         Regex::new(r"js/(privatebin|zerobin).js\?(Alpha%20)?(\d+\.\d+\.*\d*)")
                             .unwrap()
@@ -673,6 +670,7 @@ async fn test_privatebin() {
     assert!(privatebin.instance.csp_header);
     assert!(privatebin.instance.attachments);
     assert_eq!(privatebin.instance.country_id, "CH");
+    assert_eq!(privatebin.instance.variant, InstanceVariant::PrivateBin);
 }
 
 #[tokio::test]
@@ -718,6 +716,7 @@ async fn test_zerobin() {
     assert_eq!(privatebin.instance.version, "0.20");
     assert!(!privatebin.instance.attachments);
     assert_eq!(privatebin.instance.country_id, "CH");
+    assert_eq!(privatebin.instance.variant, InstanceVariant::PrivateBin);
 }
 
 /* disabled test, instance no longer exists and I couldn't find another one configured like this:

@@ -1,6 +1,5 @@
 #![forbid(unsafe_code)]
 
-#[macro_use]
 extern crate diesel;
 #[macro_use]
 extern crate diesel_migrations;

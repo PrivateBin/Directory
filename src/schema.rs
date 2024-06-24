@@ -19,7 +19,7 @@ diesel::table! {
         country_id -> Text,
         attachments -> Bool,
         csp_header -> Bool,
-        variant -> SmallInt,
+        variant -> Integer,
     }
 }
 
