@@ -186,12 +186,18 @@ async fn check_instance(instance: Instance) -> InstanceCheckResult {
     let instance_url = instance.url.to_owned();
     match PrivateBin::new(instance.url.to_owned()).await {
         Ok(privatebin) => {
-            instance_options[0].2 = privatebin.instance.version.to_owned();
+            privatebin
+                .instance
+                .version
+                .clone_into(&mut instance_options[0].2);
             instance_options[1].2 = format!("{:?}", privatebin.instance.https);
             instance_options[2].2 = format!("{:?}", privatebin.instance.https_redirect);
             instance_options[3].2 = format!("{:?}", privatebin.instance.csp_header);
             instance_options[4].2 = format!("{:?}", privatebin.instance.attachments);
-            instance_options[5].2 = privatebin.instance.country_id.to_owned();
+            privatebin
+                .instance
+                .country_id
+                .clone_into(&mut instance_options[5].2);
             let elapsed = timer.elapsed();
             let timer = Instant::now();
             if instance_options.iter().any(|x| x.1 != x.2) {

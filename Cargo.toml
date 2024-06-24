@@ -1,6 +1,6 @@
 [package]
 name = "directory"
-version = "0.10.7"
+version = "0.11.0"
 authors = ["El RIDO <elrido@gmx.net>"]
 edition = "2021"
 license = "AGPL-3.0"
@@ -9,34 +9,34 @@ rust-version = "1.70"
 [dependencies]
 diesel_migrations = "2.1.0"
 futures = "0.3.30"
-http-body-util = "0.1.0"
-hyper-util = "0.1.3"
+http-body-util = "0.1.2"
+hyper-util = "0.1.5"
 isocountry = "0.3.2"
 maxminddb = "0.24.0"
 rand = "0.8.5"
-regex = "1.10.3"
-tokio = "1.36.0"
-url = "2.5.0"
+regex = "1.10.5"
+tokio = "1.38.0"
+url = "2.5.2"
 
 [dependencies.diesel]
-version = "2.1.4"
+version = "2.1.6"
 features = ["sqlite"]
 
 [dependencies.hyper]
-version = "1.2.0"
+version = "1.3.1"
 features = ["client"]
 
 [dependencies.hyper-rustls]
-version = "0.26.0"
+version = "0.27.2"
 default-features = false
 features = ["http1", "http2", "tls12", "ring", "webpki-tokio"]
 
 [dependencies.rocket]
-version = "0.5.0"
+version = "0.5.1"
 features = ["json"]
 
 [dependencies.rocket_dyn_templates]
-version = "0.1.0"
+version = "0.2.0"
 features = ["tera"]
 
 [dependencies.rocket_sync_db_pools]

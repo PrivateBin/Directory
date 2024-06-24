@@ -35,10 +35,61 @@ pub const CSP_RECOMMENDATION: &str = "default-src 'none'; base-uri 'self'; \
     frame-ancestors 'none'; img-src 'self' data: blob:; media-src blob:; \
     object-src blob:; sandbox allow-same-origin allow-scripts allow-forms \
     allow-popups allow-modals allow-downloads";
+static CSP_MAP: &[(&str, &str)] = &[
+    (
+        "1.3.5",
+        "default-src 'none'; manifest-src 'self'; connect-src * blob:; \
+        script-src 'self' 'unsafe-eval' resource:; style-src 'self'; \
+        font-src 'self'; img-src 'self' data: blob:; media-src blob:; \
+        object-src blob:; sandbox allow-same-origin allow-scripts allow-forms \
+        allow-popups allow-modals allow-downloads",
+    ),
+    (
+        "1.3.",
+        "default-src 'none'; manifest-src 'self'; connect-src * blob:; \
+        script-src 'self' 'unsafe-eval'; style-src 'self'; font-src 'self'; \
+        img-src 'self' data: blob:; media-src blob:; object-src blob:; sandbox \
+        allow-same-origin allow-scripts allow-forms allow-popups allow-modals",
+    ),
+    (
+        "1.3",
+        "default-src 'none'; manifest-src 'self'; connect-src *; \
+        script-src 'self' 'unsafe-eval'; style-src 'self'; font-src 'self'; \
+        img-src 'self' data: blob:; media-src blob:; object-src blob:; sandbox \
+        allow-same-origin allow-scripts allow-forms allow-popups allow-modals",
+    ),
+    (
+        "1.2",
+        "default-src 'none'; manifest-src 'self'; connect-src *; \
+        script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' \
+        data:; media-src data:; object-src data:; Referrer-Policy: 'no-referrer'; \
+        sandbox allow-same-origin allow-scripts allow-forms allow-popups \
+        allow-modals",
+    ),
+    (
+        "1.1",
+        "default-src 'none'; manifest-src 'self'; connect-src *; \
+        script-src 'self'; style-src 'self'; font-src 'self'; \
+        img-src 'self' data:; referrer no-referrer;",
+    ),
+    // since 1.7.2, with bootstrap5
+    (
+        "1.7.",
+        "default-src 'self'; base-uri 'self'; form-action 'none'; \
+        manifest-src 'self'; connect-src * blob:; script-src 'self' \
+        'unsafe-eval'; style-src 'self'; font-src 'self'; \
+        frame-ancestors 'none'; img-src 'self' data: blob:; media-src blob:; \
+        object-src blob:; sandbox allow-same-origin allow-scripts allow-forms \
+        allow-modals allow-downloads",
+    ),
+    // since 1.4
+    ("1.", CSP_RECOMMENDATION),
+];
 const OBSERVATORY_API: &str = "https://http-observatory.security.mozilla.org/api/v1/analyze?host=";
 const OBSERVATORY_MAX_CONTENT_LENGTH: u64 = 10240;
 const MAX_LINE_COUNT: u16 = 1024;
 pub const TITLE: &str = "Instance Directory";
+static TEMPLATE_EXP: OnceLock<Regex> = OnceLock::new();
 static VERSION_EXP: OnceLock<Regex> = OnceLock::new();
 
 #[derive(Queryable)]
@@ -534,17 +585,17 @@ impl PrivateBin {
             return Err(format!("Web server responded with status code {status}."));
         }
 
-        // check Content-Security-Policy header
+        // collect Content-Security-Policy header
+        let mut policy = String::new();
         if res.headers().contains_key(CONTENT_SECURITY_POLICY) {
             if let Ok(csp) = res.headers()[CONTENT_SECURITY_POLICY].to_str() {
-                if csp.eq(CSP_RECOMMENDATION) {
-                    csp_header = true;
-                }
+                csp.clone_into(&mut policy);
             }
         }
 
         let mut version = String::new();
         let mut attachments = false;
+        let mut template = PrivateBinTemplate::Unknown;
         let body = match res.collect().await {
             Ok(body) => body,
             Err(_) => return Err("Error reading the web server response.".to_owned()),
@@ -561,9 +612,21 @@ impl PrivateBin {
 
             if !attachments && line_str.contains(" id=\"attachment\" ") {
                 attachments = true;
-                if !version.is_empty() {
-                    // we got both version and attachment, stop parsing
+                if !version.is_empty() && template != PrivateBinTemplate::Unknown {
+                    // we got version, template and attachment, stop parsing
                     break;
+                }
+            }
+            if template == PrivateBinTemplate::Unknown {
+                if let Some(matches) = TEMPLATE_EXP
+                    .get_or_init(|| Regex::new(r"css/bootstrap(\d*)/").unwrap())
+                    .captures(&line_str)
+                {
+                    template = if matches[1].is_empty() {
+                        PrivateBinTemplate::Bootstrap3
+                    } else {
+                        PrivateBinTemplate::Bootstrap5
+                    };
                 }
             }
             if version.is_empty() {
@@ -574,8 +637,25 @@ impl PrivateBin {
                     })
                     .captures(&line_str)
                 {
-                    version = matches[3].into();
+                    matches[3].clone_into(&mut version);
                 }
+            }
+        }
+        // check Content-Security-Policy header
+        if !policy.is_empty() {
+            for rule in CSP_MAP {
+                if version.starts_with(rule.0)
+                    && ((template == PrivateBinTemplate::Bootstrap3 // Bootstrap3 templates do not need popups
+                        && policy.eq(&rule.1.to_string().replace(" allow-popups", "")))
+                        || policy.eq(rule.1))
+                {
+                    csp_header = true;
+                    break;
+                }
+            }
+            // versions before 1.0 didn't come with a CSP, so if we get to here, we'll give you a brownie point for trying
+            if version.starts_with("0.") {
+                csp_header = true;
             }
         }
         Ok((version, attachments, csp_header))
@@ -655,6 +735,13 @@ async fn test_no_http() {
 async fn test_idn() {
     let privatebin = PrivateBin::new("https://zerobin-täst.dssr.ch".into()).await;
     assert!(privatebin.is_err());
+}
+
+#[derive(PartialEq)]
+enum PrivateBinTemplate {
+    Bootstrap3,
+    Bootstrap5,
+    Unknown,
 }
 
 #[derive(Queryable)]
