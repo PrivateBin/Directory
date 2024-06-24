@@ -72,8 +72,7 @@ impl Jitsi {
             if version.is_empty() {
                 if let Some(matches) = VERSION_EXP
                     .get_or_init(|| {
-                        Regex::new(r"libs/lib-jitsi-meet.min.js\?v=(\d+\.*\d*)")
-                            .unwrap()
+                        Regex::new(r"libs/lib-jitsi-meet.min.js\?v=(\d+\.*\d*)").unwrap()
                     })
                     .captures(&line_str)
                 {

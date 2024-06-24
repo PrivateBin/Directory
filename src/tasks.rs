@@ -1,5 +1,5 @@
-use super::models::*;
 use super::models::privatebin::PrivateBin;
+use super::models::*;
 use super::schema::instances::dsl::*;
 use super::{get_epoch, get_instances, Build, Rocket};
 use diesel::{

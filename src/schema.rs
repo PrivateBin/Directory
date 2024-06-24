@@ -36,8 +36,4 @@ diesel::table! {
 diesel::joinable!(checks -> instances (instance_id));
 diesel::joinable!(scans -> instances (instance_id));
 
-diesel::allow_tables_to_appear_in_same_query!(
-    checks,
-    instances,
-    scans,
-);
+diesel::allow_tables_to_appear_in_same_query!(checks, instances, scans,);
