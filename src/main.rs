@@ -221,8 +221,7 @@ async fn report(
 ) -> Template {
     let form = form.into_inner();
     let form_url = form.url.trim().to_string();
-    let check_url = strip_url(form_url.to_owned());
-    let lookup_url = check_url.to_owned();
+    let check_url = strip_url(&form_url);
     let check_success_title = format!("Results of checking {check_url}");
 
     // check in negative lookup cache, prevent unnecessary lookups
@@ -235,6 +234,7 @@ async fn report(
     }
 
     // check in database
+    let lookup_url = check_url.to_owned();
     let instance_in_db = db
         .run(move |conn| {
             use diesel::dsl::sql;

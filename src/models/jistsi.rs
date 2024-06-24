@@ -1,5 +1,4 @@
 use super::*;
-use super::super::functions::strip_url;
 use http_body_util::BodyExt; // BodyExt provides the Iterator trait
 use hyper::body::{Buf, Bytes}; // Body provides the size_hint() trait, Buf provides the reader() trait
 use hyper::{Method, StatusCode};
@@ -14,14 +13,7 @@ pub struct Jitsi {
 
 impl Jitsi {
     pub async fn new(url: String) -> Result<Jitsi, String> {
-        if !url.starts_with("http://") && !url.starts_with("https://") {
-            return Err(format!("Not a valid URL: {url}"));
-        }
-
-        let check_url = strip_url(url);
-        let (https, https_redirect, check_url) = Instance::check_http(&check_url).await?;
-        // don't proceed if the robots.txt tells us not to index the instance
-        Instance::check_robots(&check_url).await?;
+        let (https, https_redirect, check_url) = Instance::check_http(&url).await?;
 
         // remaining checks may run in parallel
         let check_properties = Self::check_properties(&check_url);

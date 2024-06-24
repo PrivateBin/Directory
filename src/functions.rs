@@ -126,8 +126,8 @@ pub fn set_cached(cache: &RwLock<HashMap<String, u64>>, key: &str) {
     }
 }
 
-pub fn strip_url(url: String) -> String {
-    let mut check_url = url;
+pub fn strip_url(url: &str) -> String {
+    let mut check_url = url.to_string();
     // remove query from URL
     if let Some(query_start) = check_url.find('?') {
         check_url = check_url[..query_start].into();

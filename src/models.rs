@@ -114,10 +114,14 @@ impl Instance {
 
     // check for HTTP to HTTPS redirect
     pub async fn check_http(url: &str) -> Result<(bool, bool, String), String> {
+        if !url.starts_with("http://") && !url.starts_with("https://") {
+            return Err(format!("Not a valid URL: {url}"));
+        }
+
         let mut https = false;
         let mut https_redirect = false;
-        let mut http_url = url.to_string();
-        let mut resulting_url = url.into();
+        let mut http_url = strip_url(url);
+        let mut resulting_url = http_url.clone();
 
         if url.starts_with("https://") {
             https = true;
@@ -144,7 +148,7 @@ impl Instance {
                         if !https && https_redirect {
                             // if the given URL was HTTP, but we got redirected to https,
                             // check & store the HTTPS URL instead
-                            resulting_url = strip_url(location.into());
+                            resulting_url = strip_url(location);
                             https = true;
                         }
                     }
@@ -160,6 +164,8 @@ impl Instance {
                 }
             }
         }
+        // don't proceed if the robots.txt tells us not to index the instance
+        Self::check_robots(&resulting_url).await?;
         Ok((https, https_redirect, resulting_url))
     }
 
@@ -200,7 +206,7 @@ impl Instance {
     }
 
     // check robots.txt, if one exists, and bail if server doesn't want us to index the instance
-    pub async fn check_robots(url: &str) -> Result<bool, String> {
+    async fn check_robots(url: &str) -> Result<bool, String> {
         let robots_url = if url.ends_with('/') {
             format!("{url}robots.txt")
         } else {
