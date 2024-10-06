@@ -14,7 +14,7 @@ hyper-util = "0.1.9"
 isocountry = "0.3.2"
 maxminddb = "0.24.0"
 rand = "0.8.5"
-regex = "1.10.6"
+regex = "1.11.0"
 tokio = "1.40.0"
 url = "2.5.2"
 
