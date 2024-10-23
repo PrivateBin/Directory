@@ -76,7 +76,7 @@ static CSP_MAP: &[(&str, &str)] = &[
     // since 1.4
     ("1.", CSP_RECOMMENDATION),
 ];
-const OBSERVATORY_API: &str = "https://http-observatory.security.mozilla.org/api/v1/analyze?host=";
+const OBSERVATORY_API: &str = "https://observatory-api.mdn.mozilla.net/api/v2/analyze?host=";
 const OBSERVATORY_MAX_CONTENT_LENGTH: u64 = 10240;
 const MAX_LINE_COUNT: u16 = 1024;
 pub const TITLE: &str = "Instance Directory";

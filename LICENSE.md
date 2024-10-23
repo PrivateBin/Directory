@@ -4,8 +4,8 @@ This document lists the licenses of the projects used in the instance directory.
 
 ## Overview of licenses
 
-- [Apache License 2.0](#Apache-2.0) (210)
-- [MIT License](#MIT) (61)
+- [Apache License 2.0](#Apache-2.0) (208)
+- [MIT License](#MIT) (60)
 - [ISC License](#ISC) (7)
 - [BSD 3-Clause &quot;New&quot; or &quot;Revised&quot; License](#BSD-3-Clause) (3)
 - [GNU Affero General Public License v3.0](#AGPL-3.0) (1)
@@ -20,7 +20,7 @@ This document lists the licenses of the projects used in the instance directory.
 
 #### Used by
 
-- [directory](https://crates.io/crates/directory) 0.11.0
+- [directory](https://crates.io/crates/directory) 0.12.0
 
 ```
 GNU AFFERO GENERAL PUBLIC LICENSE
@@ -265,9 +265,7 @@ You should also get your employer (if you work as a programmer) or school, if an
 #### Used by
 
 - [miniz_oxide](https://github.com/Frommi/miniz_oxide/tree/master/miniz_oxide) 0.7.1
-- [pin-project-internal](https://github.com/taiki-e/pin-project) 1.1.3
 - [pin-project-lite](https://github.com/taiki-e/pin-project-lite) 0.2.13
-- [pin-project](https://github.com/taiki-e/pin-project) 1.1.3
 
 ```
 
@@ -454,9 +452,9 @@ You should also get your employer (if you work as a programmer) or school, if an
 #### Used by
 
 - [deranged](https://github.com/jhpratt/deranged) 0.3.11
+- [time](https://github.com/time-rs/time) 0.3.31
 - [time-core](https://github.com/time-rs/time) 0.1.2
 - [time-macros](https://github.com/time-rs/time) 0.2.16
-- [time](https://github.com/time-rs/time) 0.3.31
 
 ```
 
@@ -1486,12 +1484,12 @@ You should also get your employer (if you work as a programmer) or school, if an
 
 #### Used by
 
+- [windows](https://github.com/microsoft/windows-rs) 0.48.0
 - [windows-core](https://github.com/microsoft/windows-rs) 0.52.0
 - [windows-sys](https://github.com/microsoft/windows-rs) 0.48.0
 - [windows-sys](https://github.com/microsoft/windows-rs) 0.52.0
 - [windows-targets](https://github.com/microsoft/windows-rs) 0.48.5
 - [windows-targets](https://github.com/microsoft/windows-rs) 0.52.0
-- [windows](https://github.com/microsoft/windows-rs) 0.48.0
 - [windows_aarch64_gnullvm](https://github.com/microsoft/windows-rs) 0.48.5
 - [windows_aarch64_gnullvm](https://github.com/microsoft/windows-rs) 0.52.0
 - [windows_aarch64_msvc](https://github.com/microsoft/windows-rs) 0.48.5
@@ -2983,19 +2981,19 @@ limitations under the License.
 - [figment](https://github.com/SergioBenitez/Figment) 0.10.14
 - [itoa](https://github.com/dtolnay/itoa) 1.0.10
 - [libc](https://github.com/rust-lang/libc) 0.2.152
-- [proc-macro2-diagnostics](https://github.com/SergioBenitez/proc-macro2-diagnostics) 0.10.1
 - [proc-macro2](https://github.com/dtolnay/proc-macro2) 1.0.78
+- [proc-macro2-diagnostics](https://github.com/SergioBenitez/proc-macro2-diagnostics) 0.10.1
 - [quote](https://github.com/dtolnay/quote) 1.0.35
-- [ref-cast-impl](https://github.com/dtolnay/ref-cast) 1.0.22
 - [ref-cast](https://github.com/dtolnay/ref-cast) 1.0.22
+- [ref-cast-impl](https://github.com/dtolnay/ref-cast) 1.0.22
 - [rustversion](https://github.com/dtolnay/rustversion) 1.0.14
 - [ryu](https://github.com/dtolnay/ryu) 1.0.16
 - [serde](https://github.com/serde-rs/serde) 1.0.195
 - [serde_derive](https://github.com/serde-rs/serde) 1.0.195
 - [serde_json](https://github.com/serde-rs/json) 1.0.111
-- [syn](https://github.com/dtolnay/syn) 2.0.48
-- [thiserror-impl](https://github.com/dtolnay/thiserror) 1.0.56
+- [syn](https://github.com/dtolnay/syn) 2.0.58
 - [thiserror](https://github.com/dtolnay/thiserror) 1.0.56
+- [thiserror-impl](https://github.com/dtolnay/thiserror) 1.0.56
 - [ubyte](https://github.com/SergioBenitez/ubyte) 0.10.4
 - [uncased](https://github.com/SergioBenitez/uncased) 0.9.9
 - [unicode-ident](https://github.com/dtolnay/unicode-ident) 1.0.12
@@ -3183,15 +3181,15 @@ END OF TERMS AND CONDITIONS
 
 #### Used by
 
-- [futures-channel](https://github.com/rust-lang/futures-rs) 0.3.30
-- [futures-core](https://github.com/rust-lang/futures-rs) 0.3.30
-- [futures-executor](https://github.com/rust-lang/futures-rs) 0.3.30
-- [futures-io](https://github.com/rust-lang/futures-rs) 0.3.30
-- [futures-macro](https://github.com/rust-lang/futures-rs) 0.3.30
-- [futures-sink](https://github.com/rust-lang/futures-rs) 0.3.30
-- [futures-task](https://github.com/rust-lang/futures-rs) 0.3.30
-- [futures-util](https://github.com/rust-lang/futures-rs) 0.3.30
-- [futures](https://github.com/rust-lang/futures-rs) 0.3.30
+- [futures](https://github.com/rust-lang/futures-rs) 0.3.31
+- [futures-channel](https://github.com/rust-lang/futures-rs) 0.3.31
+- [futures-core](https://github.com/rust-lang/futures-rs) 0.3.31
+- [futures-executor](https://github.com/rust-lang/futures-rs) 0.3.31
+- [futures-io](https://github.com/rust-lang/futures-rs) 0.3.31
+- [futures-macro](https://github.com/rust-lang/futures-rs) 0.3.31
+- [futures-sink](https://github.com/rust-lang/futures-rs) 0.3.31
+- [futures-task](https://github.com/rust-lang/futures-rs) 0.3.31
+- [futures-util](https://github.com/rust-lang/futures-rs) 0.3.31
 
 ```
                               Apache License
@@ -5086,8 +5084,8 @@ limitations under the License.
 
 #### Used by
 
-- [iana-time-zone-haiku](https://github.com/strawlab/iana-time-zone) 0.1.2
 - [iana-time-zone](https://github.com/strawlab/iana-time-zone) 0.1.59
+- [iana-time-zone-haiku](https://github.com/strawlab/iana-time-zone) 0.1.2
 
 ```
                               Apache License
@@ -5533,9 +5531,9 @@ limitations under the License.
 - [gimli](https://github.com/gimli-rs/gimli) 0.28.1
 - [glob](https://github.com/rust-lang/glob) 0.3.1
 - [hashbrown](https://github.com/rust-lang/hashbrown) 0.14.3
-- [hermit-abi](https://github.com/hermitcore/hermit-rs) 0.3.4
+- [hermit-abi](https://github.com/hermit-os/hermit-rs) 0.3.9
 - [httparse](https://github.com/seanmonstar/httparse) 1.8.0
-- [hyper-rustls](https://github.com/rustls/hyper-rustls) 0.27.2
+- [hyper-rustls](https://github.com/rustls/hyper-rustls) 0.27.3
 - [idna](https://github.com/servo/rust-url/) 0.5.0
 - [indexmap](https://github.com/bluss/indexmap) 2.1.0
 - [inlinable_string](https://github.com/fitzgen/inlinable_string) 0.1.15
@@ -5558,10 +5556,10 @@ limitations under the License.
 - [pest_generator](https://github.com/pest-parser/pest) 2.7.6
 - [pest_meta](https://github.com/pest-parser/pest) 2.7.6
 - [pkg-config](https://github.com/rust-lang/pkg-config-rs) 0.3.29
-- [regex-automata](https://github.com/rust-lang/regex/tree/master/regex-automata) 0.4.5
+- [regex](https://github.com/rust-lang/regex) 1.11.0
+- [regex-automata](https://github.com/rust-lang/regex/tree/master/regex-automata) 0.4.8
 - [regex-syntax](https://github.com/rust-lang/regex) 0.6.29
-- [regex-syntax](https://github.com/rust-lang/regex/tree/master/regex-syntax) 0.8.2
-- [regex](https://github.com/rust-lang/regex) 1.10.5
+- [regex-syntax](https://github.com/rust-lang/regex/tree/master/regex-syntax) 0.8.5
 - [rustc-demangle](https://github.com/alexcrichton/rustc-demangle) 0.1.23
 - [rustix](https://github.com/bytecodealliance/rustix) 0.38.30
 - [rustls](https://github.com/rustls/rustls) 0.23.5
@@ -5581,11 +5579,11 @@ limitations under the License.
 - [url](https://github.com/servo/rust-url) 2.5.2
 - [version_check](https://github.com/SergioBenitez/version_check) 0.9.4
 - [wasi](https://github.com/bytecodealliance/wasi) 0.11.0+wasi-snapshot-preview1
-- [wasm-bindgen-backend](https://github.com/rustwasm/wasm-bindgen/tree/master/crates/backend) 0.2.90
-- [wasm-bindgen-macro-support](https://github.com/rustwasm/wasm-bindgen/tree/master/crates/macro-support) 0.2.90
-- [wasm-bindgen-macro](https://github.com/rustwasm/wasm-bindgen/tree/master/crates/macro) 0.2.90
-- [wasm-bindgen-shared](https://github.com/rustwasm/wasm-bindgen/tree/master/crates/shared) 0.2.90
 - [wasm-bindgen](https://github.com/rustwasm/wasm-bindgen) 0.2.90
+- [wasm-bindgen-backend](https://github.com/rustwasm/wasm-bindgen/tree/master/crates/backend) 0.2.90
+- [wasm-bindgen-macro](https://github.com/rustwasm/wasm-bindgen/tree/master/crates/macro) 0.2.90
+- [wasm-bindgen-macro-support](https://github.com/rustwasm/wasm-bindgen/tree/master/crates/macro-support) 0.2.90
+- [wasm-bindgen-shared](https://github.com/rustwasm/wasm-bindgen/tree/master/crates/shared) 0.2.90
 
 ```
                               Apache License
@@ -7610,8 +7608,8 @@ limitations under the License.
 
 #### Used by
 
-- [chrono-tz-build](https://crates.io/crates/chrono-tz-build) 0.2.1
 - [chrono-tz](https://github.com/chronotope/chrono-tz) 0.8.5
+- [chrono-tz-build](https://crates.io/crates/chrono-tz-build) 0.2.1
 
 ```
 Chrono-TZ is dual-licensed under the MIT License and Apache 2.0 Licence.
@@ -8416,6 +8414,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #### Used by
 
 - [mio](https://github.com/tokio-rs/mio) 0.8.11
+- [mio](https://github.com/tokio-rs/mio) 1.0.1
 
 ```
 Copyright (c) 2014 Carl Lerche and other MIO contributors
@@ -8444,7 +8443,7 @@ THE SOFTWARE.
 #### Used by
 
 - [hyper](https://github.com/hyperium/hyper) 0.14.28
-- [hyper](https://github.com/hyperium/hyper) 1.3.1
+- [hyper](https://github.com/hyperium/hyper) 1.5.0
 
 ```
 Copyright (c) 2014-2021 Sean McArthur
@@ -8529,8 +8528,8 @@ SOFTWARE.
 
 #### Used by
 
-- [kqueue-sys](https://gitlab.com/rust-kqueue/rust-kqueue-sys) 1.0.4
 - [kqueue](https://gitlab.com/rust-kqueue/rust-kqueue) 1.0.8
+- [kqueue-sys](https://gitlab.com/rust-kqueue/rust-kqueue-sys) 1.0.4
 
 ```
 Copyright (c) 2016 William Orr &lt;will@worrbase.com&gt;
@@ -8681,7 +8680,7 @@ DEALINGS IN THE SOFTWARE.
 
 #### Used by
 
-- [bytes](https://github.com/tokio-rs/bytes) 1.5.0
+- [bytes](https://github.com/tokio-rs/bytes) 1.7.1
 
 ```
 Copyright (c) 2018 Carl Lerche
@@ -8865,8 +8864,8 @@ SOFTWARE.
 
 #### Used by
 
-- [http-body-util](https://github.com/hyperium/http-body) 0.1.2
 - [http-body](https://github.com/hyperium/http-body) 0.4.6
+- [http-body-util](https://github.com/hyperium/http-body) 0.1.2
 
 ```
 Copyright (c) 2019 Hyper Contributors
@@ -8900,11 +8899,11 @@ DEALINGS IN THE SOFTWARE.
 
 #### Used by
 
+- [tracing](https://github.com/tokio-rs/tracing) 0.1.40
 - [tracing-attributes](https://github.com/tokio-rs/tracing) 0.1.27
 - [tracing-core](https://github.com/tokio-rs/tracing) 0.1.32
 - [tracing-log](https://github.com/tokio-rs/tracing) 0.2.0
 - [tracing-subscriber](https://github.com/tokio-rs/tracing) 0.3.18
-- [tracing](https://github.com/tokio-rs/tracing) 0.1.40
 
 ```
 Copyright (c) 2019 Tokio Contributors
@@ -8938,9 +8937,7 @@ DEALINGS IN THE SOFTWARE.
 
 #### Used by
 
-- [tower-layer](https://github.com/tower-rs/tower) 0.3.2
 - [tower-service](https://github.com/tower-rs/tower) 0.3.2
-- [tower](https://github.com/tower-rs/tower) 0.4.13
 
 ```
 Copyright (c) 2019 Tower Contributors
@@ -8974,7 +8971,7 @@ DEALINGS IN THE SOFTWARE.
 
 #### Used by
 
-- [hyper-util](https://github.com/hyperium/hyper-util) 0.1.5
+- [hyper-util](https://github.com/hyperium/hyper-util) 0.1.9
 
 ```
 Copyright (c) 2023 Sean McArthur
@@ -9067,7 +9064,7 @@ SOFTWARE.
 
 #### Used by
 
-- [tokio-macros](https://github.com/tokio-rs/tokio) 2.3.0
+- [tokio-macros](https://github.com/tokio-rs/tokio) 2.4.0
 
 ```
 MIT License
@@ -9128,8 +9125,8 @@ SOFTWARE.
 
 #### Used by
 
-- [async-stream-impl](https://github.com/tokio-rs/async-stream) 0.3.5
 - [async-stream](https://github.com/tokio-rs/async-stream) 0.3.5
+- [async-stream-impl](https://github.com/tokio-rs/async-stream) 0.3.5
 - [http-body](https://github.com/hyperium/http-body) 1.0.0
 - [valuable](https://github.com/tokio-rs/valuable) 0.1.0
 
@@ -9149,7 +9146,7 @@ THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRES
 
 #### Used by
 
-- [tokio](https://github.com/tokio-rs/tokio) 1.38.0
+- [tokio](https://github.com/tokio-rs/tokio) 1.40.0
 
 ```
 MIT License

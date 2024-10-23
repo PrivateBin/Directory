@@ -1,5 +1,9 @@
 # Change Log
 
+# 0.12.0
+- switch to Mozilla Observatory API v2
+- bump libraries
+
 # 0.11.0
 - adding version- and template based CSP checks #89
 - addressed typos in the about page
