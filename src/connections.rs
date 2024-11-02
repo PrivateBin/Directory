@@ -93,6 +93,10 @@ pub async fn request_head(url: &str) -> Result<Response<Incoming>, String> {
     request(url, Method::HEAD, &KEEPALIVE, Bytes::new()).await
 }
 
+pub async fn request_post(url: &str) -> Result<Response<Incoming>, String> {
+    request(url, Method::POST, &KEEPALIVE, Bytes::new()).await
+}
+
 pub fn init_connection() -> Client<HttpsConnector<HttpConnector>, Full<Bytes>> {
     let https_connector = HttpsConnectorBuilder::new()
         .with_webpki_roots()

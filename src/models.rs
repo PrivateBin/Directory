@@ -76,7 +76,7 @@ static CSP_MAP: &[(&str, &str)] = &[
     // since 1.4
     ("1.", CSP_RECOMMENDATION),
 ];
-const OBSERVATORY_API: &str = "https://observatory-api.mdn.mozilla.net/api/v2/analyze?host=";
+const OBSERVATORY_API: &str = "https://observatory-api.mdn.mozilla.net/api/v2/scan?host=";
 const OBSERVATORY_MAX_CONTENT_LENGTH: u64 = 10240;
 const MAX_LINE_COUNT: u16 = 1024;
 pub const TITLE: &str = "Instance Directory";
@@ -203,7 +203,7 @@ impl<R: std::io::BufRead> Iterator for LineReader<R> {
 #[serde(crate = "rocket::serde")]
 struct ObservatoryScan<'r> {
     grade: &'r str,
-    state: &'r str,
+    status_code: u16,
 }
 
 pub struct PrivateBin {
@@ -434,7 +434,7 @@ impl PrivateBin {
         if let Ok(parsed_url) = Url::parse(url) {
             if let Some(host) = parsed_url.host_str() {
                 let observatory_url = format!("{OBSERVATORY_API}{host}");
-                if let Ok(res) = request_get(&observatory_url).await {
+                if let Ok(res) = request_post(&observatory_url).await {
                     if res.status() == StatusCode::OK {
                         let response_content_length = match res.body().size_hint().upper() {
                             Some(length) => length,
@@ -446,18 +446,10 @@ impl PrivateBin {
                         let body_bytes = res.collect().await.unwrap().aggregate();
                         let api_response = json::from_slice::<ObservatoryScan>(body_bytes.chunk());
                         if let Ok(api_response) = api_response {
-                            if "FINISHED" == api_response.state {
+                            if api_response.status_code == StatusCode::OK.as_u16() {
                                 return ScanNew::new("mozilla_observatory", api_response.grade, 0);
                             }
                         }
-                        // initiate a rescan
-                        let _ = request(
-                            &observatory_url,
-                            Method::POST,
-                            &KEEPALIVE,
-                            Bytes::from_static(b"hidden=true"),
-                        )
-                        .await;
                     }
                 }
             }
@@ -517,6 +509,7 @@ async fn test_privatebin() {
     assert!(privatebin.instance.csp_header);
     assert!(privatebin.instance.attachments);
     assert_eq!(privatebin.instance.country_id, "CH");
+    assert_ne!(privatebin.scans[0].rating, "-");
 }
 
 #[tokio::test]

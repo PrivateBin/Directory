@@ -20,7 +20,7 @@ This document lists the licenses of the projects used in the instance directory.
 
 #### Used by
 
-- [directory](https://crates.io/crates/directory) 0.12.0
+- [directory](https://crates.io/crates/directory) 0.13.0
 
 ```
 GNU AFFERO GENERAL PUBLIC LICENSE
@@ -5556,7 +5556,7 @@ limitations under the License.
 - [pest_generator](https://github.com/pest-parser/pest) 2.7.6
 - [pest_meta](https://github.com/pest-parser/pest) 2.7.6
 - [pkg-config](https://github.com/rust-lang/pkg-config-rs) 0.3.29
-- [regex](https://github.com/rust-lang/regex) 1.11.0
+- [regex](https://github.com/rust-lang/regex) 1.11.1
 - [regex-automata](https://github.com/rust-lang/regex/tree/master/regex-automata) 0.4.8
 - [regex-syntax](https://github.com/rust-lang/regex) 0.6.29
 - [regex-syntax](https://github.com/rust-lang/regex/tree/master/regex-syntax) 0.8.5
@@ -9146,7 +9146,7 @@ THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRES
 
 #### Used by
 
-- [tokio](https://github.com/tokio-rs/tokio) 1.40.0
+- [tokio](https://github.com/tokio-rs/tokio) 1.41.0
 
 ```
 MIT License

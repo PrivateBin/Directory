@@ -1,5 +1,10 @@
 # Change Log
 
+# 0.13.0
+- fix Mozilla Observatory API v2, request is now POST, response behaved slightly
+  differently, rescan not necessary nor supported anymore
+- bump libraries
+
 # 0.12.0
 - switch to Mozilla Observatory API v2
 - bump libraries
