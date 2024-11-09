@@ -16,7 +16,7 @@ maxminddb = "0.24.0"
 rand = "0.8.5"
 regex = "1.11.1"
 tokio = "1.41.0"
-url = "2.5.2"
+url = "2.5.3"
 
 [dependencies.diesel]
 version = "2.1.6"
