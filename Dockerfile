@@ -1,5 +1,5 @@
 FROM scratch
-ARG RELEASE=0.13.0
+ARG RELEASE=0.14.0
 LABEL org.opencontainers.image.authors=support@privatebin.org \
       org.opencontainers.image.vendor=PrivateBin \
       org.opencontainers.image.documentation=https://github.com/PrivateBin/Directory/blob/master/README.md \
@@ -21,5 +21,5 @@ CMD ["directory"]
 
 COPY css /css
 COPY img /img
-COPY target/x86_64-unknown-linux-musl/release/directory /bin/
+COPY target/release/directory /bin/
 COPY templates /templates

@@ -1,5 +1,9 @@
 # Change Log
 
+# 0.14.0
+- switch to rust 1.78 to support diesel_migrations 2.2.0
+- bump libraries
+
 # 0.13.0
 - fix Mozilla Observatory API v2, request is now POST, response behaved slightly
   differently, rescan not necessary nor supported anymore

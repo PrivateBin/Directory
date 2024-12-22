@@ -42,7 +42,7 @@ image: ## Build the container image.
 
 run: ## Run a container from the image.
 	docker run -d --rm --init --name $(NAME) -p=$(PORT):$(PORT) \
-		--read-only -v "$(CURDIR)/var":/var $(IMAGE)
+		--read-only -v "$(CURDIR)/var":/var -u=$$(id -u):$$(id -g) $(IMAGE)
 
 check: ## Launch tests to verify that the service works as expected, requires a running container.
 	@sleep 2

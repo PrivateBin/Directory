@@ -3,7 +3,7 @@
 /Makefile
 /src
 /target
-!/target/x86_64-unknown-linux-musl/release/directory
+!/target/release/directory
 *.md
 /.cargo
 .git

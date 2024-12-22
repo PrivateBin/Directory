@@ -1,10 +1,10 @@
 [package]
 name = "directory"
-version = "0.13.0"
+version = "0.14.0"
 authors = ["El RIDO <elrido@gmx.net>"]
 edition = "2021"
 license = "AGPL-3.0"
-rust-version = "1.70"
+rust-version = "1.78"
 
 [dependencies]
 diesel_migrations = "2.1.0"
