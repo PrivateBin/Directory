@@ -4,7 +4,7 @@ This document lists the licenses of the projects used in the instance directory.
 
 ## Overview of licenses
 
-- [Apache License 2.0](#Apache-2.0) (220)
+- [Apache License 2.0](#Apache-2.0) (227)
 - [MIT License](#MIT) (67)
 - [Unicode License v3](#Unicode-3.0) (20)
 - [ISC License](#ISC) (7)
@@ -1930,6 +1930,7 @@ You should also get your employer (if you work as a programmer) or school, if an
 
 - [zerocopy-derive](https://github.com/google/zerocopy) 0.7.35
 - [zerocopy](https://github.com/google/zerocopy) 0.7.35
+- [zerocopy](https://github.com/google/zerocopy) 0.8.14
 
 ```
                                  Apache License
@@ -2567,7 +2568,7 @@ You should also get your employer (if you work as a programmer) or school, if an
 
 #### Used by
 
-- [diesel](https://github.com/diesel-rs/diesel) 2.2.6
+- [diesel](https://github.com/diesel-rs/diesel) 2.2.7
 - [diesel_derives](https://github.com/diesel-rs/diesel/) 2.2.3
 - [diesel_migrations](https://github.com/diesel-rs/diesel) 2.2.0
 - [diesel_table_macro_syntax](https://github.com/diesel-rs/diesel/) 0.2.0
@@ -5799,6 +5800,7 @@ limitations under the License.
 - [url](https://github.com/servo/rust-url) 2.5.4
 - [version_check](https://github.com/SergioBenitez/version_check) 0.9.5
 - [wasi](https://github.com/bytecodealliance/wasi) 0.11.0+wasi-snapshot-preview1
+- [wasi](https://github.com/bytecodealliance/wasi-rs) 0.13.3+wasi-0.2.2
 - [wasm-bindgen-backend](https://github.com/rustwasm/wasm-bindgen/tree/master/crates/backend) 0.2.99
 - [wasm-bindgen-macro-support](https://github.com/rustwasm/wasm-bindgen/tree/master/crates/macro-support) 0.2.99
 - [wasm-bindgen-macro](https://github.com/rustwasm/wasm-bindgen/tree/master/crates/macro) 0.2.99
@@ -6228,6 +6230,8 @@ limitations under the License.
 #### Used by
 
 - [rand](https://github.com/rust-random/rand) 0.8.5
+- [rand](https://github.com/rust-random/rand) 0.9.0
+- [rand_chacha](https://github.com/rust-random/rand) 0.9.0
 
 ```
                               Apache License
@@ -6413,6 +6417,7 @@ END OF TERMS AND CONDITIONS
 #### Used by
 
 - [rand_core](https://github.com/rust-random/rand) 0.6.4
+- [rand_core](https://github.com/rust-random/rand) 0.9.0
 
 ```
                               Apache License
@@ -6609,6 +6614,7 @@ APPENDIX: How to apply the Apache License to your work.
 #### Used by
 
 - [getrandom](https://github.com/rust-random/getrandom) 0.2.15
+- [getrandom](https://github.com/rust-random/getrandom) 0.3.1
 - [rand_chacha](https://github.com/rust-random/rand) 0.3.1
 
 ```
@@ -7678,6 +7684,7 @@ limitations under the License.
 - [unic-ucd-version](https://github.com/open-i18n/rust-unic/) 0.9.0
 - [winapi-i686-pc-windows-gnu](https://github.com/retep998/winapi-rs) 0.4.0
 - [winapi-x86_64-pc-windows-gnu](https://github.com/retep998/winapi-rs) 0.4.0
+- [wit-bindgen-rt](https://github.com/bytecodealliance/wasi-rs) 0.33.0
 
 ```
 Apache License

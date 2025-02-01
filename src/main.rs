@@ -375,7 +375,7 @@ async fn api(
             break;
         }
     }
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     instance_list.shuffle(&mut rng);
     Json(instance_list)
 }
@@ -425,7 +425,7 @@ async fn forward_me(
         instance_list.push(instance.to_owned());
     }
 
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     instance_list.shuffle(&mut rng);
     if instance_list.is_empty() {
         // safe fallback - likely we have some connectivity issues (no instance
