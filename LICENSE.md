@@ -20,7 +20,7 @@ This document lists the licenses of the projects used in the instance directory.
 
 #### Used by
 
-- [directory](https://crates.io/crates/directory) 0.14.0
+- [directory](https://crates.io/crates/directory) 0.15.0
 
 ```
 GNU AFFERO GENERAL PUBLIC LICENSE
@@ -8631,7 +8631,6 @@ THE SOFTWARE.
 #### Used by
 
 - [hyper](https://github.com/hyperium/hyper) 0.14.32
-- [hyper](https://github.com/hyperium/hyper) 1.5.2
 
 ```
 Copyright (c) 2014-2021 Sean McArthur
@@ -8663,6 +8662,34 @@ THE SOFTWARE.
 
 ```
 Copyright (c) 2014-2021 The rusqlite developers
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the &quot;Software&quot;), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+```
+### <a id="MIT"></a>MIT License
+
+#### Used by
+
+- [hyper](https://github.com/hyperium/hyper) 1.6.0
+
+```
+Copyright (c) 2014-2025 Sean McArthur
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the &quot;Software&quot;), to deal
@@ -9269,7 +9296,7 @@ SOFTWARE.
 
 #### Used by
 
-- [tokio-macros](https://github.com/tokio-rs/tokio) 2.4.0
+- [tokio-macros](https://github.com/tokio-rs/tokio) 2.5.0
 
 ```
 MIT License
@@ -9383,7 +9410,7 @@ THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRES
 
 - [tokio-stream](https://github.com/tokio-rs/tokio) 0.1.17
 - [tokio-util](https://github.com/tokio-rs/tokio) 0.7.13
-- [tokio](https://github.com/tokio-rs/tokio) 1.42.0
+- [tokio](https://github.com/tokio-rs/tokio) 1.43.0
 
 ```
 MIT License

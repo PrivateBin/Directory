@@ -22,11 +22,33 @@ use url::Url;
 
 pub const CSP_RECOMMENDATION: &str = "default-src 'none'; base-uri 'self'; \
     form-action 'none'; manifest-src 'self'; connect-src * blob:; \
-    script-src 'self' 'unsafe-eval'; style-src 'self'; font-src 'self'; \
+    script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; font-src 'self'; \
     frame-ancestors 'none'; img-src 'self' data: blob:; media-src blob:; \
     object-src blob:; sandbox allow-same-origin allow-scripts allow-forms \
     allow-popups allow-modals allow-downloads";
 static CSP_MAP: &[(&str, &str)] = &[
+    // since 1.7.6, with bootstrap
+    ("1.7.6", CSP_RECOMMENDATION),
+    // since 1.7.6, with bootstrap5
+    (
+        "1.7.6",
+        "default-src 'self'; base-uri 'self'; form-action 'none'; \
+        manifest-src 'self'; connect-src * blob:; script-src 'self' \
+        'wasm-unsafe-eval'; style-src 'self'; font-src 'self'; \
+        frame-ancestors 'none'; img-src 'self' data: blob:; media-src blob:; \
+        object-src blob:; sandbox allow-same-origin allow-scripts allow-forms \
+        allow-modals allow-downloads",
+    ),
+    // since 1.7.2, with bootstrap5
+    (
+        "1.7.",
+        "default-src 'self'; base-uri 'self'; form-action 'none'; \
+        manifest-src 'self'; connect-src * blob:; script-src 'self' \
+        'unsafe-eval'; style-src 'self'; font-src 'self'; \
+        frame-ancestors 'none'; img-src 'self' data: blob:; media-src blob:; \
+        object-src blob:; sandbox allow-same-origin allow-scripts allow-forms \
+        allow-modals allow-downloads",
+    ),
     (
         "1.3.5",
         "default-src 'none'; manifest-src 'self'; connect-src * blob:; \
@@ -63,18 +85,16 @@ static CSP_MAP: &[(&str, &str)] = &[
         script-src 'self'; style-src 'self'; font-src 'self'; \
         img-src 'self' data:; referrer no-referrer;",
     ),
-    // since 1.7.2, with bootstrap5
-    (
-        "1.7.",
-        "default-src 'self'; base-uri 'self'; form-action 'none'; \
-        manifest-src 'self'; connect-src * blob:; script-src 'self' \
-        'unsafe-eval'; style-src 'self'; font-src 'self'; \
-        frame-ancestors 'none'; img-src 'self' data: blob:; media-src blob:; \
-        object-src blob:; sandbox allow-same-origin allow-scripts allow-forms \
-        allow-modals allow-downloads",
-    ),
     // since 1.4
-    ("1.", CSP_RECOMMENDATION),
+    (
+        "1.",
+        "default-src 'none'; base-uri 'self'; form-action 'none'; \
+    manifest-src 'self'; connect-src * blob:; script-src 'self' 'unsafe-eval'; \
+    style-src 'self'; font-src 'self'; frame-ancestors 'none'; \
+    img-src 'self' data: blob:; media-src blob:; object-src blob:; sandbox \
+    allow-same-origin allow-scripts allow-forms allow-popups allow-modals \
+    allow-downloads",
+    ),
 ];
 const OBSERVATORY_API: &str = "https://observatory-api.mdn.mozilla.net/api/v2/scan?host=";
 const OBSERVATORY_MAX_CONTENT_LENGTH: u64 = 10240;

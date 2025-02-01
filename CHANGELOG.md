@@ -1,5 +1,9 @@
 # Change Log
 
+# 0.15.0
+- PrivateBin release 1.7.6 switched to WASM streaming & eliminated unsafe-eval CSP
+- bump libraries
+
 # 0.14.0
 - switch to rust 1.78 to support diesel_migrations 2.2.0
 - bump libraries
