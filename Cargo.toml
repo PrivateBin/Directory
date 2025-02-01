@@ -1,6 +1,6 @@
 [package]
 name = "directory"
-version = "0.14.0"
+version = "0.15.0"
 authors = ["El RIDO <elrido@gmx.net>"]
 edition = "2021"
 license = "AGPL-3.0"
@@ -19,11 +19,11 @@ tokio = "1.43.0"
 url = "2.5.4"
 
 [dependencies.diesel]
-version = "2.2.6"
+version = "2.2.7"
 features = ["sqlite"]
 
 [dependencies.hyper]
-version = "1.5.2"
+version = "1.6.0"
 features = ["client"]
 
 [dependencies.hyper-rustls]
