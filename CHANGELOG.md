@@ -1,5 +1,8 @@
 # Change Log
 
+# 0.15.1
+- bump libraries
+
 # 0.15.0
 - PrivateBin release 1.7.6 switched to WASM streaming & eliminated unsafe-eval CSP
 - bump libraries
