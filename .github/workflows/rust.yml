@@ -11,8 +11,9 @@ jobs:
       uses: actions/checkout@v4
     - name: Install Rust
       run: |
-        rustup toolchain install 1.78 --profile minimal --no-self-update --component rustfmt clippy
+        rustup toolchain install 1.78 --profile minimal --no-self-update
         rustup default 1.78
+        rustup component add rustfmt clippy
     - name: Cache GeoIP database
       id: cache-geoip
       uses: actions/cache@v4
