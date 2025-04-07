@@ -307,8 +307,13 @@ impl PrivateBin {
                 );
             }
             let reader = opener.unwrap();
-            let country: Country = reader.lookup(ip).unwrap();
-            country_code = country.country.unwrap().iso_code.unwrap().into();
+            if let Ok(Some(country)) = reader.lookup::<Country>(ip) {
+                if let Some(country) = country.country {
+                    if let Some(iso_code) = country.iso_code {
+                        country_code = iso_code.into();
+                    }
+                }
+            }
         }
         Ok(country_code)
     }
