@@ -19,7 +19,7 @@ This document lists the licenses of the projects used in the instance directory.
 
 #### Used by
 
-- [directory](https://crates.io/crates/directory) 0.15.2
+- [directory](https://crates.io/crates/directory) 0.15.3
 
 ```
 GNU AFFERO GENERAL PUBLIC LICENSE
@@ -5528,7 +5528,7 @@ limitations under the License.
 - [cc](https://github.com/rust-lang/cc-rs) 1.2.18
 - [cfg-if](https://github.com/alexcrichton/cfg-if) 1.0.0
 - [core-foundation-sys](https://github.com/servo/core-foundation-rs) 0.8.7
-- [crossbeam-channel](https://github.com/crossbeam-rs/crossbeam) 0.5.14
+- [crossbeam-channel](https://github.com/crossbeam-rs/crossbeam) 0.5.15
 - [crossbeam-deque](https://github.com/crossbeam-rs/crossbeam) 0.8.6
 - [crossbeam-epoch](https://github.com/crossbeam-rs/crossbeam) 0.9.18
 - [crossbeam-utils](https://github.com/crossbeam-rs/crossbeam) 0.8.21
