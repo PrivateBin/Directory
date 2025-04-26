@@ -4,7 +4,7 @@ This document lists the licenses of the projects used in the instance directory.
 
 ## Overview of licenses
 
-- [Apache License 2.0](#Apache-2.0) (232)
+- [Apache License 2.0](#Apache-2.0) (233)
 - [MIT License](#MIT) (65)
 - [Unicode License v3](#Unicode-3.0) (20)
 - [ISC License](#ISC) (6)
@@ -263,7 +263,7 @@ You should also get your employer (if you work as a programmer) or school, if an
 
 #### Used by
 
-- [miniz_oxide](https://github.com/Frommi/miniz_oxide/tree/master/miniz_oxide) 0.8.7
+- [miniz_oxide](https://github.com/Frommi/miniz_oxide/tree/master/miniz_oxide) 0.8.8
 - [pin-project-lite](https://github.com/taiki-e/pin-project-lite) 0.2.16
 - [time-core](https://github.com/time-rs/time) 0.1.4
 - [time-macros](https://github.com/time-rs/time) 0.2.22
@@ -1722,7 +1722,7 @@ You should also get your employer (if you work as a programmer) or school, if an
 
 #### Used by
 
-- [zerocopy](https://github.com/google/zerocopy) 0.8.24
+- [zerocopy](https://github.com/google/zerocopy) 0.8.25
 
 ```
                                  Apache License
@@ -2147,9 +2147,10 @@ You should also get your employer (if you work as a programmer) or school, if an
 - [r2d2](https://github.com/sfackler/r2d2) 0.8.10
 - [scheduled-thread-pool](https://github.com/sfackler/scheduled-thread-pool) 0.2.7
 - [serde_spanned](https://github.com/toml-rs/toml) 0.6.8
-- [toml](https://github.com/toml-rs/toml) 0.8.20
-- [toml_datetime](https://github.com/toml-rs/toml) 0.6.8
-- [toml_edit](https://github.com/toml-rs/toml) 0.22.24
+- [toml](https://github.com/toml-rs/toml) 0.8.21
+- [toml_datetime](https://github.com/toml-rs/toml) 0.6.9
+- [toml_edit](https://github.com/toml-rs/toml) 0.22.25
+- [toml_write](https://github.com/toml-rs/toml) 0.1.0
 
 ```
                                  Apache License
@@ -2361,7 +2362,7 @@ You should also get your employer (if you work as a programmer) or school, if an
 #### Used by
 
 - [diesel](https://github.com/diesel-rs/diesel) 2.2.10
-- [diesel_derives](https://github.com/diesel-rs/diesel/) 2.2.4
+- [diesel_derives](https://github.com/diesel-rs/diesel/) 2.2.5
 - [diesel_migrations](https://github.com/diesel-rs/diesel) 2.2.0
 - [diesel_table_macro_syntax](https://github.com/diesel-rs/diesel/) 0.2.0
 - [dsl_auto_type](https://crates.io/crates/dsl_auto_type) 0.1.3
@@ -2988,9 +2989,9 @@ limitations under the License.
 - [async-trait](https://github.com/dtolnay/async-trait) 0.1.88
 - [figment](https://github.com/SergioBenitez/Figment) 0.10.19
 - [itoa](https://github.com/dtolnay/itoa) 1.0.15
-- [libc](https://github.com/rust-lang/libc) 0.2.171
+- [libc](https://github.com/rust-lang/libc) 0.2.172
 - [proc-macro2-diagnostics](https://github.com/SergioBenitez/proc-macro2-diagnostics) 0.10.1
-- [proc-macro2](https://github.com/dtolnay/proc-macro2) 1.0.94
+- [proc-macro2](https://github.com/dtolnay/proc-macro2) 1.0.95
 - [quote](https://github.com/dtolnay/quote) 1.0.40
 - [ref-cast-impl](https://github.com/dtolnay/ref-cast) 1.0.24
 - [ref-cast](https://github.com/dtolnay/ref-cast) 1.0.24
@@ -5523,9 +5524,9 @@ limitations under the License.
 - [backtrace](https://github.com/rust-lang/backtrace-rs) 0.3.74
 - [bitflags](https://github.com/bitflags/bitflags) 1.3.2
 - [bitflags](https://github.com/bitflags/bitflags) 2.9.0
-- [bstr](https://github.com/BurntSushi/bstr) 1.11.3
+- [bstr](https://github.com/BurntSushi/bstr) 1.12.0
 - [bumpalo](https://github.com/fitzgen/bumpalo) 3.17.0
-- [cc](https://github.com/rust-lang/cc-rs) 1.2.18
+- [cc](https://github.com/rust-lang/cc-rs) 1.2.20
 - [cfg-if](https://github.com/alexcrichton/cfg-if) 1.0.0
 - [core-foundation-sys](https://github.com/servo/core-foundation-rs) 0.8.7
 - [crossbeam-channel](https://github.com/crossbeam-rs/crossbeam) 0.5.15
@@ -5554,7 +5555,7 @@ limitations under the License.
 - [inlinable_string](https://github.com/fitzgen/inlinable_string) 0.1.15
 - [js-sys](https://github.com/rustwasm/wasm-bindgen/tree/master/crates/js-sys) 0.3.77
 - [lazy_static](https://github.com/rust-lang-nursery/lazy-static.rs) 1.5.0
-- [linux-raw-sys](https://github.com/sunfishcode/linux-raw-sys) 0.9.3
+- [linux-raw-sys](https://github.com/sunfishcode/linux-raw-sys) 0.9.4
 - [lock_api](https://github.com/Amanieu/parking_lot) 0.4.12
 - [log](https://github.com/rust-lang/log) 0.4.27
 - [mime](https://github.com/hyperium/mime) 0.3.17
@@ -5577,10 +5578,10 @@ limitations under the License.
 - [ring](https://github.com/briansmith/ring) 0.17.14
 - [rustc-demangle](https://github.com/rust-lang/rustc-demangle) 0.1.24
 - [rustix](https://github.com/bytecodealliance/rustix) 1.0.5
-- [rustls](https://github.com/rustls/rustls) 0.23.25
+- [rustls](https://github.com/rustls/rustls) 0.23.26
 - [scoped-tls](https://github.com/alexcrichton/scoped-tls) 1.0.1
 - [scopeguard](https://github.com/bluss/scopeguard) 1.2.0
-- [signal-hook-registry](https://github.com/vorner/signal-hook) 1.4.2
+- [signal-hook-registry](https://github.com/vorner/signal-hook) 1.4.5
 - [slug](https://github.com/Stebalien/slug-rs) 0.1.6
 - [smallvec](https://github.com/servo/rust-smallvec) 1.15.0
 - [socket2](https://github.com/rust-lang/socket2) 0.5.9
@@ -6406,7 +6407,7 @@ APPENDIX: How to apply the Apache License to your work.
 
 #### Used by
 
-- [getrandom](https://github.com/rust-random/getrandom) 0.2.15
+- [getrandom](https://github.com/rust-random/getrandom) 0.2.16
 - [getrandom](https://github.com/rust-random/getrandom) 0.3.2
 - [rand_chacha](https://github.com/rust-random/rand) 0.3.1
 
@@ -8583,7 +8584,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #### Used by
 
 - [h2](https://github.com/hyperium/h2) 0.3.26
-- [h2](https://github.com/hyperium/h2) 0.4.8
+- [h2](https://github.com/hyperium/h2) 0.4.9
 
 ```
 Copyright (c) 2017 h2 authors
@@ -9174,7 +9175,7 @@ SOFTWARE.
 
 - [async-stream-impl](https://github.com/tokio-rs/async-stream) 0.3.6
 - [async-stream](https://github.com/tokio-rs/async-stream) 0.3.6
-- [libm](https://github.com/rust-lang/libm) 0.2.11
+- [libm](https://github.com/rust-lang/compiler-builtins) 0.2.13
 - [parse-zoneinfo](https://github.com/chronotope/chrono-tz) 0.3.1
 
 ```
@@ -9194,7 +9195,7 @@ THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRES
 #### Used by
 
 - [tokio-stream](https://github.com/tokio-rs/tokio) 0.1.17
-- [tokio-util](https://github.com/tokio-rs/tokio) 0.7.14
+- [tokio-util](https://github.com/tokio-rs/tokio) 0.7.15
 - [tokio](https://github.com/tokio-rs/tokio) 1.44.2
 
 ```
@@ -9316,7 +9317,7 @@ DEALINGS IN THE SOFTWARE.
 
 #### Used by
 
-- [winnow](https://github.com/winnow-rs/winnow) 0.7.4
+- [winnow](https://github.com/winnow-rs/winnow) 0.7.7
 
 ```
 Permission is hereby granted, free of charge, to any person obtaining
