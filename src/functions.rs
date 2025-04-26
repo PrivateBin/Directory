@@ -197,7 +197,7 @@ pub fn filter_country(value: &Value, args: &HashMap<String, Value>) -> Result<Va
     }
     let output = match args.get("label") {
         Some(label) => match try_get_value!("country", "label", bool, label) {
-            true => format!("{0}. {1}", country_name, country_emoji),
+            true => format!("{country_name}. {country_emoji}"),
             false => format!(TABLE_CELL_FORMAT!(), country_name, country_emoji),
         },
         None => format!(TABLE_CELL_FORMAT!(), country_name, country_emoji),

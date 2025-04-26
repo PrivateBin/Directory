@@ -19,7 +19,7 @@ This document lists the licenses of the projects used in the instance directory.
 
 #### Used by
 
-- [directory](https://crates.io/crates/directory) 0.15.3
+- [directory](https://crates.io/crates/directory) 0.16.0
 
 ```
 GNU AFFERO GENERAL PUBLIC LICENSE
@@ -2360,7 +2360,7 @@ You should also get your employer (if you work as a programmer) or school, if an
 
 #### Used by
 
-- [diesel](https://github.com/diesel-rs/diesel) 2.2.9
+- [diesel](https://github.com/diesel-rs/diesel) 2.2.10
 - [diesel_derives](https://github.com/diesel-rs/diesel/) 2.2.4
 - [diesel_migrations](https://github.com/diesel-rs/diesel) 2.2.0
 - [diesel_table_macro_syntax](https://github.com/diesel-rs/diesel/) 0.2.0
@@ -6023,7 +6023,7 @@ limitations under the License.
 #### Used by
 
 - [rand](https://github.com/rust-random/rand) 0.8.5
-- [rand](https://github.com/rust-random/rand) 0.9.0
+- [rand](https://github.com/rust-random/rand) 0.9.1
 - [rand_chacha](https://github.com/rust-random/rand) 0.9.0
 
 ```

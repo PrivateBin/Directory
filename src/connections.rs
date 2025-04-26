@@ -36,7 +36,7 @@ pub async fn request(
         None => return Err(format!("Unable to parse host from URL {url}.")),
     };
     let authority = match parsed_url.port() {
-        Some(port) => format!("{}:{}", parsed_host, port),
+        Some(port) => format!("{parsed_host}:{port}"),
         None => parsed_host.to_owned(),
     };
     let uri = match Uri::builder()

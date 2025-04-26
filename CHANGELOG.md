@@ -1,5 +1,9 @@
 # Change Log
 
+# 0.16.0
+- re-add rescan for Mozilla Observatory API, due to error rate on parallel scans
+- bump libraries
+
 # 0.15.3
 - bump libraries
 

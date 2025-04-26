@@ -9,6 +9,7 @@ use hyper::body::{Body, Buf, Bytes}; // Body provides the size_hint() trait, Buf
 use hyper::header::{CONTENT_SECURITY_POLICY, LOCATION};
 use hyper::{Method, StatusCode};
 use maxminddb::geoip2::Country;
+use rand::Rng;
 use regex::Regex;
 use rocket::serde::{json, Deserialize, Serialize};
 use std::collections::HashMap;
@@ -18,6 +19,7 @@ use std::str::from_utf8;
 use std::sync::atomic::AtomicU64;
 use std::sync::OnceLock;
 use std::sync::RwLock;
+use tokio::time::{sleep, Duration};
 use url::Url;
 
 pub const CSP_RECOMMENDATION: &str = "default-src 'none'; base-uri 'self'; \
@@ -222,8 +224,9 @@ impl<R: std::io::BufRead> Iterator for LineReader<R> {
 #[derive(Deserialize)]
 #[serde(crate = "rocket::serde")]
 struct ObservatoryScan<'r> {
-    grade: &'r str,
-    status_code: u16,
+    error: Option<&'r str>,
+    grade: Option<&'r str>,
+    status_code: Option<u16>,
 }
 
 pub struct PrivateBin {
@@ -459,23 +462,46 @@ impl PrivateBin {
         if let Ok(parsed_url) = Url::parse(url) {
             if let Some(host) = parsed_url.host_str() {
                 let observatory_url = format!("{OBSERVATORY_API}{host}");
-                if let Ok(res) = request_post(&observatory_url).await {
-                    if res.status() == StatusCode::OK {
-                        let response_content_length = match res.body().size_hint().upper() {
-                            Some(length) => length,
-                            None => OBSERVATORY_MAX_CONTENT_LENGTH + 1, // protect from malicious response
-                        };
-                        if response_content_length >= OBSERVATORY_MAX_CONTENT_LENGTH {
-                            Default::default()
-                        }
-                        let body_bytes = res.collect().await.unwrap().aggregate();
-                        let api_response = json::from_slice::<ObservatoryScan>(body_bytes.chunk());
-                        if let Ok(api_response) = api_response {
-                            if api_response.status_code == StatusCode::OK.as_u16() {
-                                return ScanNew::new("mozilla_observatory", api_response.grade, 0);
+                loop {
+                    if let Ok(res) = request_post(&observatory_url).await {
+                        if res.status() == StatusCode::OK {
+                            let response_content_length = res
+                                .body()
+                                .size_hint()
+                                .upper()
+                                .unwrap_or(OBSERVATORY_MAX_CONTENT_LENGTH);
+                            // protect from malicious response
+                            if response_content_length >= OBSERVATORY_MAX_CONTENT_LENGTH {
+                                break;
+                            }
+                            let body_bytes = res.collect().await.unwrap().aggregate();
+                            if let Ok(api_response) =
+                                json::from_slice::<ObservatoryScan>(body_bytes.chunk())
+                            {
+                                if api_response.error.is_none()
+                                    && api_response.grade.is_some()
+                                    && api_response
+                                        .status_code
+                                        .unwrap_or(StatusCode::EXPECTATION_FAILED.as_u16())
+                                        == StatusCode::OK.as_u16()
+                                {
+                                    return ScanNew::new(
+                                        "mozilla_observatory",
+                                        api_response.grade.unwrap(),
+                                        0,
+                                    );
+                                }
+                                // initiate a rescan, if the error indicates a timeout
+                                // see: https://github.com/mdn/mdn-http-observatory/blob/main/src/api/errors.js
+                                if api_response.error.unwrap_or("") == "error-unknown" {
+                                    let backoff_ms = rand::rng().random_range(2000..5000);
+                                    sleep(Duration::from_millis(backoff_ms)).await;
+                                    continue;
+                                }
                             }
                         }
                     }
+                    break;
                 }
             }
         }
