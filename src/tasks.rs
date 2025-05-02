@@ -18,11 +18,11 @@ pub const CRON_INTERVAL: u64 = 900; // 15 minutes
 pub const CHECKS_TO_STORE: u64 = 100; // amount of checks to keep
 pub const MAX_FAILURES: u64 = 90; // remove instances that failed this many times
 
-struct InstanceCheckResult {
+struct InstanceCheckResult<'a> {
     message: String,
     scan_update: Option<ScanNew>,
     scan_update_success: String,
-    instance: Instance,
+    instance: &'a Instance,
     instance_update: Option<InstanceNew>,
     instance_update_success: String,
 }
@@ -43,7 +43,7 @@ pub async fn check_full(rocket: Rocket<Build>) {
             let mut instance_update_queries = vec![];
             let mut scan_update_queries = vec![];
             let mut children = vec![];
-            for instance in instance_list.into_iter() {
+            for instance in instance_list.iter() {
                 children.push(check_instance(instance));
             }
             let mut pinned_children: Vec<_> = children.into_iter().map(Box::pin).collect();
@@ -92,7 +92,7 @@ pub async fn check_full(rocket: Rocket<Build>) {
                             country_id.eq(updated_instance.country_id),
                         )),
                         result.instance_update_success,
-                        result.instance.url,
+                        result.instance.url.to_owned(),
                     ));
                 }
             }
@@ -155,7 +155,7 @@ pub async fn check_full(rocket: Rocket<Build>) {
     }
 }
 
-async fn check_instance(instance: Instance) -> InstanceCheckResult {
+async fn check_instance(instance: &Instance) -> InstanceCheckResult {
     let timer = Instant::now();
     let mut message = String::new();
     let mut instance_options = [
@@ -261,14 +261,14 @@ async fn check_instance(instance: Instance) -> InstanceCheckResult {
     }
 }
 
-async fn check_instance_up(instance: Instance) -> (String, CheckNew, Duration) {
+async fn check_instance_up(instance: &Instance) -> (&String, CheckNew, Duration) {
     // measure instance being up or down
     let timer = Instant::now();
     let check_result = CheckNew {
         up: instance.check_up().await,
         instance_id: instance.id,
     };
-    (instance.url, check_result, timer.elapsed())
+    (&instance.url, check_result, timer.elapsed())
 }
 
 pub async fn check_up(rocket: Rocket<Build>) {
@@ -283,7 +283,7 @@ pub async fn check_up(rocket: Rocket<Build>) {
         Ok(instance_list) => {
             let mut instance_checks = vec![];
             let mut children = vec![];
-            for instance in instance_list.into_iter() {
+            for instance in instance_list.iter() {
                 children.push(check_instance_up(instance));
             }
             let mut pinned_children: Vec<_> = children.into_iter().map(Box::pin).collect();
