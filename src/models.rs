@@ -12,6 +12,7 @@ use maxminddb::geoip2::Country;
 use rand::Rng;
 use regex::Regex;
 use rocket::serde::{json, Deserialize, Serialize};
+use rocket::warn;
 use std::collections::HashMap;
 use std::env::var;
 use std::net::{IpAddr, ToSocketAddrs}; // ToSocketAddrs provides the to_socket_addrs() trait
@@ -25,12 +26,33 @@ use url::Url;
 pub const CSP_RECOMMENDATION: &str = "default-src 'none'; base-uri 'self'; \
     form-action 'none'; manifest-src 'self'; connect-src * blob:; \
     script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; font-src 'self'; \
-    frame-ancestors 'none'; img-src 'self' data: blob:; media-src blob:; \
-    object-src blob:; sandbox allow-same-origin allow-scripts allow-forms \
-    allow-popups allow-modals allow-downloads";
+    frame-ancestors 'none'; frame-src blob:; img-src 'self' data: blob:; \
+    media-src blob:; object-src blob:; sandbox allow-same-origin allow-scripts \
+    allow-forms allow-popups allow-modals allow-downloads";
+pub const CSP_B5_RECOMMENDATION: &str = "default-src 'self'; base-uri 'self'; \
+    form-action 'none'; manifest-src 'self'; connect-src * blob:; \
+    script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; font-src 'self'; \
+    frame-ancestors 'none'; frame-src blob:; img-src 'self' data: blob:; \
+    media-src blob:; object-src blob:; sandbox allow-same-origin allow-scripts \
+    allow-forms allow-modals allow-downloads";
 static CSP_MAP: &[(&str, &str)] = &[
+    ("1.7.8", CSP_RECOMMENDATION),
+    // with bootstrap5
+    ("1.7.8", CSP_B5_RECOMMENDATION),
+    // since 1.7.7, with bootstrap
+    ("1.7.7", CSP_RECOMMENDATION),
+    // since 1.7.7, with bootstrap5
+    ("1.7.7", CSP_B5_RECOMMENDATION),
     // since 1.7.6, with bootstrap
-    ("1.7.6", CSP_RECOMMENDATION),
+    (
+        "1.7.6",
+        "default-src 'none'; base-uri 'self'; form-action 'none'; \
+        manifest-src 'self'; connect-src * blob:; script-src 'self' \
+        'wasm-unsafe-eval'; style-src 'self'; font-src 'self'; \
+        frame-ancestors 'none'; img-src 'self' data: blob:; media-src blob:; \
+        object-src blob:; sandbox allow-same-origin allow-scripts allow-forms \
+        allow-modals allow-downloads",
+    ),
     // since 1.7.6, with bootstrap5
     (
         "1.7.6",
@@ -472,6 +494,7 @@ impl PrivateBin {
                                 .unwrap_or(OBSERVATORY_MAX_CONTENT_LENGTH);
                             // protect from malicious response
                             if response_content_length >= OBSERVATORY_MAX_CONTENT_LENGTH {
+                                warn!("Failed retrieving observatory rating for {url} due response being too large (>= {OBSERVATORY_MAX_CONTENT_LENGTH}).");
                                 break;
                             }
                             let body_bytes = res.collect().await.unwrap().aggregate();
@@ -493,13 +516,22 @@ impl PrivateBin {
                                 }
                                 // initiate a rescan, if the error indicates a timeout
                                 // see: https://github.com/mdn/mdn-http-observatory/blob/main/src/api/errors.js
-                                if api_response.error.unwrap_or("") == "error-unknown" {
+                                let error = api_response.error.unwrap_or("");
+                                if error == "error-unknown" {
                                     let backoff_ms = rand::rng().random_range(2000..5000);
                                     sleep(Duration::from_millis(backoff_ms)).await;
                                     continue;
                                 }
+                                warn!("Failed retrieving observatory rating for {url} due to {error}.");
+                            } else {
+                                warn!("Failed retrieving observatory rating for {url} due JSON decoding issue.");
                             }
+                        } else {
+                            let status = res.status().as_u16();
+                            warn!("Failed retrieving observatory rating for {url} due to HTTP status {status}.");
                         }
+                    } else {
+                        warn!("Failed retrieving observatory rating for {url} due request failing or timeout.");
                     }
                     break;
                 }
