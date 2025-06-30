@@ -3,6 +3,7 @@
 # 0.17.0
 - PrivateBin release 1.7.7 & 1.7.8 CSP changes
 - adding more diagnostics on Mozilla Observatory API errors
+- enable and address most of the pedantic clippy lints
 - bump libraries
 
 # 0.16.0

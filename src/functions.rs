@@ -23,6 +23,10 @@ const CACHE_TIMEOUT: u64 = 300; // 5 minutes
 const CACHE_TIMEOUT: u64 = 1; // 1 second, for unit tests
 static SLASHES_EXP: OnceLock<Regex> = OnceLock::new();
 
+/// # Panics
+///
+/// May panic in `SystemTime::now().duration_since`.
+#[must_use]
 pub fn get_epoch() -> u64 {
     use std::time::SystemTime;
     SystemTime::now()
@@ -51,7 +55,10 @@ pub fn get_instances() -> SqlQuery {
     )
 }
 
-pub fn is_cached(cache: &RwLock<HashMap<String, u64>>, key: &str) -> bool {
+pub fn is_cached<S: std::hash::BuildHasher>(
+    cache: &RwLock<HashMap<String, u64, S>>,
+    key: &str,
+) -> bool {
     if let Ok(read_cache) = cache.read() {
         if let Some(timestamp) = read_cache.get(key) {
             if *timestamp < get_epoch() - CACHE_TIMEOUT {
@@ -67,6 +74,7 @@ pub fn is_cached(cache: &RwLock<HashMap<String, u64>>, key: &str) -> bool {
     false
 }
 
+#[must_use]
 pub fn rating_to_percent(rating: &str) -> u8 {
     // see https://en.wikipedia.org/wiki/Academic_grading_in_the_United_States#Numerical_and_letter_grades
     match rating {
@@ -87,6 +95,7 @@ pub fn rating_to_percent(rating: &str) -> u8 {
     }
 }
 
+#[must_use]
 pub fn rocket() -> Rocket<Build> {
     rocket::build()
         .mount(
@@ -106,6 +115,9 @@ pub fn rocket() -> Rocket<Build> {
         })
 }
 
+/// # Panics
+///
+/// May panic in `DirectoryDbConn::get_one` & `conn.run_pending_migrations(MIGRATIONS)`.
 pub async fn run_db_migrations(rocket: Rocket<Build>) -> Rocket<Build> {
     pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!();
     let db = DirectoryDbConn::get_one(&rocket)
@@ -119,12 +131,15 @@ pub async fn run_db_migrations(rocket: Rocket<Build>) -> Rocket<Build> {
     rocket
 }
 
-pub fn set_cached(cache: &RwLock<HashMap<String, u64>>, key: &str) {
+pub fn set_cached<S: std::hash::BuildHasher>(cache: &RwLock<HashMap<String, u64, S>>, key: &str) {
     if let Ok(mut write_cache) = cache.write() {
         write_cache.insert(key.into(), get_epoch());
     }
 }
 
+/// # Panics
+///
+/// May panic in `Regex::new(r"/{2,}").unwrap()`.
 pub fn strip_url(url: String) -> String {
     let mut check_url = url;
     // remove query from URL
@@ -143,10 +158,10 @@ pub fn strip_url(url: String) -> String {
     // - https://example.com/ -> https://example.com
     // - https://example.com// -> https://example.com
     // - but https://example.com/path/ remains unchanged
-    let (schema, uri) = check_url.split_at(7);
+    let (schema, path) = check_url.split_at(7);
     let cleaned_uri = SLASHES_EXP
         .get_or_init(|| Regex::new(r"/{2,}").unwrap())
-        .replace_all(uri, "/");
+        .replace_all(path, "/");
     check_url = format!("{schema}{cleaned_uri}");
     if check_url.matches('/').count() == 3 {
         check_url = check_url.trim_end_matches('/').into();
@@ -171,12 +186,18 @@ pub async fn update_instance_cache(db: DirectoryDbConn, cache: &State<InstancesC
     }
 }
 
-pub fn filter_country(value: &Value, args: &HashMap<String, Value>) -> Result<Value> {
+/// # Errors
+///
+/// Will not return `Err`, but Tera filters require a `Result`.
+pub fn filter_country<S: std::hash::BuildHasher>(
+    value: &Value,
+    args: &HashMap<String, Value, S>,
+) -> Result<Value> {
     use isocountry::CountryCode;
     let country_code = try_get_value!("country", "value", String, value);
     let mut country_code_points = ['A', 'Q'];
     let mut country_chars = country_code.chars();
-    for country_code_point in country_code_points.iter_mut() {
+    for country_code_point in &mut country_code_points {
         if let Some(char_code_point) = country_chars.next() {
             if let Some(character) =
                 std::char::from_u32(REGIONAL_INDICATOR_OFFSET + char_code_point as u32)
@@ -189,18 +210,20 @@ pub fn filter_country(value: &Value, args: &HashMap<String, Value>) -> Result<Va
         Ok(country) => country.name(),
         Err(_) => "Unknown country",
     };
-    let country_emoji = country_code_points.iter().cloned().collect::<String>();
+    let country_emoji = country_code_points.iter().copied().collect::<String>();
     macro_rules! TABLE_CELL_FORMAT {
         () => {
             "<td title=\"{0}\" aria-label=\"{0}\">{1}</td>"
         };
     }
-    let output = match args.get("label") {
-        Some(label) => match try_get_value!("country", "label", bool, label) {
-            true => format!("{country_name}. {country_emoji}"),
-            false => format!(TABLE_CELL_FORMAT!(), country_name, country_emoji),
-        },
-        None => format!(TABLE_CELL_FORMAT!(), country_name, country_emoji),
+    let output = if let Some(label) = args.get("label") {
+        if try_get_value!("country", "label", bool, label) {
+            format!("{country_name}. {country_emoji}")
+        } else {
+            format!(TABLE_CELL_FORMAT!(), country_name, country_emoji)
+        }
+    } else {
+        format!(TABLE_CELL_FORMAT!(), country_name, country_emoji)
     };
     Ok(to_value(output).unwrap_or(Value::Null))
 }

@@ -21,14 +21,20 @@ use std::sync::atomic::Ordering::Relaxed;
 
 pub mod connections;
 pub mod functions;
-use functions::*;
+use functions::{
+    get_epoch, get_instances, is_cached, rating_to_percent, rocket, run_db_migrations, set_cached,
+    strip_url, update_instance_cache,
+};
 pub mod models;
-use models::*;
+use models::{
+    AddForm, CheckNew, DirectoryDbConn, HtmlTable, Instance, InstancePage, InstancesCache,
+    PrivateBin, ScanNew, StatusPage, TablePage, CSP_RECOMMENDATION, TITLE,
+};
 pub mod schema;
 use schema::checks::dsl::checks;
 use schema::scans::dsl::scans;
 pub mod tasks;
-use tasks::*;
+use tasks::{check_full, check_up, CRON_INTERVAL};
 #[cfg(test)]
 mod tests;
 
@@ -74,7 +80,7 @@ async fn index(db: DirectoryDbConn, cache: &State<InstancesCache>) -> Template {
             tables.push(HtmlTable {
                 title: format!("Version {major}.{minor}"),
                 header: header.to_owned(),
-                body: body.to_owned(),
+                body: body.clone(),
             });
             // start a new one
             major = instance_major;
@@ -85,15 +91,15 @@ async fn index(db: DirectoryDbConn, cache: &State<InstancesCache>) -> Template {
         // format current instance for table display
         body.push([
             format!("opacity{}", instance.uptime / 25),
-            instance.url.to_owned(),
-            instance.version.to_owned(),
+            instance.url.clone(),
+            instance.version.clone(),
             Instance::format(instance.https),
             Instance::format(instance.https_redirect),
             Instance::format(instance.csp_header),
-            instance.rating_mozilla_observatory.to_owned(),
+            instance.rating_mozilla_observatory.clone(),
             Instance::format(instance.attachments),
             format!("{}%", instance.uptime),
-            instance.country_id.to_owned(),
+            instance.country_id.clone(),
         ]);
     }
     tables.push(HtmlTable {
@@ -146,7 +152,7 @@ async fn save(db: DirectoryDbConn, form: Form<AddForm>, cache: &State<InstancesC
     let (do_cache_flush, page) = match privatebin_result {
         Ok(privatebin) => {
             db.run(move |conn| {
-                use schema::instances::dsl::*;
+                use schema::instances::dsl::{id, instances, url};
                 match insert_into(instances)
                     .values(&privatebin.instance)
                     .execute(conn)
@@ -155,7 +161,7 @@ async fn save(db: DirectoryDbConn, form: Form<AddForm>, cache: &State<InstancesC
                         // need to store at least one check and scan, or the JOIN in /index produces NULL
                         let instance_id: i32 = instances
                             .select(id)
-                            .filter(url.eq(privatebin.instance.url.to_owned()))
+                            .filter(url.eq(privatebin.instance.url.clone()))
                             .limit(1)
                             .first(conn)
                             .expect("selecting the just inserted the instance");
@@ -221,8 +227,8 @@ async fn report(
 ) -> Template {
     let form = form.into_inner();
     let form_url = form.url.trim().to_string();
-    let check_url = strip_url(form_url.to_owned());
-    let lookup_url = check_url.to_owned();
+    let check_url = strip_url(form_url.clone());
+    let lookup_url = check_url.clone();
     let check_success_title = format!("Results of checking {check_url}");
 
     // check in negative lookup cache, prevent unnecessary lookups
@@ -239,7 +245,10 @@ async fn report(
         .run(move |conn| {
             use diesel::dsl::sql;
             use diesel::sql_types::{Integer, Text};
-            use schema::instances::dsl::*;
+            use schema::instances::dsl::{
+                attachments, country_id, csp_header, https, https_redirect, id, instances, url,
+                version,
+            };
             instances
                 .select((
                     id,
@@ -261,7 +270,7 @@ async fn report(
         .await;
     let page = match instance_in_db {
         Ok(instance) => InstancePage::new(check_success_title, Some(instance), None),
-        Err(_) => match PrivateBin::new(form_url.to_owned()).await {
+        Err(_) => match PrivateBin::new(form_url.clone()).await {
             // scan unknown instance
             Ok(privatebin) => {
                 let instance = Instance {
@@ -279,7 +288,7 @@ async fn report(
                         .last()
                         .unwrap_or(&ScanNew::default())
                         .rating
-                        .to_owned(),
+                        .clone(),
                 };
                 InstancePage::new(check_success_title, Some(instance), None)
             }
@@ -435,7 +444,7 @@ async fn forward_me(
     }
     // note the use of 303 See Other instead of 307 Temporary to ensure redirect
     // is changed to a GET method, if necessary, to avoid leaking request details
-    Redirect::to(instance_list[0].url.to_owned())
+    Redirect::to(instance_list[0].url.clone())
 }
 
 #[get("/favicon.ico")]

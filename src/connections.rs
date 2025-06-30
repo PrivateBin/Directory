@@ -20,6 +20,13 @@ pub static KEEPALIVE: HeaderValue = HeaderValue::from_static("keep-alive");
 static USER_AGENT_STRING: OnceLock<String> = OnceLock::new();
 static USER_AGENT_VALUE: OnceLock<HeaderValue> = OnceLock::new();
 
+/// # Errors
+///
+/// Will return `Err` if request to `url` fails for any reason.
+///
+/// # Panics
+///
+/// May panic in `Request::builder().[...].unwrap()`.
 pub async fn request(
     url: &str,
     method: Method,
@@ -27,31 +34,28 @@ pub async fn request(
     body: Bytes,
 ) -> Result<Response<Incoming>, String> {
     // parse URL to convert IDN into punycode
-    let parsed_url = match Url::parse(url) {
-        Ok(parsed_url) => parsed_url,
-        Err(_) => return Err(format!("Host or domain of URL {url} is not supported.")),
+    let Ok(parsed_url) = Url::parse(url) else {
+        return Err(format!("Host or domain of URL {url} is not supported."));
     };
-    let parsed_host = match parsed_url.host_str() {
-        Some(host) => host,
-        None => return Err(format!("Unable to parse host from URL {url}.")),
+    let Some(parsed_host) = parsed_url.host_str() else {
+        return Err(format!("Unable to parse host from URL {url}."));
     };
     let authority = match parsed_url.port() {
         Some(port) => format!("{parsed_host}:{port}"),
         None => parsed_host.to_owned(),
     };
-    let uri = match Uri::builder()
+    let Ok(parsed_uri) = Uri::builder()
         .scheme(parsed_url.scheme())
         .authority(authority)
         .path_and_query(&parsed_url[Position::BeforePath..])
         .build()
-    {
-        Ok(uri) => uri,
-        Err(_) => return Err(format!("Host or domain of URL {url} is not supported.")),
+    else {
+        return Err(format!("Host or domain of URL {url} is not supported."));
     };
 
     let request = Request::builder()
         .method(method)
-        .uri(uri)
+        .uri(parsed_uri)
         .header(CONNECTION, connection)
         .header(
             USER_AGENT,
@@ -85,18 +89,28 @@ pub async fn request(
     }
 }
 
+/// # Errors
+///
+/// Will return `Err` if request to `url` fails for any reason.
 pub async fn request_get(url: &str) -> Result<Response<Incoming>, String> {
     request(url, Method::GET, &KEEPALIVE, Bytes::new()).await
 }
 
+/// # Errors
+///
+/// Will return `Err` if request to `url` fails for any reason.
 pub async fn request_head(url: &str) -> Result<Response<Incoming>, String> {
     request(url, Method::HEAD, &KEEPALIVE, Bytes::new()).await
 }
 
+/// # Errors
+///
+/// Will return `Err` if request to `url` fails for any reason.
 pub async fn request_post(url: &str) -> Result<Response<Incoming>, String> {
     request(url, Method::POST, &KEEPALIVE, Bytes::new()).await
 }
 
+#[must_use]
 pub fn init_connection() -> Client<HttpsConnector<HttpConnector>, Full<Bytes>> {
     let https_connector = HttpsConnectorBuilder::new()
         .with_webpki_roots()

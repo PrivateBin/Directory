@@ -1,4 +1,4 @@
-use super::connections::*;
+use super::connections::{request, request_get, request_head, request_post, CLOSE};
 use super::functions::{rating_to_percent, strip_url};
 use super::schema::checks;
 use super::schema::instances;
@@ -145,6 +145,7 @@ pub struct CheckNew {
 #[database("directory")]
 pub struct DirectoryDbConn(SqliteConnection);
 
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Clone, QueryableByName, Queryable, Serialize)]
 #[serde(crate = "rocket::serde")]
 #[diesel(table_name = instances)]
@@ -171,6 +172,7 @@ impl Instance {
         }
     }
 
+    #[must_use]
     pub fn format(flag: bool) -> String {
         if flag {
             "\u{2714}".into() // Heavy Check Mark
@@ -180,6 +182,7 @@ impl Instance {
     }
 }
 
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Insertable)]
 #[diesel(table_name = instances)]
 pub struct InstanceNew {
@@ -257,6 +260,9 @@ pub struct PrivateBin {
 }
 
 impl PrivateBin {
+    /// # Errors
+    ///
+    /// Will return `Err` if `url` fails to get tested for any reason.
     pub async fn new(url: String) -> Result<PrivateBin, String> {
         if !url.starts_with("http://") && !url.starts_with("https://") {
             return Err(format!("Not a valid URL: {url}"));
@@ -269,12 +275,11 @@ impl PrivateBin {
 
         // remaining checks may run in parallel
         let check_properties = Self::check_properties(&check_url);
-        let check_country = Self::check_country(&check_url);
         let check_rating = Self::check_rating_mozilla_observatory(&check_url);
+        let country_code = Self::check_country(&check_url)?;
 
         // collect results of async checks
         let (version, attachments, csp_header) = check_properties.await?;
-        let country_code = check_country.await?;
         let scans = vec![check_rating.await];
 
         if !version.is_empty() {
@@ -298,7 +303,7 @@ impl PrivateBin {
     }
 
     // check country via geo IP database lookup
-    async fn check_country(url: &str) -> Result<String, String> {
+    fn check_country(url: &str) -> Result<String, String> {
         let mut country_code = "AQ".into();
         if let Ok(parsed_url) = Url::parse(url) {
             let ip: IpAddr;
@@ -386,9 +391,8 @@ impl PrivateBin {
                 // HTTPS-only webservers, though uncommon, do enforce HTTPS
                 if url.starts_with("http://") {
                     return Err(message);
-                } else {
-                    https_redirect = true;
                 }
+                https_redirect = true;
             }
         }
         Ok((https, https_redirect, resulting_url))
@@ -414,9 +418,8 @@ impl PrivateBin {
         let mut version = String::new();
         let mut attachments = false;
         let mut template = PrivateBinTemplate::Unknown;
-        let body = match res.collect().await {
-            Ok(body) => body,
-            Err(_) => return Err("Error reading the web server response.".to_owned()),
+        let Ok(body) = res.collect().await else {
+            return Err("Error reading the web server response.".to_owned());
         };
         let reader = LineReader {
             reader: body.aggregate().reader(),
@@ -479,7 +482,11 @@ impl PrivateBin {
         Ok((version, attachments, csp_header))
     }
 
-    // check rating at mozilla observatory
+    /// check rating at mozilla observatory
+    ///
+    /// # Panics
+    ///
+    /// May panic in `res.collect().await.unwrap()`.
     pub async fn check_rating_mozilla_observatory(url: &str) -> ScanNew {
         if let Ok(parsed_url) = Url::parse(url) {
             if let Some(host) = parsed_url.host_str() {
@@ -537,7 +544,7 @@ impl PrivateBin {
                 }
             }
         }
-        Default::default()
+        ScanNew::default()
     }
 
     // check robots.txt, if one exists, and bail if server doesn't want us to index the instance
@@ -550,19 +557,15 @@ impl PrivateBin {
         if let Ok(res) = request_get(&robots_url).await {
             if res.status() == StatusCode::OK {
                 let mut rule_for_us = false;
-                let body = match res.collect().await {
-                    Ok(body) => body,
-                    Err(_) => return Ok(true),
+                let Ok(body) = res.collect().await else {
+                    return Ok(true);
                 };
                 let reader = LineReader {
                     reader: body.aggregate().reader(),
                     line_count: 0,
                 };
                 for line in reader {
-                    let line_str = match line {
-                        Ok(string) => string,
-                        _ => break,
-                    };
+                    let Ok(line_str) = line else { break };
 
                     if rule_for_us {
                         if line_str.starts_with("Disallow: /") {
@@ -584,7 +587,7 @@ impl PrivateBin {
 #[tokio::test]
 async fn test_privatebin() {
     let url = "https://privatebin.net".to_owned();
-    let test_url = url.to_owned();
+    let test_url = url.clone();
     let privatebin = PrivateBin::new(test_url).await.unwrap();
     assert_eq!(privatebin.instance.url, url);
     assert!(privatebin.instance.https);
@@ -681,6 +684,7 @@ pub struct ScanNew {
 }
 
 impl ScanNew {
+    #[must_use]
     pub fn new(scanner: &str, rating: &str, instance_id: i32) -> ScanNew {
         let percent: i32 = rating_to_percent(rating).into();
         ScanNew {
@@ -706,6 +710,7 @@ pub struct Page {
 }
 
 impl Page {
+    #[must_use]
     pub fn new(topic: String) -> Page {
         Page {
             title: TITLE.into(),
@@ -725,6 +730,7 @@ pub struct InstancePage {
 }
 
 impl InstancePage {
+    #[must_use]
     pub fn new(topic: String, instance: Option<Instance>, error: Option<String>) -> InstancePage {
         let error_string = error.unwrap_or_default();
         InstancePage {
@@ -747,6 +753,7 @@ pub struct StatusPage {
 }
 
 impl StatusPage {
+    #[must_use]
     pub fn new(topic: String, error: Option<String>, success: Option<String>) -> StatusPage {
         let error_string = error.unwrap_or_default();
         let success_string = success.unwrap_or_default();
@@ -768,6 +775,7 @@ pub struct TablePage {
 }
 
 impl TablePage {
+    #[must_use]
     pub fn new(topic: String, tables: Vec<HtmlTable>) -> TablePage {
         TablePage {
             title: TITLE.into(),

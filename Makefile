@@ -58,7 +58,7 @@ check: ## Launch tests to verify that the service works as expected, requires a 
 
 lint: ## Run fmt & clippy on the code to come up with improvements.
 	cargo fmt
-	cargo clippy --all-targets --all-features -- -D warnings
+	cargo clippy --all-targets --all-features -- -D warnings -W clippy::pedantic
 	git checkout $(DATABASE)
 
 coverage: ## Run tarpaulin on the code to report on the tests code coverage.

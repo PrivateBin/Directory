@@ -1,5 +1,7 @@
-use super::models::*;
-use super::schema::instances::dsl::*;
+use super::models::{CheckNew, Instance, InstanceNew, PrivateBin, ScanNew};
+use super::schema::instances::dsl::{
+    attachments, country_id, csp_header, https, https_redirect, id, instances, version,
+};
 use super::{get_epoch, get_instances, Build, Rocket};
 use diesel::{
     delete,
@@ -27,6 +29,10 @@ struct InstanceCheckResult<'a> {
     instance_update_success: String,
 }
 
+/// # Panics
+///
+/// May panic in `Config::from`.
+#[allow(clippy::too_many_lines)]
 pub async fn check_full(rocket: Rocket<Build>) {
     use super::schema::scans::dsl::{instance_id, percent, rating, scanner, scans};
 
@@ -43,7 +49,7 @@ pub async fn check_full(rocket: Rocket<Build>) {
             let mut instance_update_queries = vec![];
             let mut scan_update_queries = vec![];
             let mut children = vec![];
-            for instance in instance_list.iter() {
+            for instance in &instance_list {
                 children.push(check_instance(instance));
             }
             let mut pinned_children: Vec<_> = children.into_iter().map(Box::pin).collect();
@@ -74,11 +80,11 @@ pub async fn check_full(rocket: Rocket<Build>) {
                                 .filter(scanner.eq(updated_scan.scanner)),
                         )
                         .set((
-                            rating.eq(updated_scan.rating.to_owned()),
+                            rating.eq(updated_scan.rating.clone()),
                             percent.eq(updated_scan.percent),
                         )),
                         result.scan_update_success,
-                        result.instance.url.to_owned(),
+                        result.instance.url.clone(),
                     ));
                 }
                 if let Some(updated_instance) = result.instance_update {
@@ -92,7 +98,7 @@ pub async fn check_full(rocket: Rocket<Build>) {
                             country_id.eq(updated_instance.country_id),
                         )),
                         result.instance_update_success,
-                        result.instance.url.to_owned(),
+                        result.instance.url.clone(),
                     ));
                 }
             }
@@ -155,11 +161,12 @@ pub async fn check_full(rocket: Rocket<Build>) {
     }
 }
 
+#[allow(clippy::too_many_lines)]
 async fn check_instance(instance: &Instance) -> InstanceCheckResult {
     let timer = Instant::now();
     let mut message = String::new();
     let mut instance_options = [
-        ("version", instance.version.to_owned(), String::new()),
+        ("version", instance.version.clone(), String::new()),
         ("https", format!("{:?}", instance.https), String::new()),
         (
             "https_redirect",
@@ -176,15 +183,15 @@ async fn check_instance(instance: &Instance) -> InstanceCheckResult {
             format!("{:?}", instance.attachments),
             String::new(),
         ),
-        ("country_id", instance.country_id.to_owned(), String::new()),
+        ("country_id", instance.country_id.clone(), String::new()),
     ];
     let mut scan: ScanNew;
     let mut instance_update = None;
     let mut instance_update_success = String::new();
     let mut scan_update = None;
     let mut scan_update_success = String::new();
-    let instance_url = instance.url.to_owned();
-    match PrivateBin::new(instance.url.to_owned()).await {
+    let instance_url = instance.url.clone();
+    match PrivateBin::new(instance.url.clone()).await {
         Ok(privatebin) => {
             privatebin
                 .instance
@@ -206,7 +213,7 @@ async fn check_instance(instance: &Instance) -> InstanceCheckResult {
                     &mut instance_update_success,
                     "Instance {instance_url} checked and updated ({elapsed:?}):"
                 );
-                for (label, old, new) in instance_options.iter() {
+                for (label, old, new) in &instance_options {
                     if old != new {
                         let _ = writeln!(
                             &mut instance_update_success,
@@ -222,16 +229,16 @@ async fn check_instance(instance: &Instance) -> InstanceCheckResult {
             }
 
             // retrieve latest scan
-            scan = privatebin.scans[0].to_owned();
+            scan = privatebin.scans[0].clone();
             // if missing, wait for the scan to conclude and poll again
-            let rating = scan.rating.to_owned();
+            let rating = scan.rating.clone();
             if rating == "-" {
                 sleep(Duration::from_secs(5)).await;
                 scan = PrivateBin::check_rating_mozilla_observatory(&instance_url).await;
             }
             let elapsed = timer.elapsed();
             if rating != "-" && rating != instance.rating_mozilla_observatory {
-                scan_update = Some(scan.to_owned());
+                scan_update = Some(scan.clone());
                 let _ = writeln!(
                     &mut scan_update_success,
                     "Instance {instance_url} rating updated to: {rating} ({elapsed:?})"
@@ -271,6 +278,9 @@ async fn check_instance_up(instance: &Instance) -> (&String, CheckNew, Duration)
     (&instance.url, check_result, timer.elapsed())
 }
 
+/// # Panics
+///
+/// May panic in `Config::from`.
 pub async fn check_up(rocket: Rocket<Build>) {
     use super::schema::checks::dsl::{checks, updated};
 
@@ -283,7 +293,7 @@ pub async fn check_up(rocket: Rocket<Build>) {
         Ok(instance_list) => {
             let mut instance_checks = vec![];
             let mut children = vec![];
-            for instance in instance_list.iter() {
+            for instance in &instance_list {
                 children.push(check_instance_up(instance));
             }
             let mut pinned_children: Vec<_> = children.into_iter().map(Box::pin).collect();
@@ -336,10 +346,11 @@ pub async fn check_up(rocket: Rocket<Build>) {
 }
 
 #[tokio::test]
+#[allow(clippy::too_many_lines)]
 async fn add_update_and_delete() {
     use super::schema::checks::dsl::*;
     use super::schema::{instances, scans};
-    use super::{rocket, CHECKS_TO_STORE, CRON_INTERVAL, MAX_FAILURES};
+    use super::{rocket, CRON_INTERVAL};
     use diesel::prelude::*;
 
     let directory_config = rocket_sync_db_pools::Config::from("directory", &rocket())
@@ -379,7 +390,7 @@ async fn add_update_and_delete() {
 
     // insert checks
     let mut instance_checks = vec![];
-    for interval in 0..(CHECKS_TO_STORE + 1) {
+    for interval in 0..=CHECKS_TO_STORE {
         let interval_update = now - (interval * CRON_INTERVAL);
         instance_checks.push((
             updated.eq(sql(&format!("datetime({interval_update}, 'unixepoch')"))),
@@ -474,7 +485,7 @@ async fn add_update_and_delete() {
     // check immediate removal of sites that are no longer PrivateBin instances
     update(instances)
         .filter(instances::id.eq(1))
-        .set(url.eq("https://privatebin.info".to_string()))
+        .set(instances::url.eq("https://privatebin.info".to_string()))
         .execute(&mut conn)
         .expect("manipulating instance ID 1 to point to a non-PrivateBin URL");
     check_full(rocket()).await;
