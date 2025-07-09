@@ -1,5 +1,9 @@
 # Change Log
 
+# 0.17.1
+- add delay before calling Mozilla Observatory API to spread the load during full syncs
+- bump libraries
+
 # 0.17.0
 - PrivateBin release 1.7.7 & 1.7.8 CSP changes
 - adding more diagnostics on Mozilla Observatory API errors

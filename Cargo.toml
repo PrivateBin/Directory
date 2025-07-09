@@ -1,6 +1,6 @@
 [package]
 name = "directory"
-version = "0.17.0"
+version = "0.17.1"
 authors = ["El RIDO <elrido@gmx.net>"]
 edition = "2021"
 license = "AGPL-3.0"
@@ -10,7 +10,7 @@ rust-version = "1.78"
 diesel_migrations = "2.2.0"
 futures = "0.3.31"
 http-body-util = "0.1.3"
-hyper-util = "0.1.14"
+hyper-util = "0.1.15"
 isocountry = "0.3.2"
 maxminddb = "0.26.0"
 rand = "0.9.1"

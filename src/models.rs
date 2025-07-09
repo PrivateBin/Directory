@@ -492,6 +492,9 @@ impl PrivateBin {
             if let Some(host) = parsed_url.host_str() {
                 let observatory_url = format!("{OBSERVATORY_API}{host}");
                 loop {
+                    // pause before scanning, to spread the load during full syncs
+                    let backoff_ms = rand::rng().random_range(500..3000);
+                    sleep(Duration::from_millis(backoff_ms)).await;
                     if let Ok(res) = request_post(&observatory_url).await {
                         if res.status() == StatusCode::OK {
                             let response_content_length = res
