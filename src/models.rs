@@ -537,6 +537,12 @@ impl PrivateBin {
                                 warn!("Failed retrieving observatory rating for {url} due JSON decoding issue.");
                             }
                         } else {
+                            let status = res.status();
+                            if status == StatusCode::INTERNAL_SERVER_ERROR {
+                                let backoff_ms = rand::rng().random_range(2000..5000);
+                                sleep(Duration::from_millis(backoff_ms)).await;
+                                continue;
+                            }
                             let status = res.status().as_u16();
                             warn!("Failed retrieving observatory rating for {url} due to HTTP status {status}.");
                         }

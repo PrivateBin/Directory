@@ -1,5 +1,8 @@
 # Change Log
 
+# 0.17.2
+- rescan Mozilla Observatory API on HTTP status 500, after a delay
+
 # 0.17.1
 - add delay before calling Mozilla Observatory API to spread the load during full syncs
 - bump libraries
