@@ -491,7 +491,7 @@ impl PrivateBin {
         if let Ok(parsed_url) = Url::parse(url) {
             if let Some(host) = parsed_url.host_str() {
                 let observatory_url = format!("{OBSERVATORY_API}{host}");
-                loop {
+                for _retries in 0..5 {
                     // pause before scanning, to spread the load during full syncs
                     let backoff_ms = rand::rng().random_range(500..3000);
                     sleep(Duration::from_millis(backoff_ms)).await;

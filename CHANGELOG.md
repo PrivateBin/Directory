@@ -1,5 +1,8 @@
 # Change Log
 
+# 0.17.3
+- limit Mozilla Observatory API rescan to 5 attempts per instance
+
 # 0.17.2
 - rescan Mozilla Observatory API on HTTP status 500, after a delay
 

@@ -19,7 +19,7 @@ This document lists the licenses of the projects used in the instance directory.
 
 #### Used by
 
-- [directory](https://crates.io/crates/directory) 0.17.1
+- [directory](https://crates.io/crates/directory) 0.17.3
 
 ```
 GNU AFFERO GENERAL PUBLIC LICENSE
