@@ -4,7 +4,7 @@ version = "0.17.4"
 authors = ["El RIDO <elrido@gmx.net>"]
 edition = "2021"
 license = "AGPL-3.0"
-rust-version = "1.78"
+rust-version = "1.80"
 
 [dependencies]
 diesel_migrations = "2.2.0"

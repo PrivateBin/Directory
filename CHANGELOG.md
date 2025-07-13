@@ -2,6 +2,7 @@
 
 # 0.17.4
 - increase timeout on client connections to 25s
+- switch to rust 1.80 to support pest 2.8.1
 - bump libraries
 
 # 0.17.3
