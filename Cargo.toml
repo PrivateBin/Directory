@@ -1,6 +1,6 @@
 [package]
 name = "directory"
-version = "0.17.3"
+version = "0.17.4"
 authors = ["El RIDO <elrido@gmx.net>"]
 edition = "2021"
 license = "AGPL-3.0"

@@ -13,6 +13,7 @@ use tokio::time::timeout;
 use url::{Position, Url};
 
 static HTTP_CLIENT: OnceLock<Client<HttpsConnector<HttpConnector>, Full<Bytes>>> = OnceLock::new();
+const TIMEOUT_SECONDS: u64 = 25;
 
 // cache frequently used header values
 pub static CLOSE: HeaderValue = HeaderValue::from_static("close");
@@ -71,7 +72,7 @@ pub async fn request(
         .body(Full::from(body))
         .unwrap();
     match timeout(
-        Duration::from_secs(15),
+        Duration::from_secs(TIMEOUT_SECONDS),
         HTTP_CLIENT
             .get_or_init(init_connection)
             .clone()
@@ -84,7 +85,7 @@ pub async fn request(
             Err(_) => Err(format!("Web server on URL {url} is not responding.")),
         },
         Err(_) => Err(format!(
-            "Web server on URL {url} is not responding within 15s."
+            "Web server on URL {url} is not responding within {TIMEOUT_SECONDS}s."
         )),
     }
 }

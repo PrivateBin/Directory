@@ -1,5 +1,9 @@
 # Change Log
 
+# 0.17.4
+- increase timeout on client connections to 25s
+- bump libraries
+
 # 0.17.3
 - limit Mozilla Observatory API rescan to 5 attempts per instance
 
