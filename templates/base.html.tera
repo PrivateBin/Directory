@@ -1,28 +1,30 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 		<meta name="robots" content="index">
 		<title>{{ title }} - {{ topic }}</title>
-		<link rel="stylesheet" href="/css/bootstrap.min.css">
-		<link rel="stylesheet" href="/css/dark-mode.css">
+		<link rel="stylesheet" href="/css/bootstrap-5.3.7.css">
 		<link rel="stylesheet" href="/css/directory.css">
 		<link rel="stylesheet" href="/css/gh-fork-ribbon.css">
+		<script type="text/javascript" src="/css/bootstrap-5.3.7.js"></script>
+		<script type="text/javascript" src="/css/dark-mode-switch.js"></script>
 	</head>
 	<body>
-		<nav class="navbar navbar-expand-lg bg-light">
+		<nav class="navbar navbar-expand-lg bg-body-tertiary text-nowrap">
 			<div class="container-fluid">
 				<a class="navbar-brand" href="/">
-					<img src="/img/icon.svg" width="38" alt="PrivateBin">
+					<img alt="PrivateBin" src="/img/icon.svg" height="38">
 					{{ title }}
 				</a>
-				<input type="checkbox" id="navbarToggleCheckbox">
-				<label for="navbarToggleCheckbox" class="navbar-toggler hidden-sm-up" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-label="Toggle navigation">&#9776;</label>
-				<div id="navbarSupportedContent" class="collapse navbar-collapse">
-					<ul class="navbar-nav me-auto">
-						<li class="nav-item active">
-							<a class="nav-link" href="/">Home</a>
+				<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
+					<span class="navbar-toggler-icon"></span>
+				</button>
+				<div id="navbar" class="collapse navbar-collapse">
+					<ul class="navbar-nav me-auto gap-2 align-items-lg-center align-items-stretch">
+						<li class="nav-item">
+							<a class="nav-link active" href="/">Home</a>
 						</li>
 						<li class="nav-item">
 							<a class="nav-link" href="/add">Add</a>
@@ -33,12 +35,13 @@
 						<li class="nav-item">
 							<a class="nav-link" href="/about">About</a>
 						</li>
-						<li class="nav-item ms-5">
-							<div class="form-check form-switch navbar-text">
-								<input id="darkSwitch" type="checkbox" class="form-check-input">
-								<label for="darkSwitch" class="form-check-label">Dark Mode</label>
+					</ul>
+					<ul class="navbar-nav">
+						<li class="nav-item">
+							<div class="form-check form-switch navbar-text me-5 pe-5">
+								<input id="bd-theme" type="checkbox" class="form-check-input" />
+								<label for="bd-theme" class="form-check-label">Dark Mode</label>
 							</div>
-							<script src="/css/dark-mode-switch.js"></script>
 						</li>
 					</ul>
 				</div>

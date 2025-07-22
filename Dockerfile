@@ -1,5 +1,20 @@
+FROM rust:1.80-alpine3.20
+RUN apk --no-cache update && \
+    apk add --no-cache \
+        musl-dev \
+        sqlite-static \
+        upx && \
+    adduser -D rust
+USER rust
+WORKDIR /home/rust
+# these avoid the overhead of compiling our own static library
+ENV SQLITE3_STATIC=1 \
+    SQLITE3_LIB_DIR=/usr/lib
+COPY . /home/rust/
+RUN cargo build --release
+
 FROM scratch
-ARG RELEASE=0.17.4
+ARG RELEASE=0.18.0
 LABEL org.opencontainers.image.authors=support@privatebin.org \
       org.opencontainers.image.vendor=PrivateBin \
       org.opencontainers.image.documentation=https://github.com/PrivateBin/Directory/blob/master/README.md \
@@ -7,13 +22,10 @@ LABEL org.opencontainers.image.authors=support@privatebin.org \
       org.opencontainers.image.licenses=AGPL-3.0 \
       org.opencontainers.image.version=${RELEASE}
 
-ARG GEOIP_MMDB
-ARG ROCKET_DATABASES
-ENV GEOIP_MMDB=$GEOIP_MMDB \
+ENV GEOIP_MMDB=/var/geoip-country.mmdb \
     ROCKET_ADDRESS="::" \
-    ROCKET_DATABASES=$ROCKET_DATABASES
-ARG PORT
-EXPOSE $PORT
+    ROCKET_DATABASES={directory={url="/var/directory.sqlite"}}
+EXPOSE 8000
 USER 1000:1000
 WORKDIR /
 VOLUME /var
@@ -21,5 +33,5 @@ CMD ["directory"]
 
 COPY css /css
 COPY img /img
-COPY target/release/directory /bin/
+COPY --from=0 /home/rust/target/release/directory /bin/
 COPY templates /templates

@@ -1,9 +1,6 @@
-/Cargo.*
 /Dockerfile
 /Makefile
-/src
 /target
-!/target/release/directory
 *.md
 /.cargo
 .git

@@ -1,5 +1,9 @@
 # Change Log
 
+# 0.18.0
+- upgrade to bootstrap CSS 5.3.7
+- bump libraries
+
 # 0.17.4
 - increase timeout on client connections to 25s
 - switch to rust 1.80 to support pest 2.8.1

@@ -1,46 +1,47 @@
-(function() {
-  var darkSwitch = document.getElementById("darkSwitch");
-  if (darkSwitch) {
-    initTheme();
-    darkSwitch.addEventListener("change", function(event) {
-      resetTheme();
-    });
-    function enableDark() {
-      document.body.setAttribute("data-theme", "dark");
-      document.querySelectorAll("table").forEach(
-        function(table) {
-          table.classList.add("table-dark");
-        }
-      );
+/*!
+ * Color mode toggler for Bootstrap's docs (https://getbootstrap.com/)
+ * Copyright 2011-2024 The Bootstrap Authors
+ * Licensed under the Creative Commons Attribution 3.0 Unported License.
+ * Modified to work with a simpler checkbox toggle
+ */
+
+(() => {
+  'use strict'
+
+  const getStoredTheme = () => localStorage.getItem('theme')
+  const setStoredTheme = theme => localStorage.setItem('theme', theme)
+  const getPreferredTheme = () => window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+
+  const getStoredPreferredTheme = () => {
+    const storedTheme = getStoredTheme()
+    if (storedTheme) {
+      return storedTheme
     }
-    function disableDark() {
-      document.body.removeAttribute("data-theme");
-      document.querySelectorAll("table").forEach(
-        function(table) {
-          table.classList.remove("table-dark");
-        }
-      );
-    }
-    function initTheme() {
-      var darkThemeSelected = localStorage.getItem("darkSwitch") !== null
-        ? localStorage.getItem("darkSwitch") === "dark"
-        : window.matchMedia("(prefers-color-scheme: dark)").matches;
-      darkSwitch.checked = darkThemeSelected;
-      darkThemeSelected
-        ? enableDark()
-        : disableDark();
-      if (darkThemeSelected) {
-        window.addEventListener('DOMContentLoaded', enableDark, false);
-      }
-    }
-    function resetTheme() {
-      if (darkSwitch.checked) {
-        enableDark();
-        localStorage.setItem("darkSwitch", "dark");
-      } else {
-        disableDark();
-        localStorage.setItem("darkSwitch", "light");
-      }
-    }
+    return getPreferredTheme()
   }
-})();
+
+  const setTheme = theme => {
+    const preferredTheme = theme === 'auto' ? getPreferredTheme() : theme
+    document.documentElement.setAttribute('data-bs-theme', preferredTheme)
+  }
+
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    const storedTheme = getStoredTheme()
+    if (storedTheme !== 'light' && storedTheme !== 'dark') {
+      setTheme(getStoredPreferredTheme())
+    }
+  })
+
+  window.addEventListener('DOMContentLoaded', () => {
+    const toggle = document.getElementById('bd-theme')
+    const theme = getStoredPreferredTheme()
+    setTheme(theme)
+    toggle.checked = (theme === 'dark')
+    toggle.addEventListener('change', (event) => {
+      const theme = event.currentTarget.checked ? 'dark' : 'light'
+      setStoredTheme(theme)
+      setTheme(theme)
+      event.currentTarget.focus()
+    })
+  })
+})()

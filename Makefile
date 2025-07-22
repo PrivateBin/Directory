@@ -35,10 +35,7 @@ license: ## Generates the LICENSE.md file
 LICENSE.md: license
 
 image: ## Build the container image.
-	docker build --build-arg PORT=$(PORT) \
-		--build-arg GEOIP_MMDB="/$(GEOIP_MMDB)" \
-		--build-arg ROCKET_DATABASES='{directory={url="/'$(DATABASE)'"}}' \
-		-t $(IMAGE) .
+	docker build --build-arg PORT=$(PORT) -t $(IMAGE) --load .
 
 run: ## Run a container from the image.
 	docker run -d --rm --init --name $(NAME) -p=$(PORT):$(PORT) \
