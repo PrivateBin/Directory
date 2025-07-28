@@ -2,8 +2,7 @@ FROM rust:1.80-alpine3.20
 RUN apk --no-cache update && \
     apk add --no-cache \
         musl-dev \
-        sqlite-static \
-        upx && \
+        sqlite-static && \
     adduser -D rust
 USER rust
 WORKDIR /home/rust
@@ -14,7 +13,7 @@ COPY . /home/rust/
 RUN cargo build --release
 
 FROM scratch
-ARG RELEASE=0.18.1
+ARG RELEASE=0.18.2
 LABEL org.opencontainers.image.authors=support@privatebin.org \
       org.opencontainers.image.vendor=PrivateBin \
       org.opencontainers.image.documentation=https://github.com/PrivateBin/Directory/blob/master/README.md \

@@ -71,21 +71,19 @@ async fn index(db: DirectoryDbConn, cache: &State<InstancesCache>) -> Template {
         }
         let (instance_major, instance_minor) = (mmp[0], mmp[1]);
 
-        if minor == 0 {
-            // this is the first instance in the list
+        if major != instance_major || minor != instance_minor {
+            // close table, unless it is the first instance in the list
+            if major != 0 || minor != 0 {
+                tables.push(HtmlTable {
+                    title: format!("Version {major}.{minor}"),
+                    header: header.to_owned(),
+                    body: body.clone(),
+                });
+                // start a new one
+                body.clear();
+            }
             major = instance_major;
             minor = instance_minor;
-        } else if major != instance_major || minor != instance_minor {
-            // close table
-            tables.push(HtmlTable {
-                title: format!("Version {major}.{minor}"),
-                header: header.to_owned(),
-                body: body.clone(),
-            });
-            // start a new one
-            major = instance_major;
-            minor = instance_minor;
-            body.clear();
         }
 
         // format current instance for table display

@@ -1,5 +1,8 @@
 # Change Log
 
+# 0.18.2
+- fix table version split when a minor version 0 is the first entry (i.e. 2.0.0 is lumped in with 1.7 and 1.0 with 0.20)
+
 # 0.18.1
 - PrivateBin release 2.0.0 CSP changes: Policy `default-src: 'self';` is no
   longer necessary, as of [Firefox 131](https://bugzilla.mozilla.org/show_bug.cgi?id=1773976).
