@@ -1,5 +1,13 @@
 # Change Log
 
+# 0.18.1
+- PrivateBin release 2.0.0 CSP changes: Policy `default-src: 'self';` is no
+  longer necessary, as of [Firefox 131](https://bugzilla.mozilla.org/show_bug.cgi?id=1773976).
+  This applies retroactively to older 1.7 instances using `bootstrap5` template
+  as well; please update all instances to use `default-src: 'none';` to pass the
+  recommended CSP check
+- bump libraries
+
 # 0.18.0
 - upgrade to bootstrap CSS 5.3.7
 - bump libraries

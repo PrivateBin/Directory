@@ -14,7 +14,7 @@ COPY . /home/rust/
 RUN cargo build --release
 
 FROM scratch
-ARG RELEASE=0.18.0
+ARG RELEASE=0.18.1
 LABEL org.opencontainers.image.authors=support@privatebin.org \
       org.opencontainers.image.vendor=PrivateBin \
       org.opencontainers.image.documentation=https://github.com/PrivateBin/Directory/blob/master/README.md \

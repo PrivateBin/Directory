@@ -1,5 +1,5 @@
 FROM rust:1.80-alpine3.20
-ARG RELEASE=0.18.0
+ARG RELEASE=0.18.1
 RUN apk --no-cache update && \
     apk add --no-cache \
         musl-dev \
@@ -16,7 +16,7 @@ RUN wget -qO - https://github.com/PrivateBin/Directory/archive/${RELEASE}.tar.gz
     upx --ultra-brute target/release/directory
 
 FROM scratch
-ARG RELEASE=0.18.0
+ARG RELEASE=0.18.1
 LABEL org.opencontainers.image.authors=support@privatebin.org \
       org.opencontainers.image.vendor=PrivateBin \
       org.opencontainers.image.documentation=https://github.com/PrivateBin/Directory/blob/master/README.md \

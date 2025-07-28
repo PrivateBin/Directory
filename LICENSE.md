@@ -4,7 +4,7 @@ This document lists the licenses of the projects used in the instance directory.
 
 ## Overview of licenses
 
-- [Apache License 2.0](#Apache-2.0) (238)
+- [Apache License 2.0](#Apache-2.0) (239)
 - [MIT License](#MIT) (65)
 - [Unicode License v3](#Unicode-3.0) (20)
 - [ISC License](#ISC) (6)
@@ -19,7 +19,7 @@ This document lists the licenses of the projects used in the instance directory.
 
 #### Used by
 
-- [directory](https://crates.io/crates/directory) 0.17.4
+- [directory](https://crates.io/crates/directory) 0.18.1
 
 ```
 GNU AFFERO GENERAL PUBLIC LICENSE
@@ -3004,7 +3004,7 @@ limitations under the License.
 - [ryu](https://github.com/dtolnay/ryu) 1.0.20
 - [serde](https://github.com/serde-rs/serde) 1.0.219
 - [serde_derive](https://github.com/serde-rs/serde) 1.0.219
-- [serde_json](https://github.com/serde-rs/json) 1.0.140
+- [serde_json](https://github.com/serde-rs/json) 1.0.141
 - [syn](https://github.com/dtolnay/syn) 2.0.104
 - [thiserror-impl](https://github.com/dtolnay/thiserror) 1.0.69
 - [thiserror-impl](https://github.com/dtolnay/thiserror) 2.0.12
@@ -5741,7 +5741,7 @@ limitations under the License.
 - [bitflags](https://github.com/bitflags/bitflags) 2.9.1
 - [bstr](https://github.com/BurntSushi/bstr) 1.12.0
 - [bumpalo](https://github.com/fitzgen/bumpalo) 3.19.0
-- [cc](https://github.com/rust-lang/cc-rs) 1.2.29
+- [cc](https://github.com/rust-lang/cc-rs) 1.2.30
 - [cfg-if](https://github.com/rust-lang/cfg-if) 1.0.1
 - [core-foundation-sys](https://github.com/servo/core-foundation-rs) 0.8.7
 - [crossbeam-channel](https://github.com/crossbeam-rs/crossbeam) 0.5.15
@@ -5792,13 +5792,14 @@ limitations under the License.
 - [ring](https://github.com/briansmith/ring) 0.17.14
 - [rustc-demangle](https://github.com/rust-lang/rustc-demangle) 0.1.25
 - [rustix](https://github.com/bytecodealliance/rustix) 1.0.7
-- [rustls](https://github.com/rustls/rustls) 0.23.29
+- [rustls](https://github.com/rustls/rustls) 0.23.30
 - [scoped-tls](https://github.com/alexcrichton/scoped-tls) 1.0.1
 - [scopeguard](https://github.com/bluss/scopeguard) 1.2.0
 - [signal-hook-registry](https://github.com/vorner/signal-hook) 1.4.5
 - [slug](https://github.com/Stebalien/slug-rs) 0.1.6
 - [smallvec](https://github.com/servo/rust-smallvec) 1.15.1
 - [socket2](https://github.com/rust-lang/socket2) 0.5.10
+- [socket2](https://github.com/rust-lang/socket2) 0.6.0
 - [stable_deref_trait](https://github.com/storyyeller/stable_deref_trait) 1.2.0
 - [state](https://github.com/SergioBenitez/state) 0.6.0
 - [tempfile](https://github.com/Stebalien/tempfile) 3.20.0
@@ -6238,7 +6239,7 @@ limitations under the License.
 #### Used by
 
 - [rand](https://github.com/rust-random/rand) 0.8.5
-- [rand](https://github.com/rust-random/rand) 0.9.1
+- [rand](https://github.com/rust-random/rand) 0.9.2
 - [rand_chacha](https://github.com/rust-random/rand) 0.9.0
 
 ```
@@ -8454,7 +8455,7 @@ For these and/or other purposes and motivations, and without any expectation of 
 
 #### Used by
 
-- [webpki-roots](https://github.com/rustls/webpki-roots) 1.0.1
+- [webpki-roots](https://github.com/rustls/webpki-roots) 1.0.2
 
 ```
 # Community Data License Agreement - Permissive - Version 2.0
@@ -9256,7 +9257,7 @@ DEALINGS IN THE SOFTWARE.
 
 #### Used by
 
-- [hyper-util](https://github.com/hyperium/hyper-util) 0.1.15
+- [hyper-util](https://github.com/hyperium/hyper-util) 0.1.16
 
 ```
 Copyright (c) 2023-2025 Sean McArthur
@@ -9476,7 +9477,7 @@ THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRES
 
 - [tokio-stream](https://github.com/tokio-rs/tokio) 0.1.17
 - [tokio-util](https://github.com/tokio-rs/tokio) 0.7.15
-- [tokio](https://github.com/tokio-rs/tokio) 1.46.1
+- [tokio](https://github.com/tokio-rs/tokio) 1.47.0
 
 ```
 MIT License

@@ -28,45 +28,30 @@ pub const CSP_RECOMMENDATION: &str = "default-src 'none'; base-uri 'self'; \
     script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; font-src 'self'; \
     frame-ancestors 'none'; frame-src blob:; img-src 'self' data: blob:; \
     media-src blob:; object-src blob:; sandbox allow-same-origin allow-scripts \
-    allow-forms allow-popups allow-modals allow-downloads";
-pub const CSP_B5_RECOMMENDATION: &str = "default-src 'self'; base-uri 'self'; \
-    form-action 'none'; manifest-src 'self'; connect-src * blob:; \
-    script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; font-src 'self'; \
-    frame-ancestors 'none'; frame-src blob:; img-src 'self' data: blob:; \
-    media-src blob:; object-src blob:; sandbox allow-same-origin allow-scripts \
     allow-forms allow-modals allow-downloads";
 static CSP_MAP: &[(&str, &str)] = &[
-    ("1.7.8", CSP_RECOMMENDATION),
-    // with bootstrap5
-    ("1.7.8", CSP_B5_RECOMMENDATION),
-    // since 1.7.7, with bootstrap
-    ("1.7.7", CSP_RECOMMENDATION),
-    // since 1.7.7, with bootstrap5
-    ("1.7.7", CSP_B5_RECOMMENDATION),
-    // since 1.7.6, with bootstrap
+    ("2.", CSP_RECOMMENDATION), // removed allow-popups (and the page template that used it)
     (
-        "1.7.6",
+        "1.7.6", // changed script-src from 'unsafe-eval' to 'wasm-unsafe-eval'
         "default-src 'none'; base-uri 'self'; form-action 'none'; \
         manifest-src 'self'; connect-src * blob:; script-src 'self' \
         'wasm-unsafe-eval'; style-src 'self'; font-src 'self'; \
         frame-ancestors 'none'; img-src 'self' data: blob:; media-src blob:; \
         object-src blob:; sandbox allow-same-origin allow-scripts allow-forms \
-        allow-modals allow-downloads",
+        allow-popups allow-modals allow-downloads",
     ),
-    // since 1.7.6, with bootstrap5
     (
-        "1.7.6",
-        "default-src 'self'; base-uri 'self'; form-action 'none'; \
+        "1.7.", // since 1.7.7, added frame-src blob:
+        "default-src 'none'; base-uri 'self'; form-action 'none'; \
         manifest-src 'self'; connect-src * blob:; script-src 'self' \
         'wasm-unsafe-eval'; style-src 'self'; font-src 'self'; \
-        frame-ancestors 'none'; img-src 'self' data: blob:; media-src blob:; \
-        object-src blob:; sandbox allow-same-origin allow-scripts allow-forms \
-        allow-modals allow-downloads",
+        frame-ancestors 'none'; frame-src blob:; img-src 'self' data: blob:; \
+        media-src blob:; object-src blob:; sandbox allow-same-origin \
+        allow-scripts allow-forms allow-popups allow-modals allow-downloads",
     ),
-    // since 1.7.2, with bootstrap5
     (
-        "1.7.",
-        "default-src 'self'; base-uri 'self'; form-action 'none'; \
+        "1.7.", // since 1.7.2
+        "default-src 'none'; base-uri 'self'; form-action 'none'; \
         manifest-src 'self'; connect-src * blob:; script-src 'self' \
         'unsafe-eval'; style-src 'self'; font-src 'self'; \
         frame-ancestors 'none'; img-src 'self' data: blob:; media-src blob:; \
@@ -89,7 +74,7 @@ static CSP_MAP: &[(&str, &str)] = &[
         allow-same-origin allow-scripts allow-forms allow-popups allow-modals",
     ),
     (
-        "1.3",
+        "1.3", // since 1.3.0
         "default-src 'none'; manifest-src 'self'; connect-src *; \
         script-src 'self' 'unsafe-eval'; style-src 'self'; font-src 'self'; \
         img-src 'self' data: blob:; media-src blob:; object-src blob:; sandbox \
@@ -109,9 +94,8 @@ static CSP_MAP: &[(&str, &str)] = &[
         script-src 'self'; style-src 'self'; font-src 'self'; \
         img-src 'self' data:; referrer no-referrer;",
     ),
-    // since 1.4
     (
-        "1.",
+        "1.", // since 1.4
         "default-src 'none'; base-uri 'self'; form-action 'none'; \
     manifest-src 'self'; connect-src * blob:; script-src 'self' 'unsafe-eval'; \
     style-src 'self'; font-src 'self'; frame-ancestors 'none'; \
@@ -466,9 +450,9 @@ impl PrivateBin {
         if !policy.is_empty() {
             for rule in CSP_MAP {
                 if version.starts_with(rule.0)
-                    && ((template == PrivateBinTemplate::Bootstrap3 // Bootstrap3 templates do not need popups
-                        && policy.eq(&rule.1.to_string().replace(" allow-popups", "")))
-                        || policy.eq(rule.1))
+                    && (policy.eq(rule.1)
+                    || (template != PrivateBinTemplate::Unknown // Bootstrap templates do not need popups
+                        && policy.eq(&rule.1.to_string().replace(" allow-popups", ""))))
                 {
                     csp_header = true;
                     break;
