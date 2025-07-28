@@ -451,7 +451,7 @@ impl PrivateBin {
             for rule in CSP_MAP {
                 if version.starts_with(rule.0)
                     && (policy.eq(rule.1)
-                    || (template != PrivateBinTemplate::Unknown // Bootstrap templates do not need popups
+                        || (template != PrivateBinTemplate::Unknown // Bootstrap templates do not need popups
                         && policy.eq(&rule.1.to_string().replace(" allow-popups", ""))))
                 {
                     csp_header = true;
