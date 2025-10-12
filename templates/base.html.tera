@@ -5,10 +5,10 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 		<meta name="robots" content="index">
 		<title>{{ title }} - {{ topic }}</title>
-		<link rel="stylesheet" href="/css/bootstrap-5.3.7.css">
+		<link rel="stylesheet" href="/css/bootstrap-5.3.8.css">
 		<link rel="stylesheet" href="/css/directory.css">
 		<link rel="stylesheet" href="/css/gh-fork-ribbon.css">
-		<script type="text/javascript" src="/css/bootstrap-5.3.7.js"></script>
+		<script type="text/javascript" src="/css/bootstrap-5.3.8.js"></script>
 		<script type="text/javascript" src="/css/dark-mode-switch.js"></script>
 	</head>
 	<body>
