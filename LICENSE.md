@@ -4,8 +4,8 @@ This document lists the licenses of the projects used in the instance directory.
 
 ## Overview of licenses
 
-- [Apache License 2.0](#Apache-2.0) (239)
-- [MIT License](#MIT) (65)
+- [Apache License 2.0](#Apache-2.0) (235)
+- [MIT License](#MIT) (63)
 - [Unicode License v3](#Unicode-3.0) (20)
 - [ISC License](#ISC) (6)
 - [BSD 3-Clause &quot;New&quot; or &quot;Revised&quot; License](#BSD-3-Clause) (3)
@@ -19,7 +19,7 @@ This document lists the licenses of the projects used in the instance directory.
 
 #### Used by
 
-- [directory](https://crates.io/crates/directory) 0.18.2
+- [directory](https://crates.io/crates/directory) 0.18.3
 
 ```
 GNU AFFERO GENERAL PUBLIC LICENSE
@@ -1934,7 +1934,6 @@ You should also get your employer (if you work as a programmer) or school, if an
 #### Used by
 
 - [ipnetwork](https://github.com/achanda/ipnetwork) 0.21.1
-- [winapi](https://github.com/retep998/winapi-rs) 0.3.9
 
 ```
                                  Apache License
@@ -5755,7 +5754,7 @@ limitations under the License.
 - [fastrand](https://github.com/smol-rs/fastrand) 2.3.0
 - [filetime](https://github.com/alexcrichton/filetime) 0.2.25
 - [fnv](https://github.com/servo/rust-fnv) 1.0.7
-- [form_urlencoded](https://github.com/servo/rust-url) 1.2.1
+- [form_urlencoded](https://github.com/servo/rust-url) 1.2.2
 - [gimli](https://github.com/gimli-rs/gimli) 0.31.1
 - [glob](https://github.com/rust-lang/glob) 0.3.2
 - [hashbrown](https://github.com/rust-lang/hashbrown) 0.15.4
@@ -5763,7 +5762,7 @@ limitations under the License.
 - [hermit-abi](https://github.com/hermit-os/hermit-rs) 0.5.0
 - [httparse](https://github.com/seanmonstar/httparse) 1.10.1
 - [hyper-rustls](https://github.com/rustls/hyper-rustls) 0.27.7
-- [idna](https://github.com/servo/rust-url/) 1.0.3
+- [idna](https://github.com/servo/rust-url/) 1.1.0
 - [idna_adapter](https://github.com/hsivonen/idna_adapter) 1.2.0
 - [indexmap](https://github.com/indexmap-rs/indexmap) 2.9.0
 - [inlinable_string](https://github.com/fitzgen/inlinable_string) 0.1.15
@@ -5779,16 +5778,15 @@ limitations under the License.
 - [once_cell](https://github.com/matklad/once_cell) 1.21.3
 - [parking_lot](https://github.com/Amanieu/parking_lot) 0.12.4
 - [parking_lot_core](https://github.com/Amanieu/parking_lot) 0.9.11
-- [percent-encoding](https://github.com/servo/rust-url/) 2.3.1
+- [percent-encoding](https://github.com/servo/rust-url/) 2.3.2
 - [pest](https://github.com/pest-parser/pest) 2.8.1
 - [pest_derive](https://github.com/pest-parser/pest) 2.8.1
 - [pest_generator](https://github.com/pest-parser/pest) 2.8.1
 - [pest_meta](https://github.com/pest-parser/pest) 2.8.1
 - [pkg-config](https://github.com/rust-lang/pkg-config-rs) 0.3.32
-- [regex-automata](https://github.com/rust-lang/regex/tree/master/regex-automata) 0.4.9
-- [regex-syntax](https://github.com/rust-lang/regex) 0.6.29
+- [regex-automata](https://github.com/rust-lang/regex) 0.4.12
 - [regex-syntax](https://github.com/rust-lang/regex/tree/master/regex-syntax) 0.8.5
-- [regex](https://github.com/rust-lang/regex) 1.11.1
+- [regex](https://github.com/rust-lang/regex) 1.12.1
 - [ring](https://github.com/briansmith/ring) 0.17.14
 - [rustc-demangle](https://github.com/rust-lang/rustc-demangle) 0.1.25
 - [rustix](https://github.com/bytecodealliance/rustix) 1.0.7
@@ -5806,7 +5804,7 @@ limitations under the License.
 - [thread_local](https://github.com/Amanieu/thread_local-rs) 1.1.9
 - [ucd-trie](https://github.com/BurntSushi/ucd-generate) 0.1.7
 - [unicode-xid](https://github.com/unicode-rs/unicode-xid) 0.2.6
-- [url](https://github.com/servo/rust-url) 2.5.4
+- [url](https://github.com/servo/rust-url) 2.5.7
 - [version_check](https://github.com/SergioBenitez/version_check) 0.9.5
 - [wasi](https://github.com/bytecodealliance/wasi) 0.11.1+wasi-snapshot-preview1
 - [wasi](https://github.com/bytecodealliance/wasi-rs) 0.14.2+wasi-0.2.4
@@ -7762,8 +7760,6 @@ limitations under the License.
 - [unic-segment](https://github.com/open-i18n/rust-unic/) 0.9.0
 - [unic-ucd-segment](https://github.com/open-i18n/rust-unic/) 0.9.0
 - [unic-ucd-version](https://github.com/open-i18n/rust-unic/) 0.9.0
-- [winapi-i686-pc-windows-gnu](https://github.com/retep998/winapi-rs) 0.4.0
-- [winapi-x86_64-pc-windows-gnu](https://github.com/retep998/winapi-rs) 0.4.0
 - [wit-bindgen-rt](https://github.com/bytecodealliance/wit-bindgen) 0.39.0
 
 ```
@@ -8749,7 +8745,7 @@ THE SOFTWARE.
 
 #### Used by
 
-- [hyper](https://github.com/hyperium/hyper) 1.6.0
+- [hyper](https://github.com/hyperium/hyper) 1.7.0
 
 ```
 Copyright (c) 2014-2025 Sean McArthur
@@ -8993,7 +8989,7 @@ THE SOFTWARE.
 #### Used by
 
 - [loom](https://github.com/tokio-rs/loom) 0.5.6
-- [slab](https://github.com/tokio-rs/slab) 0.4.10
+- [slab](https://github.com/tokio-rs/slab) 0.4.11
 
 ```
 Copyright (c) 2019 Carl Lerche
@@ -9055,7 +9051,7 @@ THE SOFTWARE.
 
 #### Used by
 
-- [matchers](https://github.com/hawkw/matchers) 0.1.0
+- [matchers](https://github.com/hawkw/matchers) 0.2.0
 
 ```
 Copyright (c) 2019 Eliza Weisman
@@ -9120,7 +9116,7 @@ DEALINGS IN THE SOFTWARE.
 - [tracing-attributes](https://github.com/tokio-rs/tracing) 0.1.30
 - [tracing-core](https://github.com/tokio-rs/tracing) 0.1.34
 - [tracing-log](https://github.com/tokio-rs/tracing) 0.2.0
-- [tracing-subscriber](https://github.com/tokio-rs/tracing) 0.3.19
+- [tracing-subscriber](https://github.com/tokio-rs/tracing) 0.3.20
 - [tracing](https://github.com/tokio-rs/tracing) 0.1.41
 
 ```
@@ -9257,7 +9253,7 @@ DEALINGS IN THE SOFTWARE.
 
 #### Used by
 
-- [hyper-util](https://github.com/hyperium/hyper-util) 0.1.16
+- [hyper-util](https://github.com/hyperium/hyper-util) 0.1.17
 
 ```
 Copyright (c) 2023-2025 Sean McArthur
@@ -9477,7 +9473,7 @@ THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRES
 
 - [tokio-stream](https://github.com/tokio-rs/tokio) 0.1.17
 - [tokio-util](https://github.com/tokio-rs/tokio) 0.7.15
-- [tokio](https://github.com/tokio-rs/tokio) 1.47.0
+- [tokio](https://github.com/tokio-rs/tokio) 1.47.1
 
 ```
 MIT License
@@ -9532,35 +9528,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-```
-### <a id="MIT"></a>MIT License
-
-#### Used by
-
-- [overload](https://github.com/danaugrs/overload) 0.1.1
-
-```
-MIT License
-
-Copyright (c) 2019 Daniel Augusto Rizzi Salvadori
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the &quot;Software&quot;), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
 ```
 ### <a id="MIT"></a>MIT License
 
@@ -9625,7 +9592,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #### Used by
 
-- [nu-ansi-term](https://github.com/nushell/nu-ansi-term) 0.46.0
+- [nu-ansi-term](https://github.com/nushell/nu-ansi-term) 0.50.1
 
 ```
 The MIT License (MIT)
@@ -9721,7 +9688,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - [globset](https://github.com/BurntSushi/ripgrep/tree/master/crates/globset) 0.4.16
 - [ignore](https://github.com/BurntSushi/ripgrep/tree/master/crates/ignore) 0.4.23
 - [memchr](https://github.com/BurntSushi/memchr) 2.7.5
-- [regex-automata](https://github.com/BurntSushi/regex-automata) 0.1.10
 - [walkdir](https://github.com/BurntSushi/walkdir) 2.5.0
 
 ```

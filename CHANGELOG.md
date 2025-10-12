@@ -1,5 +1,9 @@
 # Change Log
 
+# 0.18.3
+- upgrade to bootstrap CSS 5.3.8
+- bump libraries
+
 # 0.18.2
 - fix table version split when a minor version 0 is the first entry (i.e. 2.0.0 is lumped in with 1.7 and 1.0 with 0.20)
 
