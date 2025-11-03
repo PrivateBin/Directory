@@ -15,8 +15,8 @@
 				<dt>The recommended CSP <em>is{% if not instance.csp_header %}n't{% endif %}</em> sent. {% if instance.csp_header %}<span class="check_passed" aria-label="passed">✔{% else %}<span class="check_failed" aria-label="failed">✘{% endif %}</span></dt>
 				<dd>If the instance responds with the currently recommend HTTP <code>Content-Security-Policy</code> (<a href="https://content-security-policy.com/">CSP</a>) header. This policy disables browser functions that PrivateBin doesn't use and can, among other things, mitigate execution of scripts that bypass other security mechanisms while viewing a paste that contains such. You can update this policy in the configuration file, by adjusting the <a href="https://github.com/PrivateBin/PrivateBin/wiki/Configuration#cspheader"><code>cspheader</code> option</a>. We currently recommed the following policy: <code>{{ csp_recommendation }}</code></dd>
 		{%- if instance.rating_mozilla_observatory != "-" -%}
-				<dt>The rating given by the Mozilla 🐲 Observatory is <em>{{ instance.rating_mozilla_observatory }}</em>.</dt>
-				<dd>The <a href="https://github.com/mozilla/http-observatory/blob/main/httpobs/docs/scoring.md#http-observatory-scoring-methodology">score</a> of the instance as per the <a href="https://observatory.mozilla.org/">Mozilla 🐲 Observatory</a>.</dd>
+				<dt>The rating given by the <a href="https://developer.mozilla.org/en-US/observatory">HTTP Observatory</a> is <em>{{ instance.rating_mozilla_observatory }}</em>.</dt>
+				<dd>The <a href="https://developer.mozilla.org/en-US/observatory/docs/tests_and_scoring">score</a> of the instance as per the <a href="https://developer.mozilla.org/en-US/observatory">HTTP Observatory</a>.</dd>
 		{%- endif -%}
 				<dt>File uploads are {% if instance.attachments %}<em>enabled</em>. <span class="check_passed" aria-label="passed">✔{% else %}<em>disabled</em>. <span class="check_failed" aria-label="failed">✘{% endif %}</span></dt>
 				<dd>If the instance has the <a href="https://github.com/PrivateBin/PrivateBin/wiki/Configuration#fileupload"><code>fileupload</code> option</a> enabled, you can upload attachments along side your texts.</dd>
