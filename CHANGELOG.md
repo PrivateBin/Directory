@@ -1,5 +1,9 @@
 # Change Log
 
+# 0.18.4
+- update links and branding related to the HTTP (formerly Mozilla) Observatory
+- bump libraries
+
 # 0.18.3
 - upgrade to bootstrap CSS 5.3.8
 - bump libraries
