@@ -19,7 +19,7 @@ This document lists the licenses of the projects used in the instance directory.
 
 #### Used by
 
-- [directory](https://crates.io/crates/directory) 0.18.4
+- [directory](https://crates.io/crates/directory) 0.18.5
 
 ```
 GNU AFFERO GENERAL PUBLIC LICENSE
@@ -8212,7 +8212,7 @@ third-party/chromium/LICENSE.
 
 #### Used by
 
-- [maxminddb](https://github.com/oschwald/maxminddb-rust) 0.26.0
+- [maxminddb](https://github.com/oschwald/maxminddb-rust) 0.27.0
 
 ```
 ISC License
@@ -8321,7 +8321,7 @@ THE SOFTWARE.
 
 #### Used by
 
-- [hyper](https://github.com/hyperium/hyper) 1.7.0
+- [hyper](https://github.com/hyperium/hyper) 1.8.1
 
 ```
 Copyright (c) 2014-2025 Sean McArthur
@@ -8829,7 +8829,7 @@ DEALINGS IN THE SOFTWARE.
 
 #### Used by
 
-- [hyper-util](https://github.com/hyperium/hyper-util) 0.1.17
+- [hyper-util](https://github.com/hyperium/hyper-util) 0.1.18
 
 ```
 Copyright (c) 2023-2025 Sean McArthur

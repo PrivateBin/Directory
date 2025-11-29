@@ -321,9 +321,13 @@ impl PrivateBin {
                 );
             }
             let reader = opener.unwrap();
-            if let Ok(Some(country)) = reader.lookup::<Country>(ip) {
-                if let Some(country) = country.country {
-                    if let Some(iso_code) = country.iso_code {
+            if let Ok(country) = reader.lookup(ip) {
+                if let Ok(Some(country)) = country.decode::<Country>() {
+                    if let Some(iso_code) = country.represented_country.iso_code {
+                        country_code = iso_code.into(); // e.g. military base or embassy
+                    } else if let Some(iso_code) = country.registered_country.iso_code {
+                        country_code = iso_code.into(); // e.g. mobile networks or VPNs
+                    } else if let Some(iso_code) = country.country.iso_code {
                         country_code = iso_code.into();
                     }
                 }

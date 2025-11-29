@@ -1,5 +1,9 @@
 # Change Log
 
+# 0.18.5
+- changes for maxminddb 0.27.0
+- bump libraries
+
 # 0.18.4
 - update links and branding related to the HTTP (formerly Mozilla) Observatory
 - bump libraries
