@@ -19,7 +19,7 @@ This document lists the licenses of the projects used in the instance directory.
 
 #### Used by
 
-- [directory](https://crates.io/crates/directory) 0.18.5
+- [directory](https://crates.io/crates/directory) 0.18.6
 
 ```
 GNU AFFERO GENERAL PUBLIC LICENSE
@@ -3197,15 +3197,15 @@ END OF TERMS AND CONDITIONS
 
 #### Used by
 
-- [futures-channel](https://github.com/rust-lang/futures-rs) 0.3.31
-- [futures-core](https://github.com/rust-lang/futures-rs) 0.3.31
-- [futures-executor](https://github.com/rust-lang/futures-rs) 0.3.31
-- [futures-io](https://github.com/rust-lang/futures-rs) 0.3.31
-- [futures-macro](https://github.com/rust-lang/futures-rs) 0.3.31
-- [futures-sink](https://github.com/rust-lang/futures-rs) 0.3.31
-- [futures-task](https://github.com/rust-lang/futures-rs) 0.3.31
-- [futures-util](https://github.com/rust-lang/futures-rs) 0.3.31
-- [futures](https://github.com/rust-lang/futures-rs) 0.3.31
+- [futures-channel](https://github.com/rust-lang/futures-rs) 0.3.32
+- [futures-core](https://github.com/rust-lang/futures-rs) 0.3.32
+- [futures-executor](https://github.com/rust-lang/futures-rs) 0.3.32
+- [futures-io](https://github.com/rust-lang/futures-rs) 0.3.32
+- [futures-macro](https://github.com/rust-lang/futures-rs) 0.3.32
+- [futures-sink](https://github.com/rust-lang/futures-rs) 0.3.32
+- [futures-task](https://github.com/rust-lang/futures-rs) 0.3.32
+- [futures-util](https://github.com/rust-lang/futures-rs) 0.3.32
+- [futures](https://github.com/rust-lang/futures-rs) 0.3.32
 
 ```
                               Apache License
@@ -5573,7 +5573,7 @@ limitations under the License.
 - [pkg-config](https://github.com/rust-lang/pkg-config-rs) 0.3.32
 - [regex-automata](https://github.com/rust-lang/regex) 0.4.12
 - [regex-syntax](https://github.com/rust-lang/regex/tree/master/regex-syntax) 0.8.5
-- [regex](https://github.com/rust-lang/regex) 1.12.2
+- [regex](https://github.com/rust-lang/regex) 1.12.3
 - [ring](https://github.com/briansmith/ring) 0.17.14
 - [rustix](https://github.com/bytecodealliance/rustix) 1.0.7
 - [rustls](https://github.com/rustls/rustls) 0.23.30
@@ -5590,7 +5590,7 @@ limitations under the License.
 - [thread_local](https://github.com/Amanieu/thread_local-rs) 1.1.9
 - [ucd-trie](https://github.com/BurntSushi/ucd-generate) 0.1.7
 - [unicode-xid](https://github.com/unicode-rs/unicode-xid) 0.2.6
-- [url](https://github.com/servo/rust-url) 2.5.7
+- [url](https://github.com/servo/rust-url) 2.5.8
 - [version_check](https://github.com/SergioBenitez/version_check) 0.9.5
 - [wasi](https://github.com/bytecodealliance/wasi) 0.11.1+wasi-snapshot-preview1
 - [wasi](https://github.com/bytecodealliance/wasi-rs) 0.14.2+wasi-0.2.4
@@ -8212,7 +8212,7 @@ third-party/chromium/LICENSE.
 
 #### Used by
 
-- [maxminddb](https://github.com/oschwald/maxminddb-rust) 0.27.0
+- [maxminddb](https://github.com/oschwald/maxminddb-rust) 0.27.3
 
 ```
 ISC License
@@ -8471,7 +8471,7 @@ DEALINGS IN THE SOFTWARE.
 
 #### Used by
 
-- [bytes](https://github.com/tokio-rs/bytes) 1.10.1
+- [bytes](https://github.com/tokio-rs/bytes) 1.11.1
 
 ```
 Copyright (c) 2018 Carl Lerche
@@ -8829,7 +8829,7 @@ DEALINGS IN THE SOFTWARE.
 
 #### Used by
 
-- [hyper-util](https://github.com/hyperium/hyper-util) 0.1.18
+- [hyper-util](https://github.com/hyperium/hyper-util) 0.1.20
 
 ```
 Copyright (c) 2023-2025 Sean McArthur
@@ -9049,7 +9049,7 @@ THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRES
 
 - [tokio-stream](https://github.com/tokio-rs/tokio) 0.1.17
 - [tokio-util](https://github.com/tokio-rs/tokio) 0.7.15
-- [tokio](https://github.com/tokio-rs/tokio) 1.48.0
+- [tokio](https://github.com/tokio-rs/tokio) 1.50.0
 
 ```
 MIT License

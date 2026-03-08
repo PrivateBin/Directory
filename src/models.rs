@@ -413,6 +413,11 @@ impl PrivateBin {
             reader: body.aggregate().reader(),
             line_count: 0,
         };
+        let template_expression =
+            TEMPLATE_EXP.get_or_init(|| Regex::new(r"css/bootstrap(\d*)/").unwrap());
+        let version_expression = VERSION_EXP.get_or_init(|| {
+            Regex::new(r"js/(privatebin|zerobin).js\?(Alpha%20)?(\d+\.\d+\.*\d*)").unwrap()
+        });
         for line in reader {
             let line_str = match line {
                 Ok(string) => string,
@@ -427,10 +432,7 @@ impl PrivateBin {
                 }
             }
             if template == PrivateBinTemplate::Unknown {
-                if let Some(matches) = TEMPLATE_EXP
-                    .get_or_init(|| Regex::new(r"css/bootstrap(\d*)/").unwrap())
-                    .captures(&line_str)
-                {
+                if let Some(matches) = template_expression.captures(&line_str) {
                     template = if matches[1].is_empty() {
                         PrivateBinTemplate::Bootstrap3
                     } else {
@@ -439,13 +441,7 @@ impl PrivateBin {
                 }
             }
             if version.is_empty() {
-                if let Some(matches) = VERSION_EXP
-                    .get_or_init(|| {
-                        Regex::new(r"js/(privatebin|zerobin).js\?(Alpha%20)?(\d+\.\d+\.*\d*)")
-                            .unwrap()
-                    })
-                    .captures(&line_str)
-                {
+                if let Some(matches) = version_expression.captures(&line_str) {
                     matches[3].clone_into(&mut version);
                 }
             }

@@ -162,7 +162,7 @@ pub async fn check_full(rocket: Rocket<Build>) {
 }
 
 #[allow(clippy::too_many_lines)]
-async fn check_instance(instance: &Instance) -> InstanceCheckResult {
+async fn check_instance(instance: &Instance) -> InstanceCheckResult<'_> {
     let timer = Instant::now();
     let mut message = String::new();
     let mut instance_options = [

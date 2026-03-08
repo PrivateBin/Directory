@@ -450,6 +450,7 @@ fn favicon() -> Redirect {
     Redirect::permanent("/img/favicon.ico")
 }
 
+#[allow(clippy::result_large_err)]
 #[rocket::main]
 async fn main() -> Result<(), Error> {
     let rocket = rocket();

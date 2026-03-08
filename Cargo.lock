@@ -400,7 +400,7 @@ dependencies = [
 
 [[package]]
 name = "directory"
-version = "0.18.5"
+version = "0.18.6"
 dependencies = [
  "diesel",
  "diesel_migrations",

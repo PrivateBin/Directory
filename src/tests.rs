@@ -12,7 +12,7 @@ fn index() {
     assert_eq!(response.status(), Status::Ok);
     assert!(response
         .into_string()
-        .map_or(false, |s| s.contains("Welcome!")));
+        .is_some_and(|s| s.contains("Welcome!")));
 }
 
 #[test]
@@ -20,9 +20,7 @@ fn about() {
     let client = Client::untracked(rocket()).expect("valid rocket instance");
     let response = client.get("/about").dispatch();
     assert_eq!(response.status(), Status::Ok);
-    assert!(response
-        .into_string()
-        .map_or(false, |s| s.contains("About")));
+    assert!(response.into_string().is_some_and(|s| s.contains("About")));
 }
 
 #[test]
@@ -32,7 +30,7 @@ fn add_get() {
     assert_eq!(response.status(), Status::Ok);
     assert!(response
         .into_string()
-        .map_or(false, |s| s.contains("Add instance")));
+        .is_some_and(|s| s.contains("Add instance")));
 }
 
 #[test]
@@ -46,7 +44,7 @@ fn add_post_error() {
     assert_eq!(response.status(), Status::Ok);
     assert!(response
         .into_string()
-        .map_or(false, |s| s.contains("Not a valid URL: privatebin.info")));
+        .is_some_and(|s| s.contains("Not a valid URL: privatebin.info")));
 
     let response = client
         .post("/add")
@@ -54,7 +52,7 @@ fn add_post_error() {
         .header(ContentType::Form)
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    assert!(response.into_string().map_or(false, |s| s.contains(
+    assert!(response.into_string().is_some_and(|s| s.contains(
         "Error adding URL privatebin.info, due to a failed scan within the last 5 minutes."
     )));
 
@@ -67,7 +65,7 @@ fn add_post_error() {
     assert_eq!(response.status(), Status::Ok);
     assert!(response
         .into_string()
-        .map_or(false, |s| s.contains("Not a valid URL: privatebin.info")));
+        .is_some_and(|s| s.contains("Not a valid URL: privatebin.info")));
 }
 
 #[test]
@@ -79,8 +77,9 @@ fn add_post_success() {
         .header(ContentType::Form)
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    assert!(response.into_string().map_or(false, |s| s
-        .contains("Successfully added URL: https:&#x2F;&#x2F;privatebin.net")));
+    assert!(response
+        .into_string()
+        .is_some_and(|s| s.contains("Successfully added URL: https:&#x2F;&#x2F;privatebin.net")));
 }
 
 #[test]
@@ -90,7 +89,7 @@ fn check_get() {
     assert_eq!(response.status(), Status::Ok);
     assert!(response
         .into_string()
-        .map_or(false, |s| s.contains("Check instance")));
+        .is_some_and(|s| s.contains("Check instance")));
 }
 
 #[test]
@@ -104,7 +103,7 @@ fn check_post_error() {
     assert_eq!(response.status(), Status::Ok);
     assert!(response
         .into_string()
-        .map_or(false, |s| s.contains("Not a valid URL: privatebin.info")));
+        .is_some_and(|s| s.contains("Not a valid URL: privatebin.info")));
 
     let response = client
         .post("/check")
@@ -112,7 +111,7 @@ fn check_post_error() {
         .header(ContentType::Form)
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    assert!(response.into_string().map_or(false, |s| s.contains(
+    assert!(response.into_string().is_some_and(|s| s.contains(
         "Error scanning URL privatebin.info, due to a failed scan within the last 5 minutes."
     )));
 
@@ -125,7 +124,7 @@ fn check_post_error() {
     assert_eq!(response.status(), Status::Ok);
     assert!(response
         .into_string()
-        .map_or(false, |s| s.contains("Not a valid URL: privatebin.info")));
+        .is_some_and(|s| s.contains("Not a valid URL: privatebin.info")));
 }
 
 #[test]
@@ -137,8 +136,9 @@ fn check_post_success() {
         .header(ContentType::Form)
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    assert!(response.into_string().map_or(false, |s| s
-        .contains("Results of checking https:&#x2F;&#x2F;privatebin.net")));
+    assert!(response
+        .into_string()
+        .is_some_and(|s| s.contains("Results of checking https:&#x2F;&#x2F;privatebin.net")));
 }
 
 #[test]
