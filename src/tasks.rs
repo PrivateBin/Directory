@@ -2,13 +2,13 @@ use super::models::{CheckNew, Instance, InstanceNew, PrivateBin, ScanNew};
 use super::schema::instances::dsl::{
     attachments, country_id, csp_header, https, https_redirect, id, instances, version,
 };
-use super::{get_epoch, get_instances, Build, Rocket};
+use super::{Build, Rocket, get_epoch, get_instances};
 use diesel::{
-    delete,
+    SqliteConnection, delete,
     dsl::{sql, sql_query},
     insert_into,
     prelude::*,
-    update, SqliteConnection,
+    update,
 };
 use futures::future::select_all;
 use rocket_sync_db_pools::Config;
@@ -350,7 +350,7 @@ pub async fn check_up(rocket: Rocket<Build>) {
 async fn add_update_and_delete() {
     use super::schema::checks::dsl::*;
     use super::schema::{instances, scans};
-    use super::{rocket, CRON_INTERVAL};
+    use super::{CRON_INTERVAL, rocket};
     use diesel::prelude::*;
 
     let directory_config = rocket_sync_db_pools::Config::from("directory", &rocket())

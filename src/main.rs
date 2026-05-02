@@ -27,14 +27,14 @@ use functions::{
 };
 pub mod models;
 use models::{
-    AddForm, CheckNew, DirectoryDbConn, HtmlTable, Instance, InstancePage, InstancesCache,
-    PrivateBin, ScanNew, StatusPage, TablePage, CSP_RECOMMENDATION, TITLE,
+    AddForm, CSP_RECOMMENDATION, CheckNew, DirectoryDbConn, HtmlTable, Instance, InstancePage,
+    InstancesCache, PrivateBin, ScanNew, StatusPage, TITLE, TablePage,
 };
 pub mod schema;
 use schema::checks::dsl::checks;
 use schema::scans::dsl::scans;
 pub mod tasks;
-use tasks::{check_full, check_up, CRON_INTERVAL};
+use tasks::{CRON_INTERVAL, check_full, check_up};
 #[cfg(test)]
 mod tests;
 
@@ -231,10 +231,15 @@ async fn report(
 
     // check in negative lookup cache, prevent unnecessary lookups
     if is_cached(&cache.negative_lookups, &check_url) {
-        return Template::render("form", StatusPage::new(
-            CHECK_TITLE.into(),
-            Some(format!("Error scanning URL {form_url}, due to a failed scan within the last 5 minutes.")),
-            None)
+        return Template::render(
+            "form",
+            StatusPage::new(
+                CHECK_TITLE.into(),
+                Some(format!(
+                    "Error scanning URL {form_url}, due to a failed scan within the last 5 minutes."
+                )),
+                None,
+            ),
         );
     }
 

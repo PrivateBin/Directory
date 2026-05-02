@@ -1,4 +1,4 @@
-use super::connections::{request, request_get, request_head, request_post, CLOSE};
+use super::connections::{CLOSE, request, request_get, request_head, request_post};
 use super::functions::{rating_to_percent, strip_url};
 use super::schema::checks;
 use super::schema::instances;
@@ -9,18 +9,18 @@ use hyper::body::{Body, Buf, Bytes}; // Body provides the size_hint() trait, Buf
 use hyper::header::{CONTENT_SECURITY_POLICY, LOCATION};
 use hyper::{Method, StatusCode};
 use maxminddb::geoip2::Country;
-use rand::Rng;
+use rand::prelude::*;
 use regex::Regex;
-use rocket::serde::{json, Deserialize, Serialize};
+use rocket::serde::{Deserialize, Serialize, json};
 use rocket::warn;
 use std::collections::HashMap;
 use std::env::var;
 use std::net::{IpAddr, ToSocketAddrs}; // ToSocketAddrs provides the to_socket_addrs() trait
 use std::str::from_utf8;
-use std::sync::atomic::AtomicU64;
 use std::sync::OnceLock;
 use std::sync::RwLock;
-use tokio::time::{sleep, Duration};
+use std::sync::atomic::AtomicU64;
+use tokio::time::{Duration, sleep};
 use url::Url;
 
 pub const CSP_RECOMMENDATION: &str = "default-src 'none'; base-uri 'self'; \
@@ -314,22 +314,20 @@ impl PrivateBin {
                 var("GEOIP_MMDB").expect("environment variable GEOIP_MMDB needs to be set");
             let opener = maxminddb::Reader::open_readfile(&geoip_mmdb);
             if opener.is_err() {
-                return Err(
-                    format!(
-                        "Error opening geo IP database {geoip_mmdb} (defined in environment variable GEOIP_MMDB)."
-                    )
-                );
+                return Err(format!(
+                    "Error opening geo IP database {geoip_mmdb} (defined in environment variable GEOIP_MMDB)."
+                ));
             }
             let reader = opener.unwrap();
-            if let Ok(country) = reader.lookup(ip) {
-                if let Ok(Some(country)) = country.decode::<Country>() {
-                    if let Some(iso_code) = country.represented_country.iso_code {
-                        country_code = iso_code.into(); // e.g. military base or embassy
-                    } else if let Some(iso_code) = country.registered_country.iso_code {
-                        country_code = iso_code.into(); // e.g. mobile networks or VPNs
-                    } else if let Some(iso_code) = country.country.iso_code {
-                        country_code = iso_code.into();
-                    }
+            if let Ok(country) = reader.lookup(ip)
+                && let Ok(Some(country)) = country.decode::<Country>()
+            {
+                if let Some(iso_code) = country.represented_country.iso_code {
+                    country_code = iso_code.into(); // e.g. military base or embassy
+                } else if let Some(iso_code) = country.registered_country.iso_code {
+                    country_code = iso_code.into(); // e.g. mobile networks or VPNs
+                } else if let Some(iso_code) = country.country.iso_code {
+                    country_code = iso_code.into();
                 }
             }
         }
@@ -397,10 +395,10 @@ impl PrivateBin {
 
         // collect Content-Security-Policy header
         let mut policy = String::new();
-        if res.headers().contains_key(CONTENT_SECURITY_POLICY) {
-            if let Ok(csp) = res.headers()[CONTENT_SECURITY_POLICY].to_str() {
-                csp.clone_into(&mut policy);
-            }
+        if res.headers().contains_key(CONTENT_SECURITY_POLICY)
+            && let Ok(csp) = res.headers()[CONTENT_SECURITY_POLICY].to_str()
+        {
+            csp.clone_into(&mut policy);
         }
 
         let mut version = String::new();
@@ -431,19 +429,19 @@ impl PrivateBin {
                     break;
                 }
             }
-            if template == PrivateBinTemplate::Unknown {
-                if let Some(matches) = template_expression.captures(&line_str) {
-                    template = if matches[1].is_empty() {
-                        PrivateBinTemplate::Bootstrap3
-                    } else {
-                        PrivateBinTemplate::Bootstrap5
-                    };
-                }
+            if template == PrivateBinTemplate::Unknown
+                && let Some(matches) = template_expression.captures(&line_str)
+            {
+                template = if matches[1].is_empty() {
+                    PrivateBinTemplate::Bootstrap3
+                } else {
+                    PrivateBinTemplate::Bootstrap5
+                };
             }
-            if version.is_empty() {
-                if let Some(matches) = version_expression.captures(&line_str) {
-                    matches[3].clone_into(&mut version);
-                }
+            if version.is_empty()
+                && let Some(matches) = version_expression.captures(&line_str)
+            {
+                matches[3].clone_into(&mut version);
             }
         }
         // check Content-Security-Policy header
@@ -472,14 +470,16 @@ impl PrivateBin {
     ///
     /// May panic in `res.collect().await.unwrap()`.
     pub async fn check_rating_mozilla_observatory(url: &str) -> ScanNew {
-        if let Ok(parsed_url) = Url::parse(url) {
-            if let Some(host) = parsed_url.host_str() {
-                let observatory_url = format!("{OBSERVATORY_API}{host}");
-                for _retries in 0..5 {
-                    // pause before scanning, to spread the load during full syncs
-                    let backoff_ms = rand::rng().random_range(500..3000);
-                    sleep(Duration::from_millis(backoff_ms)).await;
-                    if let Ok(res) = request_post(&observatory_url).await {
+        if let Ok(parsed_url) = Url::parse(url)
+            && let Some(host) = parsed_url.host_str()
+        {
+            let observatory_url = format!("{OBSERVATORY_API}{host}");
+            for _retries in 0..5 {
+                // pause before scanning, to spread the load during full syncs
+                let backoff_ms = rand::rng().random_range(500..3000);
+                sleep(Duration::from_millis(backoff_ms)).await;
+                match request_post(&observatory_url).await {
+                    Ok(res) => {
                         if res.status() == StatusCode::OK {
                             let response_content_length = res
                                 .body()
@@ -488,7 +488,9 @@ impl PrivateBin {
                                 .unwrap_or(OBSERVATORY_MAX_CONTENT_LENGTH);
                             // protect from malicious response
                             if response_content_length >= OBSERVATORY_MAX_CONTENT_LENGTH {
-                                warn!("Failed retrieving observatory rating for {url} due response being too large (>= {OBSERVATORY_MAX_CONTENT_LENGTH}).");
+                                warn!(
+                                    "Failed retrieving observatory rating for {url} due response being too large (>= {OBSERVATORY_MAX_CONTENT_LENGTH})."
+                                );
                                 break;
                             }
                             let body_bytes = res.collect().await.unwrap().aggregate();
@@ -516,9 +518,13 @@ impl PrivateBin {
                                     sleep(Duration::from_millis(backoff_ms)).await;
                                     continue;
                                 }
-                                warn!("Failed retrieving observatory rating for {url} due to {error}.");
+                                warn!(
+                                    "Failed retrieving observatory rating for {url} due to {error}."
+                                );
                             } else {
-                                warn!("Failed retrieving observatory rating for {url} due JSON decoding issue.");
+                                warn!(
+                                    "Failed retrieving observatory rating for {url} due JSON decoding issue."
+                                );
                             }
                         } else {
                             let status = res.status();
@@ -528,13 +534,18 @@ impl PrivateBin {
                                 continue;
                             }
                             let status = res.status().as_u16();
-                            warn!("Failed retrieving observatory rating for {url} due to HTTP status {status}.");
+                            warn!(
+                                "Failed retrieving observatory rating for {url} due to HTTP status {status}."
+                            );
                         }
-                    } else {
-                        warn!("Failed retrieving observatory rating for {url} due request failing or timeout.");
                     }
-                    break;
+                    _ => {
+                        warn!(
+                            "Failed retrieving observatory rating for {url} due request failing or timeout."
+                        );
+                    }
                 }
+                break;
             }
         }
         ScanNew::default()
@@ -547,29 +558,29 @@ impl PrivateBin {
         } else {
             format!("{url}/robots.txt")
         };
-        if let Ok(res) = request_get(&robots_url).await {
-            if res.status() == StatusCode::OK {
-                let mut rule_for_us = false;
-                let Ok(body) = res.collect().await else {
-                    return Ok(true);
-                };
-                let reader = LineReader {
-                    reader: body.aggregate().reader(),
-                    line_count: 0,
-                };
-                for line in reader {
-                    let Ok(line_str) = line else { break };
+        if let Ok(res) = request_get(&robots_url).await
+            && res.status() == StatusCode::OK
+        {
+            let mut rule_for_us = false;
+            let Ok(body) = res.collect().await else {
+                return Ok(true);
+            };
+            let reader = LineReader {
+                reader: body.aggregate().reader(),
+                line_count: 0,
+            };
+            for line in reader {
+                let Ok(line_str) = line else { break };
 
-                    if rule_for_us {
-                        if line_str.starts_with("Disallow: /") {
-                            return Err(format!(
-                                "Web server on URL {url} doesn't want to get added to the directory."
-                            ));
-                        }
-                        break;
-                    } else if line_str.starts_with("User-agent: PrivateBinDirectoryBot") {
-                        rule_for_us = true;
+                if rule_for_us {
+                    if line_str.starts_with("Disallow: /") {
+                        return Err(format!(
+                            "Web server on URL {url} doesn't want to get added to the directory."
+                        ));
                     }
+                    break;
+                } else if line_str.starts_with("User-agent: PrivateBinDirectoryBot") {
+                    rule_for_us = true;
                 }
             }
         }

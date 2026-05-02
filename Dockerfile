@@ -1,4 +1,4 @@
-FROM rust:1.80-alpine3.20
+FROM rust:1.91-alpine3.23
 RUN apk --no-cache update && \
     apk add --no-cache \
         musl-dev \
@@ -13,7 +13,7 @@ COPY . /home/rust/
 RUN cargo build --release
 
 FROM scratch
-ARG RELEASE=0.18.5
+ARG RELEASE=0.19.0
 LABEL org.opencontainers.image.authors=support@privatebin.org \
       org.opencontainers.image.vendor=PrivateBin \
       org.opencontainers.image.documentation=https://github.com/PrivateBin/Directory/blob/master/README.md \

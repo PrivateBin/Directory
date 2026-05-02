@@ -1,5 +1,9 @@
 # Change Log
 
+# 0.19.0
+- switch to rust 1.91 & edition 2024
+- bump libraries
+
 # 0.18.6
 - bump libraries
 

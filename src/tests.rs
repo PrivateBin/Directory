@@ -10,9 +10,11 @@ fn index() {
     let client = Client::untracked(rocket()).expect("valid rocket instance");
     let response = client.get("/").dispatch();
     assert_eq!(response.status(), Status::Ok);
-    assert!(response
-        .into_string()
-        .is_some_and(|s| s.contains("Welcome!")));
+    assert!(
+        response
+            .into_string()
+            .is_some_and(|s| s.contains("Welcome!"))
+    );
 }
 
 #[test]
@@ -28,9 +30,11 @@ fn add_get() {
     let client = Client::untracked(rocket()).expect("valid rocket instance");
     let response = client.get("/add").dispatch();
     assert_eq!(response.status(), Status::Ok);
-    assert!(response
-        .into_string()
-        .is_some_and(|s| s.contains("Add instance")));
+    assert!(
+        response
+            .into_string()
+            .is_some_and(|s| s.contains("Add instance"))
+    );
 }
 
 #[test]
@@ -42,9 +46,11 @@ fn add_post_error() {
         .header(ContentType::Form)
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    assert!(response
-        .into_string()
-        .is_some_and(|s| s.contains("Not a valid URL: privatebin.info")));
+    assert!(
+        response
+            .into_string()
+            .is_some_and(|s| s.contains("Not a valid URL: privatebin.info"))
+    );
 
     let response = client
         .post("/add")
@@ -63,9 +69,11 @@ fn add_post_error() {
         .header(ContentType::Form)
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    assert!(response
-        .into_string()
-        .is_some_and(|s| s.contains("Not a valid URL: privatebin.info")));
+    assert!(
+        response
+            .into_string()
+            .is_some_and(|s| s.contains("Not a valid URL: privatebin.info"))
+    );
 }
 
 #[test]
@@ -87,9 +95,11 @@ fn check_get() {
     let client = Client::untracked(rocket()).expect("valid rocket instance");
     let response = client.get("/check").dispatch();
     assert_eq!(response.status(), Status::Ok);
-    assert!(response
-        .into_string()
-        .is_some_and(|s| s.contains("Check instance")));
+    assert!(
+        response
+            .into_string()
+            .is_some_and(|s| s.contains("Check instance"))
+    );
 }
 
 #[test]
@@ -101,9 +111,11 @@ fn check_post_error() {
         .header(ContentType::Form)
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    assert!(response
-        .into_string()
-        .is_some_and(|s| s.contains("Not a valid URL: privatebin.info")));
+    assert!(
+        response
+            .into_string()
+            .is_some_and(|s| s.contains("Not a valid URL: privatebin.info"))
+    );
 
     let response = client
         .post("/check")
@@ -122,9 +134,11 @@ fn check_post_error() {
         .header(ContentType::Form)
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    assert!(response
-        .into_string()
-        .is_some_and(|s| s.contains("Not a valid URL: privatebin.info")));
+    assert!(
+        response
+            .into_string()
+            .is_some_and(|s| s.contains("Not a valid URL: privatebin.info"))
+    );
 }
 
 #[test]
@@ -136,9 +150,11 @@ fn check_post_success() {
         .header(ContentType::Form)
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    assert!(response
-        .into_string()
-        .is_some_and(|s| s.contains("Results of checking https:&#x2F;&#x2F;privatebin.net")));
+    assert!(
+        response
+            .into_string()
+            .is_some_and(|s| s.contains("Results of checking https:&#x2F;&#x2F;privatebin.net"))
+    );
 }
 
 #[test]

@@ -1,11 +1,11 @@
 use http_body_util::Full;
-use hyper::body::{Bytes, Incoming};
-use hyper::header::{HeaderValue, CONNECTION, USER_AGENT};
 use hyper::Uri;
+use hyper::body::{Bytes, Incoming};
+use hyper::header::{CONNECTION, HeaderValue, USER_AGENT};
 use hyper::{Method, Request, Response};
 use hyper_rustls::{HttpsConnector, HttpsConnectorBuilder};
-use hyper_util::client::legacy::connect::HttpConnector;
 use hyper_util::client::legacy::Client;
+use hyper_util::client::legacy::connect::HttpConnector;
 use hyper_util::rt::TokioExecutor;
 use std::sync::OnceLock;
 use std::time::Duration;

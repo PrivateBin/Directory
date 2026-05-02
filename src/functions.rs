@@ -1,6 +1,6 @@
 use super::{
-    about, add, api, check, favicon, forward_me, index, report, save, Build, DirectoryDbConn,
-    Instance, InstancesCache, Relaxed, Rocket, State, Template, CRON_INTERVAL,
+    Build, CRON_INTERVAL, DirectoryDbConn, Instance, InstancesCache, Relaxed, Rocket, State,
+    Template, about, add, api, check, favicon, forward_me, index, report, save,
 };
 use diesel::prelude::*;
 use diesel::query_builder::SqlQuery;
@@ -8,11 +8,11 @@ use diesel_migrations::EmbeddedMigrations;
 use diesel_migrations::MigrationHarness;
 use regex::Regex;
 use rocket::fs::FileServer;
-use rocket_dyn_templates::tera::{to_value, try_get_value, Result, Value};
+use rocket_dyn_templates::tera::{Result, Value, to_value, try_get_value};
 use std::collections::HashMap;
-use std::sync::atomic::AtomicU64;
 use std::sync::OnceLock;
 use std::sync::RwLock;
+use std::sync::atomic::AtomicU64;
 
 // 1F1E6 is the unicode code point for the "REGIONAL INDICATOR SYMBOL
 // LETTER A" and 41 is the one for A in unicode and ASCII
@@ -59,16 +59,16 @@ pub fn is_cached<S: std::hash::BuildHasher>(
     cache: &RwLock<HashMap<String, u64, S>>,
     key: &str,
 ) -> bool {
-    if let Ok(read_cache) = cache.read() {
-        if let Some(timestamp) = read_cache.get(key) {
-            if *timestamp < get_epoch() - CACHE_TIMEOUT {
-                drop(read_cache); // drop read lock, before requesting a write one
-                if let Ok(mut write_cache) = cache.write() {
-                    write_cache.remove(key);
-                }
-            } else {
-                return true;
+    if let Ok(read_cache) = cache.read()
+        && let Some(timestamp) = read_cache.get(key)
+    {
+        if *timestamp < get_epoch() - CACHE_TIMEOUT {
+            drop(read_cache); // drop read lock, before requesting a write one
+            if let Ok(mut write_cache) = cache.write() {
+                write_cache.remove(key);
             }
+        } else {
+            return true;
         }
     }
     false
@@ -100,7 +100,9 @@ pub fn rocket() -> Rocket<Build> {
     rocket::build()
         .mount(
             "/",
-            routes![about, add, api, check, favicon, forward_me, index, report, save],
+            routes![
+                about, add, api, check, favicon, forward_me, index, report, save
+            ],
         )
         .mount("/img", FileServer::from("img"))
         .mount("/css", FileServer::from("css"))
@@ -198,12 +200,11 @@ pub fn filter_country<S: std::hash::BuildHasher>(
     let mut country_code_points = ['A', 'Q'];
     let mut country_chars = country_code.chars();
     for country_code_point in &mut country_code_points {
-        if let Some(char_code_point) = country_chars.next() {
-            if let Some(character) =
+        if let Some(char_code_point) = country_chars.next()
+            && let Some(character) =
                 std::char::from_u32(REGIONAL_INDICATOR_OFFSET + char_code_point as u32)
-            {
-                *country_code_point = character;
-            }
+        {
+            *country_code_point = character;
         }
     }
     let country_name = match CountryCode::for_alpha2(&country_code) {
