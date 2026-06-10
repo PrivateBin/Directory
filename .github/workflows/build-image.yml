@@ -16,7 +16,7 @@ jobs:
           persist-credentials: false
       - name: Docker meta
         id: meta
-        uses: docker/metadata-action@v3
+        uses: docker/metadata-action@v6
         with:
           images: privatebin/directory
       - name: Set up Docker Buildx
