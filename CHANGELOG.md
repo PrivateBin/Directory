@@ -1,28 +1,31 @@
 # Change Log
 
-# 0.19.0
+## 0.19.1
+- bump libraries
+
+## 0.19.0
 - switch to rust 1.91 & edition 2024
 - bump libraries
 
-# 0.18.6
+## 0.18.6
 - bump libraries
 
-# 0.18.5
+## 0.18.5
 - changes for maxminddb 0.27.0
 - bump libraries
 
-# 0.18.4
+## 0.18.4
 - update links and branding related to the HTTP (formerly Mozilla) Observatory
 - bump libraries
 
-# 0.18.3
+## 0.18.3
 - upgrade to bootstrap CSS 5.3.8
 - bump libraries
 
-# 0.18.2
+## 0.18.2
 - fix table version split when a minor version 0 is the first entry (i.e. 2.0.0 is lumped in with 1.7 and 1.0 with 0.20)
 
-# 0.18.1
+## 0.18.1
 - PrivateBin release 2.0.0 CSP changes: Policy `default-src: 'self';` is no
   longer necessary, as of [Firefox 131](https://bugzilla.mozilla.org/show_bug.cgi?id=1773976).
   This applies retroactively to older 1.7 instances using `bootstrap5` template
@@ -30,109 +33,109 @@
   recommended CSP check
 - bump libraries
 
-# 0.18.0
+## 0.18.0
 - upgrade to bootstrap CSS 5.3.7
 - bump libraries
 
-# 0.17.4
+## 0.17.4
 - increase timeout on client connections to 25s
 - switch to rust 1.80 to support pest 2.8.1
 - bump libraries
 
-# 0.17.3
+## 0.17.3
 - limit Mozilla Observatory API rescan to 5 attempts per instance
 
-# 0.17.2
+## 0.17.2
 - rescan Mozilla Observatory API on HTTP status 500, after a delay
 
-# 0.17.1
+## 0.17.1
 - add delay before calling Mozilla Observatory API to spread the load during full syncs
 - bump libraries
 
-# 0.17.0
+## 0.17.0
 - PrivateBin release 1.7.7 & 1.7.8 CSP changes
 - adding more diagnostics on Mozilla Observatory API errors
 - enable and address most of the pedantic clippy lints
 - bump libraries
 
-# 0.16.0
+## 0.16.0
 - re-add rescan for Mozilla Observatory API, due to error rate on parallel scans
 - bump libraries
 
-# 0.15.3
+## 0.15.3
 - bump libraries
 
-# 0.15.2
+## 0.15.2
 - bump libraries
 
-# 0.15.1
+## 0.15.1
 - bump libraries
 
-# 0.15.0
+## 0.15.0
 - PrivateBin release 1.7.6 switched to WASM streaming & eliminated unsafe-eval CSP
 - bump libraries
 
-# 0.14.0
+## 0.14.0
 - switch to rust 1.78 to support diesel_migrations 2.2.0
 - bump libraries
 
-# 0.13.0
+## 0.13.0
 - fix Mozilla Observatory API v2, request is now POST, response behaved slightly
   differently, rescan not necessary nor supported anymore
 - bump libraries
 
-# 0.12.0
+## 0.12.0
 - switch to Mozilla Observatory API v2
 - bump libraries
 
-# 0.11.0
+## 0.11.0
 - adding version- and template based CSP checks #89
 - addressed typos in the about page
 - bump libraries
 
-# 0.10.8
+## 0.10.8
 - bump libraries
 
-# 0.10.7
+## 0.10.7
 - HTTP(S) client now uses hyper 1.1
 - switch to rust 1.70 to drop lazy_static in favor of OnceLock
 - bump libraries
 
-# 0.10.6
+## 0.10.6
 - bump libraries
 
-# 0.10.5
+## 0.10.5
 - bump libraries
 
-# 0.10.4
+## 0.10.4
 - drop dns-lookup library in favor of stdlib usage
 
-# 0.10.3
+## 0.10.3
 - bump libraries
 
-# 0.10.2
+## 0.10.2
 - bump libraries
 
-# 0.10.1
+## 0.10.1
 - bump libraries
 
-# 0.10.0
+## 0.10.0
 - add a random redirect endpoint
 - reverting enable_all_versions() use, it doesn't seem to enable HTTP 1.x
 
-# 0.9.6
+## 0.9.6
 - switch to rust 1.65 and to make use of it's build time strip
 - strip index.php suffix from URL, if present
 - bump libraries & bootstrap css
 - cleaned up docker image build, switching to a still maintained build image
 
-# 0.9.5
+## 0.9.5
 - add check for content length returned by Mozilla observatory
 - scan at most 1024 lines
 - use read buffer wrapped iterator to protect from reading overly long lines
 - bump libraries
 
-# 0.9.4
+## 0.9.4
 - add unit test for check page
 - fix deadlock upon evicting expired negative lookup cache
 - bump libraries
@@ -143,43 +146,43 @@
 - add negative lookup cache, to prevent unnecessary lookups, which could be abused to cause load on queried instances
 - bump libraries
 
-# 0.9.2
+## 0.9.2
 - version bump unit tests
 - bump libraries
 
-# 0.9.1
+## 0.9.1
 - removed "script-src resource:" Content-Security-Policy, previously required for PDF preview in FireFox
 
-# 0.9.0
+## 0.9.0
 - added Content-Security-Policy header rating
 
-# 0.8.0
+## 0.8.0
 - adding a "check instance" form, to retrieve a detailed report on an instance, without adding it
 - upgrade to bootstrap CSS 5.1.3
 - fix navbar toggle in mobile display
 - fix unit test that stopped working in 0.7.0
 - tweak dark mode link color for improved readability
 
-# 0.7.2
+## 0.7.2
 - cleaning up the request code
 - switch to rust 1.58.0 and make use of it's captured identifiers
 - use diesel DSL over format string SQL statements
 - cache compiled regular expressions and formatted user agent string
 
-# 0.7.1
+## 0.7.1
 - re-implementing support for internationalized domain names (IDN), lost in the hyper upgrade at 0.7.0
 - switching to rust edition 2021
 
-# 0.7.0
+## 0.7.0
 - upgrade to rocket 0.5.0-rc.1, bump libraries, update rustc
 
-# 0.6.1
+## 0.6.1
 - implement additional filters for the JSON api
 
-# 0.6.0
+## 0.6.0
 - JSON api for retrieving top instances, randomized for load balancing
 
-# 0.5.2
+## 0.5.2
 - hard 15s timeout on client connections
 - separating model and view logic of country flag
 
