@@ -12,7 +12,7 @@
 				</ol>
 			</nav>
 			<h3 id="faq-remove-instance">Removing an instance</h3>
-			<p>Instances will be removed, if they are no longer reachable from this service for more then 24 hours, checked every 15 minutes. If you run a PrivateBin instance and would like not to have it published on this site, you can disable it in one of multiple ways.</p>
+			<p>Instances will be removed if they are no longer reachable from this service for more than 24 hours, checked every 15 minutes. If you run a PrivateBin instance and would like not to have it published on this site, you can disable it in one of multiple ways.</p>
 			<h4>robots.txt</h4>
 			<p>By default the <code>robots.txt</code> file of a PrivateBin instance disallows all search engine spiders. You can add an explicit rule to tell this service not to list your site:</p>
 			<pre>
@@ -20,7 +20,7 @@ User-agent: PrivateBinDirectoryBot
 Disallow: /
 			</pre>
 			<h4>Webserver configuration</h4>
-			<p>If you don't want to rely on this service following your sites <code>robots.txt</code>, you can configure your webserver to block any access that matches this services user agent, which <strong>starts with</strong> the string <code>PrivateBinDirectoryBot</code>. Here below are examples of configuration snippets to do just that:</p>
+			<p>If you don't want to rely on this service following your site's <code>robots.txt</code>, you can configure your webserver to block any access that matches this service's user agent, which <strong>starts with</strong> the string <code>PrivateBinDirectoryBot</code>. Below are examples of configuration snippets to do just that:</p>
 			<h5>Apache</h5>
 			<pre>
 RewriteEngine On
@@ -63,7 +63,7 @@ HTTP/2 403
 				<dt>Observatory Rating</dt>
 				<dd>The <a href="https://developer.mozilla.org/en-US/observatory/docs/tests_and_scoring">score</a> of an instance as per the <a href="https://developer.mozilla.org/en-US/observatory">HTTP Observatory</a>.</dd>
 				<dt>File upload</dt>
-				<dd>If the instance has the <a href="https://github.com/PrivateBin/PrivateBin/wiki/Configuration#fileupload"><code>fileupload</code> option</a> enabled, you can upload attachments along side your texts.</dd>
+				<dd>If the instance has the <a href="https://github.com/PrivateBin/PrivateBin/wiki/Configuration#fileupload"><code>fileupload</code> option</a> enabled, you can upload attachments alongside your texts.</dd>
 				<dt>Uptime</dt>
 				<dd>The instances are checked for availability every 15 minutes, using an HTTP(S) <code>HEAD</code> request to reduce transmitted data. Only the last 100 results (25h) are kept and the percentage is calculated based on this. Basically this percentage is an indication if an instance experienced any prolonged downtime during the last day.</dd>
 				<dt>Country</dt>
@@ -85,7 +85,7 @@ $ curl --header "Accept: application/json" https://privatebin.info/directory/api
 				<dt>country</dt>
 				<dd>ISO 3166-1 alpha-2 country code, unset by default. Only return instances of that country. Note the limitations of this type of lookup, as explained above.</dd>
 				<dt>csp_header</dt>
-				<dd>Boolean (true or false), unset by default. Only return instances that set the currently recommend HTTP <code>Content-Security-Policy</code> (<a href="https://content-security-policy.com/">CSP</a>) header (see above).</dd>
+				<dd>Boolean (true or false), unset by default. Only return instances that set the currently recommended HTTP <code>Content-Security-Policy</code> (<a href="https://content-security-policy.com/">CSP</a>) header (see above).</dd>
 				<dt>https</dt>
 				<dd>Boolean (true or false), unset by default. Only return instances that offer HTTPS.</dd>
 				<dt>https_redirect</dt>
