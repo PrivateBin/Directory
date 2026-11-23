@@ -85,9 +85,11 @@ fn add_post_success() {
         .header(ContentType::Form)
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    assert!(response
-        .into_string()
-        .is_some_and(|s| s.contains("Successfully added URL: https:&#x2F;&#x2F;privatebin.net")));
+    assert!(
+        response
+            .into_string()
+            .is_some_and(|s| s.contains("Successfully added URL: https://privatebin.net"))
+    );
 }
 
 #[test]
@@ -153,7 +155,7 @@ fn check_post_success() {
     assert!(
         response
             .into_string()
-            .is_some_and(|s| s.contains("Results of checking https:&#x2F;&#x2F;privatebin.net"))
+            .is_some_and(|s| s.contains("Results of checking https://privatebin.net"))
     );
 }
 

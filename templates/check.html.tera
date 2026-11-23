@@ -1,8 +1,7 @@
-{% extends "base" %}
-{% import "macros" as draw %}
+{% extends "base.html" %}
 
 {% block content %}
-{{ draw::error(message=error) }}
+{{<error message={error}/>}}
 	{%- if not error -%}
 			<p>These are the results of checking the PrivateBin instance on URL {{ instance.url }}:</p>
 			<dl>

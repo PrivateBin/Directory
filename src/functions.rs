@@ -1,6 +1,6 @@
 use super::{
-    Build, CRON_INTERVAL, DirectoryDbConn, Instance, InstancesCache, Relaxed, Rocket, State,
-    Template, about, add, api, check, favicon, forward_me, index, report, save,
+    Build, CRON_INTERVAL, DirectoryDbConn, Instance, InstancesCache, Relaxed, Rocket, State, about,
+    add, api, check, favicon, forward_me, index, report, save,
 };
 use diesel::prelude::*;
 use diesel::query_builder::SqlQuery;
@@ -8,7 +8,8 @@ use diesel_migrations::EmbeddedMigrations;
 use diesel_migrations::MigrationHarness;
 use regex::Regex;
 use rocket::fs::FileServer;
-use rocket_dyn_templates::tera::{Result, Value, to_value, try_get_value};
+use rocket_dyn_templates::tera::{Kwargs, State as TeraState, TeraResult, Value};
+use rocket_dyn_templates::{Engines, Templating};
 use std::collections::HashMap;
 use std::sync::OnceLock;
 use std::sync::RwLock;
@@ -21,6 +22,7 @@ const REGIONAL_INDICATOR_OFFSET: u32 = 0x1F1E6 - 0x41;
 const CACHE_TIMEOUT: u64 = 300; // 5 minutes
 #[cfg(test)]
 const CACHE_TIMEOUT: u64 = 1; // 1 second, for unit tests
+static COUNTRY_CODE_EXP: OnceLock<Regex> = OnceLock::new();
 static SLASHES_EXP: OnceLock<Regex> = OnceLock::new();
 
 /// # Panics
@@ -107,8 +109,11 @@ pub fn rocket() -> Rocket<Build> {
         .mount("/img", FileServer::from("img"))
         .mount("/css", FileServer::from("css"))
         .attach(DirectoryDbConn::fairing())
-        .attach(Template::custom(|engines| {
+        .attach(Templating::init(|engines: &mut Engines| {
             engines.tera.register_filter("country", filter_country);
+            engines
+                .tera
+                .register_test("country_code", test_country_code);
         }))
         .manage(InstancesCache {
             timeout: AtomicU64::new(0),
@@ -190,13 +195,11 @@ pub async fn update_instance_cache(db: DirectoryDbConn, cache: &State<InstancesC
 
 /// # Errors
 ///
-/// Will not return `Err`, but Tera filters require a `Result`.
-pub fn filter_country<S: std::hash::BuildHasher>(
-    value: &Value,
-    args: &HashMap<String, Value, S>,
-) -> Result<Value> {
+/// May return `Err` if the `label` argument is present but not a boolean.
+#[allow(clippy::needless_pass_by_value)]
+pub fn filter_country(value: String, kwargs: Kwargs, _state: &TeraState) -> TeraResult<Value> {
     use isocountry::CountryCode;
-    let country_code = try_get_value!("country", "value", String, value);
+    let country_code = value;
     let mut country_code_points = ['A', 'Q'];
     let mut country_chars = country_code.chars();
     for country_code_point in &mut country_code_points {
@@ -217,14 +220,24 @@ pub fn filter_country<S: std::hash::BuildHasher>(
             "<td title=\"{0}\" aria-label=\"{0}\">{1}</td>"
         };
     }
-    let output = if let Some(label) = args.get("label") {
-        if try_get_value!("country", "label", bool, label) {
-            format!("{country_name}. {country_emoji}")
-        } else {
-            format!(TABLE_CELL_FORMAT!(), country_name, country_emoji)
-        }
+    let label = kwargs.get::<bool>("label")?.unwrap_or(false);
+    let output = if label {
+        format!("{country_name}. {country_emoji}")
     } else {
         format!(TABLE_CELL_FORMAT!(), country_name, country_emoji)
     };
-    Ok(to_value(output).unwrap_or(Value::Null))
+    Ok(Value::from(output))
+}
+
+/// # Errors
+///
+/// May panic on first initialization, see below.
+///
+/// # Panics
+///
+/// May panic in `Regex::new(r"^[A-Z]{2}$").unwrap()`.
+pub fn test_country_code(value: &str, _: Kwargs, _state: &TeraState) -> TeraResult<bool> {
+    Ok(COUNTRY_CODE_EXP
+        .get_or_init(|| Regex::new(r"^[A-Z]{2}$").unwrap())
+        .is_match(value))
 }

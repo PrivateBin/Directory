@@ -1,5 +1,4 @@
-{% extends "base" %}
-{% import "macros" as draw %}
+{% extends "base.html" %}
 
 {% block content %}
 			<p>This is a directory application intended to collect a list of federated instances of a PrivateBin, written in <a href="https://www.rust-lang.org/">Rust 🦀</a>.</p>

@@ -106,13 +106,13 @@ async fn index(db: DirectoryDbConn, cache: &State<InstancesCache>) -> Template {
         body,
     });
 
-    Template::render("list", TablePage::new("Welcome!".into(), tables))
+    Template::render("list.html", TablePage::new("Welcome!".into(), tables))
 }
 
 #[get("/about")]
 fn about() -> Template {
     Template::render(
-        "about",
+        "about.html",
         StatusPage::new(
             format!("About the {TITLE}"),
             Some(CSP_RECOMMENDATION.into()),
@@ -123,7 +123,7 @@ fn about() -> Template {
 
 #[get("/add")]
 fn add() -> Template {
-    Template::render("form", StatusPage::new(ADD_TITLE.into(), None, None))
+    Template::render("form.html", StatusPage::new(ADD_TITLE.into(), None, None))
 }
 
 #[post("/add", data = "<form>")]
@@ -134,7 +134,7 @@ async fn save(db: DirectoryDbConn, form: Form<AddForm>, cache: &State<InstancesC
     // check in negative lookup cache, prevent unnecessary lookups
     if is_cached(&cache.negative_lookups, add_url) {
         return Template::render(
-            "form",
+            "form.html",
             StatusPage::new(
                 ADD_TITLE.into(),
                 Some(format!(
@@ -209,12 +209,12 @@ async fn save(db: DirectoryDbConn, form: Form<AddForm>, cache: &State<InstancesC
     if do_cache_flush {
         cache.timeout.store(0, Relaxed);
     }
-    Template::render("form", page)
+    Template::render("form.html", page)
 }
 
 #[get("/check")]
 fn check() -> Template {
-    Template::render("form", StatusPage::new(CHECK_TITLE.into(), None, None))
+    Template::render("form.html", StatusPage::new(CHECK_TITLE.into(), None, None))
 }
 
 #[post("/check", data = "<form>")]
@@ -232,7 +232,7 @@ async fn report(
     // check in negative lookup cache, prevent unnecessary lookups
     if is_cached(&cache.negative_lookups, &check_url) {
         return Template::render(
-            "form",
+            "form.html",
             StatusPage::new(
                 CHECK_TITLE.into(),
                 Some(format!(
@@ -307,9 +307,12 @@ async fn report(
         },
     };
     if page.error.is_empty() {
-        return Template::render("check", page);
+        return Template::render("check.html", page);
     }
-    Template::render("form", StatusPage::new(page.topic, Some(page.error), None))
+    Template::render(
+        "form.html",
+        StatusPage::new(page.topic, Some(page.error), None),
+    )
 }
 
 #[allow(clippy::too_many_arguments)]

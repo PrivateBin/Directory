@@ -1,9 +1,8 @@
-{% extends "base" %}
-{% import "macros" as draw %}
+{% extends "base.html" %}
 
 {% block content %}
-{{ draw::error(message=error) }}
-{{ draw::success(message=success) }}
+{{<error message={error}/>}}
+{{<success message={success}/>}}
 {% set action = topic | split(pat=" ") | first -%}
 {% set target = action | lower -%}
 			<form  action="/{{ target }}" method="POST">

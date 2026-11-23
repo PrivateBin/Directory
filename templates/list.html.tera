@@ -1,8 +1,7 @@
-{% extends "base" %}
-{% import "macros" as draw %}
+{% extends "base.html" %}
 
 {% block content %}
 {% for table in tables %}
-{{ draw::table(caption=table.title, header=table.header, table=table.body) }}
+{{<table caption={table.title} header={table.header} table={table.body}/>}}
 {% endfor %}
 {% endblock content %}

@@ -1,4 +1,4 @@
-{% macro table(caption, header, table) %}
+{% component table(caption, header, table) %}
 			<h5>{{ caption }}</h5>
 			<table class="table table-borderless table-hover table-striped">
 				<thead>
@@ -12,12 +12,12 @@
 	{%- for row in table %}
 					<tr class="{{ row | first }}">
 		{%- for col in row %}
-			{%- if col is starting_with("opacity") %}{% continue %}{% endif %}
-			{%- if col is matching("^[A-Z]{2}$") %}
+			{%- if col is starting_with(pat="opacity") %}{% continue %}{% endif %}
+			{%- if col is country_code() %}
 						{{ col | country | safe }}
 			{%- else %}
 						<td>
-				{%- if col is starting_with("http") %}
+				{%- if col is starting_with(pat="http") %}
 							<a href="{{ col }}">{{ col }}</a>
 				{%- else %}
 					{%- if col == "✔" %}
@@ -37,20 +37,20 @@
 	{%- endfor %}
 				</tbody>
 			</table>
-{% endmacro table %}
+{% endcomponent table %}
 
-{% macro success(message) -%}
+{% component success(message) -%}
 	{%- if message != "" %}
 			<div class="alert alert-success" role="alert">
 				{{ message }}
 			</div>
 	{%- endif -%}
-{% endmacro success %}
+{% endcomponent success %}
 
-{% macro error(message) -%}
+{% component error(message) -%}
 	{%- if message != "" %}
 			<div class="alert alert-danger" role="alert">
 				{{ message }}
 			</div>
 	{%- endif -%}
-{% endmacro error %}
+{% endcomponent error %}
