@@ -19,6 +19,9 @@ use rocket_dyn_templates::Template;
 use std::num::NonZeroU8;
 use std::sync::atomic::Ordering::Relaxed;
 
+pub mod db;
+use db::DirectoryDbConn;
+
 pub mod connections;
 pub mod functions;
 use functions::{
@@ -27,8 +30,8 @@ use functions::{
 };
 pub mod models;
 use models::{
-    AddForm, CSP_RECOMMENDATION, CheckNew, DirectoryDbConn, HtmlTable, Instance, InstancePage,
-    InstancesCache, PrivateBin, ScanNew, StatusPage, TITLE, TablePage,
+    AddForm, CSP_RECOMMENDATION, CheckNew, HtmlTable, Instance, InstancePage, InstancesCache,
+    PrivateBin, ScanNew, StatusPage, TITLE, TablePage,
 };
 pub mod schema;
 use schema::checks::dsl::checks;

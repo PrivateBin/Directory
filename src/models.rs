@@ -3,7 +3,6 @@ use super::functions::{rating_to_percent, strip_url};
 use super::schema::checks;
 use super::schema::instances;
 use super::schema::scans;
-use diesel::SqliteConnection;
 use http_body_util::BodyExt; // BodyExt provides the Iterator trait
 use hyper::body::{Body, Buf, Bytes}; // Body provides the size_hint() trait, Buf provides the reader() trait
 use hyper::header::{CONTENT_SECURITY_POLICY, LOCATION};
@@ -125,9 +124,6 @@ pub struct CheckNew {
     pub up: bool,
     pub instance_id: i32,
 }
-
-#[database("directory")]
-pub struct DirectoryDbConn(SqliteConnection);
 
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Clone, QueryableByName, Queryable, Serialize)]
