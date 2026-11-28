@@ -236,6 +236,7 @@ pub fn filter_country(value: String, kwargs: Kwargs, _state: &TeraState) -> Tera
 /// # Panics
 ///
 /// May panic in `Regex::new(r"^[A-Z]{2}$").unwrap()`.
+#[allow(clippy::unnecessary_wraps)]
 pub fn test_country_code(value: &str, _: Kwargs, _state: &TeraState) -> TeraResult<bool> {
     Ok(COUNTRY_CODE_EXP
         .get_or_init(|| Regex::new(r"^[A-Z]{2}$").unwrap())
