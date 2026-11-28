@@ -19,24 +19,24 @@ use rocket_dyn_templates::Template;
 use std::num::NonZeroU8;
 use std::sync::atomic::Ordering::Relaxed;
 
-pub mod db;
+mod db;
 use db::DirectoryDbConn;
 
-pub mod connections;
-pub mod functions;
+mod connections;
+mod functions;
 use functions::{
     get_epoch, get_instances, is_cached, rating_to_percent, rocket, run_db_migrations, set_cached,
     strip_url, update_instance_cache,
 };
-pub mod models;
+mod models;
 use models::{
     AddForm, CSP_RECOMMENDATION, CheckNew, HtmlTable, Instance, InstancePage, InstancesCache,
-    PrivateBin, ScanNew, StatusPage, TITLE, TablePage,
+    PageResponse, PrivateBin, ScanNew, StatusPage, TITLE, TablePage,
 };
-pub mod schema;
+mod schema;
 use schema::checks::dsl::checks;
 use schema::scans::dsl::scans;
-pub mod tasks;
+mod tasks;
 use tasks::{CRON_INTERVAL, check_full, check_up};
 #[cfg(test)]
 mod tests;
@@ -116,17 +116,15 @@ async fn index(db: DirectoryDbConn, cache: &State<InstancesCache>) -> Template {
 fn about() -> Template {
     Template::render(
         "about.html",
-        StatusPage::new(
-            format!("About the {TITLE}"),
-            Some(CSP_RECOMMENDATION.into()),
-            Some(env!("CARGO_PKG_VERSION").into()),
-        ),
+        StatusPage::new(format!("About the {TITLE}"))
+            .error(CSP_RECOMMENDATION)
+            .success(env!("CARGO_PKG_VERSION")),
     )
 }
 
 #[get("/add")]
 fn add() -> Template {
-    Template::render("form.html", StatusPage::new(ADD_TITLE.into(), None, None))
+    Template::render("form.html", StatusPage::new(ADD_TITLE.into()))
 }
 
 #[post("/add", data = "<form>")]
@@ -138,13 +136,9 @@ async fn save(db: DirectoryDbConn, form: Form<AddForm>, cache: &State<InstancesC
     if is_cached(&cache.negative_lookups, add_url) {
         return Template::render(
             "form.html",
-            StatusPage::new(
-                ADD_TITLE.into(),
-                Some(format!(
-                    "Error adding URL {add_url}, due to a failed scan within the last 5 minutes."
-                )),
-                None,
-            ),
+            StatusPage::new(ADD_TITLE.into()).error(format!(
+                "Error adding URL {add_url}, due to a failed scan within the last 5 minutes."
+            )),
         );
     }
 
@@ -181,22 +175,16 @@ async fn save(db: DirectoryDbConn, form: Form<AddForm>, cache: &State<InstancesC
                         let add_url = privatebin.instance.url;
                         (
                             true,
-                            StatusPage::new(
-                                ADD_TITLE.into(),
-                                None,
-                                Some(format!("Successfully added URL: {add_url}")),
-                            ),
+                            StatusPage::new(ADD_TITLE.into())
+                                .success(format!("Successfully added URL: {add_url}")),
                         )
                     }
                     Err(e) => {
                         let add_url = form.url.trim();
                         (
                             false,
-                            StatusPage::new(
-                                ADD_TITLE.into(),
-                                Some(format!("Error adding URL {add_url}, due to: {e:?}")),
-                                None,
-                            ),
+                            StatusPage::new(ADD_TITLE.into())
+                                .error(format!("Error adding URL {add_url}, due to: {e:?}")),
                         )
                     }
                 }
@@ -206,7 +194,7 @@ async fn save(db: DirectoryDbConn, form: Form<AddForm>, cache: &State<InstancesC
         Err(e) => {
             // don't query this site again, for another 5 minutes
             set_cached(&cache.negative_lookups, add_url);
-            (false, StatusPage::new(ADD_TITLE.into(), Some(e), None))
+            (false, StatusPage::new(ADD_TITLE.into()).error(e))
         }
     };
     if do_cache_flush {
@@ -217,7 +205,7 @@ async fn save(db: DirectoryDbConn, form: Form<AddForm>, cache: &State<InstancesC
 
 #[get("/check")]
 fn check() -> Template {
-    Template::render("form.html", StatusPage::new(CHECK_TITLE.into(), None, None))
+    Template::render("form.html", StatusPage::new(CHECK_TITLE.into()))
 }
 
 #[post("/check", data = "<form>")]
@@ -236,13 +224,9 @@ async fn report(
     if is_cached(&cache.negative_lookups, &check_url) {
         return Template::render(
             "form.html",
-            StatusPage::new(
-                CHECK_TITLE.into(),
-                Some(format!(
-                    "Error scanning URL {form_url}, due to a failed scan within the last 5 minutes."
-                )),
-                None,
-            ),
+            StatusPage::new(CHECK_TITLE.into()).error(format!(
+                "Error scanning URL {form_url}, due to a failed scan within the last 5 minutes."
+            )),
         );
     }
 
@@ -275,7 +259,7 @@ async fn report(
         })
         .await;
     let page = match instance_in_db {
-        Ok(instance) => InstancePage::new(check_success_title, Some(instance), None),
+        Ok(instance) => PageResponse::Instance(InstancePage::new(check_success_title, instance)),
         Err(_) => match PrivateBin::new(form_url.clone()).await {
             // scan unknown instance
             Ok(privatebin) => {
@@ -296,26 +280,22 @@ async fn report(
                         .rating
                         .clone(),
                 };
-                InstancePage::new(check_success_title, Some(instance), None)
+                PageResponse::Instance(InstancePage::new(check_success_title, instance))
             }
             Err(e) => {
                 // don't query this site again, for another 5 minutes
                 set_cached(&cache.negative_lookups, &check_url);
-                InstancePage::new(
-                    CHECK_TITLE.into(),
-                    None,
-                    Some(format!("Error scanning URL {form_url}, due to: {e:?}")),
+                PageResponse::Status(
+                    StatusPage::new(CHECK_TITLE.into())
+                        .error(format!("Error scanning URL {form_url}, due to: {e:?}")),
                 )
             }
         },
     };
-    if page.error.is_empty() {
-        return Template::render("check.html", page);
+    match page {
+        PageResponse::Instance(page) => Template::render("check.html", page),
+        PageResponse::Status(page) => Template::render("form.html", page),
     }
-    Template::render(
-        "form.html",
-        StatusPage::new(page.topic, Some(page.error), None),
-    )
 }
 
 #[allow(clippy::too_many_arguments)]

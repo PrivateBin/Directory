@@ -4,7 +4,7 @@
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 		<meta name="robots" content="index">
-		<title>{{ title }} - {{ topic }}</title>
+		<title>{{ meta.title }} - {{ meta.topic }}</title>
 		<link rel="stylesheet" href="/css/bootstrap-5.3.8.css">
 		<link rel="stylesheet" href="/css/directory.css">
 		<link rel="stylesheet" href="/css/gh-fork-ribbon.css">
@@ -16,7 +16,7 @@
 			<div class="container-fluid">
 				<a class="navbar-brand" href="/">
 					<img alt="PrivateBin" src="/img/icon.svg" height="38">
-					{{ title }}
+					{{ meta.title }}
 				</a>
 				<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
 					<span class="navbar-toggler-icon"></span>
@@ -48,7 +48,7 @@
 			</div>
 		</nav>
 		<div class="container-fluid">
-			<h2>{{ topic }}</h2>
+			<h2>{{ meta.topic }}</h2>
 {% block content -%}
 {% endblock content %}
 		</div>

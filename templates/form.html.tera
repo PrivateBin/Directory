@@ -3,7 +3,7 @@
 {% block content %}
 {{<error message={error}/>}}
 {{<success message={success}/>}}
-{% set action = topic | split(pat=" ") | first -%}
+{% set action = meta.topic | split(pat=" ") | first -%}
 {% set target = action | lower -%}
 			<form  action="/{{ target }}" method="POST">
 				<div class="form-group">

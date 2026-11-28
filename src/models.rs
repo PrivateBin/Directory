@@ -110,6 +110,7 @@ pub const TITLE: &str = "Instance Directory";
 static TEMPLATE_EXP: OnceLock<Regex> = OnceLock::new();
 static VERSION_EXP: OnceLock<Regex> = OnceLock::new();
 
+/* not currently used
 #[derive(Queryable)]
 pub struct Check {
     pub id: i32,
@@ -117,6 +118,7 @@ pub struct Check {
     pub up: bool,
     pub instance_id: i32,
 }
+*/
 
 #[derive(Insertable)]
 #[diesel(table_name = checks)]
@@ -665,6 +667,7 @@ enum PrivateBinTemplate {
     Unknown,
 }
 
+/* not currently used
 #[derive(Queryable)]
 pub struct Scan {
     pub id: i32,
@@ -673,6 +676,7 @@ pub struct Scan {
     pub percent: i32,
     pub instance_id: i32,
 }
+*/
 
 #[derive(Insertable, Clone)]
 #[diesel(table_name = scans)]
@@ -702,7 +706,7 @@ impl Default for ScanNew {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Serialize)]
+#[derive(Serialize)]
 #[serde(crate = "rocket::serde")]
 pub struct Page {
     pub title: String,
@@ -722,55 +726,64 @@ impl Page {
 #[derive(Serialize)]
 #[serde(crate = "rocket::serde")]
 pub struct InstancePage {
-    pub title: String,
-    pub topic: String,
+    pub meta: Page,
     pub csp_recommendation: String,
-    pub instance: Option<Instance>,
+    pub instance: Instance,
     pub error: String,
 }
 
 impl InstancePage {
     #[must_use]
-    pub fn new(topic: String, instance: Option<Instance>, error: Option<String>) -> InstancePage {
-        let error_string = error.unwrap_or_default();
+    pub fn new(topic: String, instance: Instance) -> InstancePage {
         InstancePage {
-            title: TITLE.into(),
-            topic,
+            meta: Page::new(topic),
             csp_recommendation: CSP_RECOMMENDATION.into(),
             instance,
-            error: error_string,
+            error: String::new(), // required for templates
         }
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Serialize)]
+#[derive(Serialize)]
 #[serde(crate = "rocket::serde")]
 pub struct StatusPage {
-    pub title: String,
-    pub topic: String,
+    pub meta: Page,
     pub error: String,
     pub success: String,
 }
 
 impl StatusPage {
     #[must_use]
-    pub fn new(topic: String, error: Option<String>, success: Option<String>) -> StatusPage {
-        let error_string = error.unwrap_or_default();
-        let success_string = success.unwrap_or_default();
+    pub fn new(topic: String) -> StatusPage {
         StatusPage {
-            title: TITLE.into(),
-            topic,
-            error: error_string,
-            success: success_string,
+            meta: Page::new(topic),
+            error: String::new(),
+            success: String::new(),
         }
+    }
+
+    #[must_use]
+    pub fn error(mut self, error: impl Into<String>) -> StatusPage {
+        self.error = error.into();
+        self
+    }
+
+    #[must_use]
+    pub fn success(mut self, success: impl Into<String>) -> StatusPage {
+        self.success = success.into();
+        self
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Serialize)]
+pub enum PageResponse {
+    Instance(InstancePage),
+    Status(StatusPage),
+}
+
+#[derive(Serialize)]
 #[serde(crate = "rocket::serde")]
 pub struct TablePage {
-    pub title: String,
-    pub topic: String,
+    pub meta: Page,
     pub tables: Vec<HtmlTable>,
 }
 
@@ -778,14 +791,13 @@ impl TablePage {
     #[must_use]
     pub fn new(topic: String, tables: Vec<HtmlTable>) -> TablePage {
         TablePage {
-            title: TITLE.into(),
-            topic,
+            meta: Page::new(topic),
             tables,
         }
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Serialize)]
+#[derive(Serialize)]
 #[serde(crate = "rocket::serde")]
 pub struct HtmlTable {
     pub title: String,
